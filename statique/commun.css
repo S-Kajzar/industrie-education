@@ -1,0 +1,129 @@
+/* industrie.education — feuille de style commune.
+   Source : DESIGN.md. Les jetons reprennent la charte « atelier » des dépôts de cours.
+   Toute page du site charge ce fichier ; aucune page ne redéfinit un jeton. */
+
+@font-face{font-family:"Barlow Condensed";font-weight:600;font-display:swap;src:url("polices/barlow-condensed-600.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:700;font-display:swap;src:url("polices/barlow-condensed-700.woff2") format("woff2")}
+@font-face{font-family:"Barlow Condensed";font-weight:800;font-display:swap;src:url("polices/barlow-condensed-800.woff2") format("woff2")}
+
+:root{
+  --beton:#E3E5E0; --papier:#FFFFFF; --encre:#1C2530; --encre-2:#46525C;
+  --trait:#A5ADAA; --trait-fin:#D3D8D5;
+  --jaune:#F2B705; --jaune-pale:#FFF3C4;
+  --bleu:#1F5FA8; --bleu-pale:#E6EEF8;
+  --vert:#1B7A43; --vert-pale:#E2F1E7; --rouge:#B42318; --rouge-pale:#FBE6E4;
+  --orange:#B26A00; --orange-pale:#FCEFD8;
+  --f-titre:"Bahnschrift","Barlow Condensed","DIN Alternate","Roboto Condensed","Arial Narrow",sans-serif;
+  --f-texte:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --trait-fort:2px; --rail-carte:8px; --rail-titre:10px;
+  --marge:40px; --gouttiere:20px; --largeur:1360px;
+}
+
+/* ---------- base ---------- */
+*{box-sizing:border-box}
+html{scroll-padding-top:16px}
+body{margin:0; background:var(--papier); color:var(--encre); font:16px/1.55 var(--f-texte); font-variant-numeric:tabular-nums}
+body.atelier{background:var(--beton)}
+img{max-width:100%; height:auto}
+a{color:inherit}
+p a,li a{color:var(--bleu)}
+button,input,select{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
+.visuellement-cache{position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.conteneur{max-width:var(--largeur); margin:0 auto; padding:0 var(--marge)}
+.grille{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere)}
+
+/* ---------- en-tête et pied ---------- */
+.site-tete{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
+.site-tete .conteneur{display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; padding-top:18px; padding-bottom:18px}
+.logo{display:flex; align-items:center; gap:10px; font:800 1.5rem/1 var(--f-titre); text-decoration:none}
+.logo::before{content:""; width:8px; height:28px; background:var(--jaune)}
+.site-nav{display:flex; gap:24px; flex-wrap:wrap; align-items:center; font-weight:600}
+.site-nav a{text-decoration:none; padding:6px 0}
+.site-nav a[aria-current="page"]{border-bottom:4px solid var(--jaune)}
+.site-pied{border-top:var(--trait-fort) solid var(--encre); margin-top:56px; background:var(--papier)}
+.site-pied .conteneur{display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-top:24px; padding-bottom:24px; font-size:.875rem; color:var(--encre-2)}
+
+/* ---------- boutons, badges ---------- */
+.btn{border:1.5px solid var(--encre); background:var(--encre); color:#fff; padding:7px 14px; border-radius:2px; cursor:pointer; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
+.btn-jaune{background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:8px 16px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
+.btn-jaune:hover{background:var(--jaune-pale)}
+.badge{display:inline-block; background:var(--jaune); color:var(--encre); font:700 .75rem/1.4 var(--f-texte); padding:2px 8px}
+.badge-niveau{background:var(--vert); color:#fff}
+.badge-theme{background:none; border:1px solid var(--trait); padding:1px 7px; font-weight:600}
+
+/* ---------- titres ---------- */
+.accueil-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:32px}
+.accueil-titre h1{margin:0; min-height:1.8em; font:800 clamp(3.75rem,9vw,9.25rem)/.88 var(--f-titre); white-space:pre-line}
+.accueil-moment{font-size:.875rem; font-weight:600; color:var(--encre-2)}
+.page-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:24px}
+.page-titre h1{margin:0; font:800 clamp(2.5rem,5vw,4.5rem)/.9 var(--f-titre)}
+.page-titre p{margin:10px 0 0; color:var(--encre-2)}
+
+/* ---------- recherche ---------- */
+.recherche{display:flex; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
+.recherche input{flex:1; min-width:0; border:0; outline:none; padding:14px 16px; font-size:1.0625rem}
+.recherche input:focus-visible{outline:3px solid var(--bleu); outline-offset:-3px}
+.recherche button{border:0; border-left:var(--trait-fort) solid var(--encre); background:var(--jaune); font-weight:700; padding:0 22px; cursor:pointer; min-height:50px}
+
+/* ---------- index des thèmes (accueil) ---------- */
+.index-themes{border-top:var(--trait-fort) solid var(--encre); list-style:none; margin:0; padding:0}
+.index-themes a{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere); align-items:center; border-bottom:var(--trait-fort) solid var(--encre); text-decoration:none}
+.index-themes a:hover{background:var(--jaune-pale)}
+.index-num{grid-column:span 1; align-self:stretch; min-height:76px; display:flex; align-items:center; justify-content:center; background:var(--encre); color:var(--jaune); font:800 2.25rem/1 var(--f-titre)}
+.index-nom{grid-column:span 6; font:700 2.5rem/1 var(--f-titre)}
+.index-ex{grid-column:span 4; font-size:.9375rem; color:var(--encre-2)}
+.index-nb{grid-column:span 1; text-align:right; padding-right:12px; font-weight:700}
+
+/* ---------- filtres (catalogue) ---------- */
+.filtre{border:var(--trait-fort) solid var(--encre); background:var(--papier); margin:0 0 20px; padding:0}
+.filtre legend,.filtre-titre{display:block; width:100%; margin:0; background:var(--encre); color:var(--jaune); font:700 1.25rem/1.2 var(--f-titre); padding:8px 14px}
+.filtre button{display:flex; justify-content:space-between; width:100%; border:0; border-top:1px solid var(--trait-fin); background:var(--papier); padding:12px 14px; min-height:44px; cursor:pointer; text-align:left}
+.filtre button[aria-pressed="true"]{background:var(--jaune-pale); font-weight:700}
+
+/* ---------- cartes ---------- */
+.cartes{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px}
+.carte{background:var(--papier); border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); display:flex; flex-direction:column; text-decoration:none; transition:transform .15s ease, box-shadow .15s ease}
+.carte:hover{transform:translateY(-2px); box-shadow:4px 4px 0 var(--encre)}
+.carte-bandeau{aspect-ratio:16/7; display:flex; flex-direction:column; justify-content:space-between; padding:12px 14px; background:var(--encre); color:var(--jaune); border-bottom:var(--trait-fort) solid var(--encre); font-family:var(--f-titre)}
+.carte-bandeau .theme{font-size:.8125rem; font-weight:700; letter-spacing:.06em; color:var(--trait-fin)}
+.carte-bandeau .collection{font-size:1.75rem; font-weight:800; line-height:1}
+.carte-corps{padding:14px; display:flex; flex-direction:column; gap:8px; flex:1}
+.carte-badges{display:flex; gap:6px; flex-wrap:wrap}
+.carte-titre{font:700 1.5rem/1.05 var(--f-titre)}
+.carte-collection{margin-top:auto; font-size:.8125rem; color:var(--encre-2)}
+
+/* ---------- retours juste / faux (complète la charte) ---------- */
+.retour-juste{color:var(--vert); font-weight:600}
+.retour-juste::before{content:"✓ "}
+.retour-faux{color:var(--rouge); font-weight:600}
+.retour-faux::before{content:"✕ "}
+
+/* ---------- lien signaler ---------- */
+.signaler{font-size:.875rem; color:var(--encre-2); text-decoration:underline}
+
+/* ---------- mobile ---------- */
+@media (max-width:640px){
+  :root{--marge:16px}
+  .grille,.index-themes a{grid-template-columns:1fr}
+  .grille>*,.index-themes a>*{grid-column:1/-1!important}
+  .index-num{min-height:48px; justify-content:flex-start; padding-left:12px}
+  .index-nom{font-size:1.75rem; padding:8px 12px 0}
+  .index-ex,.index-nb{padding:0 12px 12px; text-align:left}
+  .accueil-titre{padding-left:16px}
+}
+
+/* ---------- mode projection ---------- */
+html[data-mode="projection"] body{background:#fff; font-size:20px}
+html[data-mode="projection"] .site-tete,html[data-mode="projection"] .site-pied,html[data-mode="projection"] .signaler{display:none}
+html[data-mode="projection"]{--trait-fort:3px}
+
+/* ---------- mouvement réduit ---------- */
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+
+/* ---------- impression ---------- */
+@media print{
+  @page{size:A4; margin:12mm}
+  body,body.atelier{background:#fff}
+  .site-tete,.site-pied,.signaler,.recherche{display:none}
+}
