@@ -89,6 +89,8 @@ Règles :
 | Cartouche, partie, barre de question, données, retour juste/faux | Repris tels quels de la charte (`.cartouche`, `.part`, `.part-num`, `.qbar`, `.data`) | — |
 | Calque Projeter | Plein écran, QR code d'au moins 60 % de la hauteur, adresse, « Copier le lien », Échap | `.projeter` |
 | Bouton « Signaler une erreur » | Lien discret en bas de chaque contenu | `.signaler` |
+| Illustration de fond | Planche technique traitée (§ 9) derrière le titre d'accueil ou d'une page de thème | `.illustration-fond` |
+| Bloc « Bientôt » | Accueil : Labo et Maquettes à venir, chacun avec sa planche, sa promesse en une phrase et un lien | `.bientot` |
 
 ## 6. Comportements
 
@@ -118,8 +120,8 @@ défaut (lu par les moteurs et sans JavaScript), puis le script le remplace. La 
 
 ## 8. Ce qu'on ne fait pas
 
-- Pas de vignettes photo ou de scans dans les cartes : bandeau typographique, puis plus tard une illustration au
-  trait unifiée.
+- Pas de vignettes photo ou de scans dans les cartes de contenu : bandeau typographique.
+- Pas d'image générée par IA, pas d'image de banque sous licence propriétaire (voir § 9).
 - Pas de police, d'image ou de script chargé depuis un tiers (sauf Umami).
 - Pas de couleur en dur dans une page : uniquement les jetons.
 - Pas de texte jaune sur fond clair.
@@ -127,3 +129,23 @@ défaut (lu par les moteurs et sans JavaScript), puis le script le remplace. La 
 
 Maquettes de référence : canvas « industrie.education — Directions visuelles », page « M1 — Gabarits »
 (accueil et catalogue).
+
+## 9. Illustrations
+
+Une seule famille d'images : **planches techniques anciennes** (gravures de mécanismes, machines, métiers), du
+domaine public ou sous CC0. Elles disent littéralement « comprendre comment ça marche » et s'accordent avec l'encre
+de la charte. Sources et circuit : TRAME § 10.
+
+| Usage | Traitement | Placement |
+|---|---|---|
+| Accueil, derrière le titre | Niveaux de gris, fond blanc, opacité 0,18 à 0,25 ou fusion `multiply` | Moitié droite du bandeau, débordant sous le titre ; jamais sous la recherche |
+| Page de thème | Idem, opacité 0,25 | En tête, à droite du titre sur rail |
+| Index des thèmes (accueil) | Vignette carrée 64 px, encre pleine | Dans la ligne, après le carré numéroté |
+| Labo, Maquettes (à venir) | Encre pleine, cadre noir 2 px | Bloc « Bientôt » de l'accueil et pages de section |
+| Articles | Encre pleine, légende avec crédit | Dans le corps |
+
+Règles :
+- Le titre posé sur une illustration garde un contraste d'au moins 4,5:1 sur toute sa surface (test automatique).
+- Sur téléphone (< 640 px), l'illustration d'accueil passe au-dessus du titre, en bandeau de 120 px de haut.
+- Une illustration n'est jamais colorisée en jaune ; le jaune reste réservé aux rails, boutons et surlignages.
+- Une seule illustration chargée par page en tête ; les autres en chargement différé (`loading="lazy"`).
