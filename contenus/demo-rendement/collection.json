@@ -1,0 +1,7 @@
+{
+  "titre": "Rendement (démonstration)",
+  "theme": "energie",
+  "publics": ["sti2d"],
+  "ordre": ["puissance-rendement", "treuil"],
+  "description": "Démonstration : collection factice qui sert à tester le site. Puissance, énergie et rendement d’une chaîne d’énergie."
+}

@@ -1,0 +1,21 @@
+{#- Annales : index par filière, épreuve et session (lot 2). En lot 0, état vide « Premières annales en préparation ». -#}
+{% extends "base.html" %}
+{% from "_composants.html" import bande %}
+{% block corps %}
+<main id="contenu">
+{{ bande(h1, lignes) }}
+<div class="conteneur atelier-corps">
+{% if filiere -%}
+<p class="etat-vide">Premières annales en préparation. <a href="{{ racine }}annales/">Toutes les filières</a>.</p>
+{%- else -%}
+<p class="etat-vide">Premières annales en préparation : les sujets seront classés par filière, épreuve et session.</p>
+<h2 class="visuellement-cache">Filières</h2>
+<ul class="index-themes liste-filieres">
+{% for p in publics -%}
+<li><a href="{{ racine }}annales/{{ p.id }}/"><span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{{ p.nom }}</span><span class="index-ex">En préparation</span><span class="index-nb">0<span class="visuellement-cache"> sujet</span></span></a></li>
+{% endfor -%}
+</ul>
+{%- endif %}
+</div>
+</main>
+{% endblock %}

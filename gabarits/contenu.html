@@ -1,0 +1,25 @@
+{#- Contenu natif (charte atelier) : barre avec fil d'Ariane et mode projection, cartouche, corps du contenu,
+    contenu précédent / suivant, « Signaler une erreur ».
+    Les contenus repris n'utilisent pas ce fichier en entier : ils reçoivent seulement les pièces de _enveloppe.html. -#}
+{% extends "base.html" %}
+{% import "_enveloppe.html" as enveloppe %}
+{% block corps %}
+<div class="contenu-barre">
+<div class="conteneur">
+{{ enveloppe.fil_ariane(c, racine) }}
+{{ enveloppe.outils(racine, projeter=false) }}
+</div>
+</div>
+<main id="contenu" class="contenu-page">
+<header class="cartouche">
+<div class="title">
+<p class="carte-badges"><span class="badge">{{ c.type_nom }}</span>{% if c.niveau %}<span class="badge badge-niveau">Niveau {{ c.niveau }}</span>{% endif %}<span class="badge badge-theme">{{ c.theme.court }}</span></p>
+<h1>{{ c.titre }}</h1>
+<p>{{ c.description }}{% if c.duree_min %} Durée conseillée : {{ c.duree_min|duree }}.{% endif %}</p>
+</div>
+</header>
+{{ corps|safe }}
+{{ enveloppe.suite(c, racine) }}
+<p class="contenu-signaler">{{ enveloppe.signaler(c, racine, site, url_absolue) }}</p>
+</main>
+{% endblock %}

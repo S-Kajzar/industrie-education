@@ -1,0 +1,64 @@
+<p class="demonstration"><strong>Démonstration.</strong> Contenu factice, écrit pour tester le site. Il sera retiré avant la mise en ligne.</p>
+
+<section class="part" aria-labelledby="partie-1">
+<header class="part-head">
+<div class="part-num" aria-hidden="true">1</div>
+<div>
+<h2 id="partie-1">Bits et octets</h2>
+<div class="duree">Durée conseillée : 10&nbsp;min · 3 questions</div>
+</div>
+</header>
+<div class="part-body">
+<fieldset class="qcm-question" data-juste="c">
+<legend>Q1. Combien de valeurs différentes peut-on coder avec un octet (8 bits)&nbsp;?</legend>
+<label><input type="radio" name="q1" value="a"> 8</label>
+<label><input type="radio" name="q1" value="b"> 255</label>
+<label><input type="radio" name="q1" value="c"> 256</label>
+<label><input type="radio" name="q1" value="d"> 512</label>
+<p class="qcm-retour" aria-live="polite"></p>
+<details class="correction"><summary>Voir la correction</summary><p class="retour-juste">256 valeurs : 2<sup>8</sup> = 256, de 0 à 255.</p></details>
+</fieldset>
+<fieldset class="qcm-question" data-juste="a">
+<legend>Q2. Que vaut 1010 (base 2) en décimal&nbsp;?</legend>
+<label><input type="radio" name="q2" value="a"> 10</label>
+<label><input type="radio" name="q2" value="b"> 5</label>
+<label><input type="radio" name="q2" value="c"> 12</label>
+<label><input type="radio" name="q2" value="d"> 1&#8239;010</label>
+<p class="qcm-retour" aria-live="polite"></p>
+<details class="correction"><summary>Voir la correction</summary><p class="retour-juste">8 + 0 + 2 + 0 = 10.</p></details>
+</fieldset>
+<fieldset class="qcm-question" data-juste="b">
+<legend>Q3. Quel est le plus grand nombre que l’on peut écrire sur 4 bits&nbsp;?</legend>
+<label><input type="radio" name="q3" value="a"> 4</label>
+<label><input type="radio" name="q3" value="b"> 15</label>
+<label><input type="radio" name="q3" value="c"> 16</label>
+<label><input type="radio" name="q3" value="d"> 8</label>
+<p class="qcm-retour" aria-live="polite"></p>
+<details class="correction"><summary>Voir la correction</summary><p class="retour-juste">1111 = 8 + 4 + 2 + 1 = 15.</p></details>
+</fieldset>
+<p><button type="button" class="btn-jaune" data-qcm-verifier hidden>Vérifier mes réponses</button></p>
+</div>
+</section>
+
+<script>
+/* Correction du QCM dans la page : rien n'est envoyé ni enregistré. Sans JavaScript, les corrections restent dépliables. */
+(function () {
+  var bouton = document.querySelector('[data-qcm-verifier]');
+  if (!bouton) return;
+  bouton.hidden = false;
+  bouton.addEventListener('click', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.qcm-question'), function (question) {
+      var choix = question.querySelector('input:checked');
+      var retour = question.querySelector('.qcm-retour');
+      if (!choix) {
+        retour.className = 'qcm-retour';
+        retour.textContent = 'Pas encore de réponse.';
+        return;
+      }
+      var juste = choix.value === question.getAttribute('data-juste');
+      retour.className = 'qcm-retour ' + (juste ? 'retour-juste' : 'retour-faux');
+      retour.textContent = juste ? 'Juste.' : 'Faux : déplie la correction.';
+    });
+  });
+}());
+</script>

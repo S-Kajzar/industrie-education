@@ -1,0 +1,12 @@
+{
+  "id": "puissances-de-2",
+  "titre": "Formulaire : puissances de 2",
+  "type": "formulaire",
+  "mots_cles": [
+    "Puissances de 2",
+    "Octet",
+    "Démonstration"
+  ],
+  "description": "Démonstration : les puissances de 2 utiles en numérique, de 2⁰ à 2¹⁰.",
+  "mode": "natif"
+}

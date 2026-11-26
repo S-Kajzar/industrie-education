@@ -1,0 +1,32 @@
+{%- macro valeur(texte) -%}
+{% if texte %}{{ texte }}{% else %}<span class="a-renseigner">À renseigner</span>{% endif %}
+{%- endmacro -%}
+
+<h2 id="editeur">Éditeur</h2>
+<dl class="fiche">
+<dt>Éditeur</dt><dd>{{ valeur(site.editeur.nom) }}</dd>
+<dt>Adresse</dt><dd>{{ valeur(site.editeur.adresse) }}</dd>
+<dt>Directeur de la publication</dt><dd>{{ valeur(site.editeur.directeur_publication) }}</dd>
+<dt>Contact</dt><dd>{% if site.contact %}<a href="mailto:{{ site.contact }}">{{ site.contact }}</a>{% else %}{{ valeur('') }}{% endif %}</dd>
+</dl>
+
+<h2 id="hebergeur">Hébergeur</h2>
+<dl class="fiche">
+<dt>Hébergeur</dt><dd>{{ valeur(site.hebergeur.nom) }}</dd>
+<dt>Adresse</dt><dd>{{ valeur(site.hebergeur.adresse) }}</dd>
+</dl>
+
+<h2 id="donnees">Données personnelles et cookies</h2>
+<p>Le site ne dépose aucun cookie et ne collecte aucune donnée personnelle : pas de compte, pas de formulaire, pas de traceur. Aucune police, image ou programme n’est chargé depuis un autre site{% if site.umami %}, à l’exception du script de mesure d’audience{% endif %}.</p>
+{% if site.umami -%}
+<p>La fréquentation est mesurée avec Umami, sans cookie : seules des statistiques globales et anonymes sont conservées (pages vues, type d’appareil, pays).</p>
+{%- else -%}
+<p>Aucune mesure d’audience n’est active.</p>
+{%- endif %}
+<p>L’hébergeur peut conserver des journaux techniques, dont l’adresse IP des visiteurs, pour la sécurité et le bon fonctionnement du service, selon sa propre politique de confidentialité.</p>
+
+<h2 id="credits">Crédits</h2>
+<ul>
+<li>Police Barlow Condensed, The Barlow Project Authors, sous licence SIL Open Font License 1.1 (<a href="{{ racine }}_/polices/OFL.txt">texte de la licence</a>).</li>
+<li>Génération des QR codes : qrcode-generator, Kazuhiko Arase, sous licence MIT (<a href="{{ racine }}_/lib/LICENCE-qrcode.txt">texte de la licence</a>). « QR Code » est une marque déposée de DENSO WAVE INCORPORATED.</li>
+</ul>

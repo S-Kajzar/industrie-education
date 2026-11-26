@@ -1,0 +1,33 @@
+{#- Catalogue — maquette « Catalogue — M1 × charte atelier » : en-tête blanc + titre sur rail, fond béton,
+    filtres Thème / Type / Filière / Niveau, cartes, compteur, « Effacer les filtres », message si aucun résultat.
+    Sans JavaScript : toutes les cartes sont affichées, les filtres restent masqués. -#}
+{% extends "base.html" %}
+{% from "_composants.html" import carte, recherche, filtre, bande %}
+{% block corps %}
+<main id="contenu">
+{{ bande('Catalogue', [contenus|length|pluriel('contenu') ~ ' · cours, exercices, études de cas, QCM, formulaires'], recherche('./', 'q-catalogue', 'Rechercher : traction, rendement, réseau…', catalogue=true)) }}
+<div class="conteneur catalogue-corps" data-catalogue>
+<aside class="filtres" aria-label="Filtres" data-filtres hidden>
+<button type="button" class="btn-contour filtres-ouvrir" data-filtres-ouvrir aria-expanded="false" aria-controls="filtres-panneau"><span>Filtres</span><span data-filtres-actifs></span></button>
+<div class="filtres-panneau" id="filtres-panneau">
+{{ filtre('theme', 'Thème', 'Tous les thèmes', contenus|length, options.themes) }}
+{{ filtre('type', 'Type', 'Tous les types', contenus|length, options.types) }}
+{{ filtre('public', 'Filière', 'Toutes les filières', contenus|length, options.publics) }}
+{{ filtre('niveau', 'Niveau', 'Tous les niveaux', contenus|length, options.niveaux) }}
+</div>
+</aside>
+<div class="catalogue-resultats">
+<div class="catalogue-barre">
+<p class="catalogue-compteur" data-compteur aria-live="polite"><b>{{ contenus|length }}</b> {{ 'contenus affichés' if contenus|length > 1 else 'contenu affiché' }}</p>
+<a class="btn-contour" href="./" data-effacer hidden>Effacer les filtres</a>
+</div>
+<noscript><p class="etat-vide">Sans JavaScript, tous les contenus sont affichés : les filtres et la recherche ont besoin de JavaScript.</p></noscript>
+<ul class="cartes" data-cartes>
+{% for c in contenus %}{{ carte(c, racine, filtrable=true) }}
+{% endfor -%}
+</ul>
+<p class="etat-vide" data-vide hidden>Aucun contenu ne correspond. Essaie un autre mot, ou efface les filtres.</p>
+</div>
+</div>
+</main>
+{% endblock %}

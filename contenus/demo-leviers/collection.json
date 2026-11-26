@@ -1,0 +1,7 @@
+{
+  "titre": "Leviers (démonstration)",
+  "theme": "mecanique",
+  "publics": ["si", "sti2d"],
+  "ordre": ["moment-force", "cle-serrage", "brouette"],
+  "description": "Démonstration : collection factice qui sert à tester le site. Moment d’une force et bras de levier, en trois contenus courts."
+}

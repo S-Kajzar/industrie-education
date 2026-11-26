@@ -1,0 +1,28 @@
+{#- Liste d'un public (/si/…) ou d'un thème (/mecanique/…) : titre sur rail, collections groupées, cartes. -#}
+{% extends "base.html" %}
+{% from "_composants.html" import carte, bande %}
+{% block corps %}
+<main id="contenu">
+{{ bande(h1, lignes) }}
+<div class="conteneur atelier-corps">
+{% if groupes -%}
+<div class="groupes">
+{% for g in groupes -%}
+<section class="groupe" aria-labelledby="groupe-{{ g.collection.id }}">
+<div class="groupe-tete">
+<h2 id="groupe-{{ g.collection.id }}"><a href="{{ racine }}{{ g.collection.id }}/">{{ g.collection.titre }}</a></h2>
+<span class="groupe-nb">{{ g.contenus|length|pluriel('contenu') }}</span>
+</div>
+<ul class="cartes">
+{% for c in g.contenus %}{{ carte(c, racine) }}
+{% endfor -%}
+</ul>
+</section>
+{% endfor -%}
+</div>
+{%- else -%}
+<p class="etat-vide">{{ message_vide }} <a href="{{ racine }}catalogue/">Voir tout le catalogue</a>.</p>
+{%- endif %}
+</div>
+</main>
+{% endblock %}

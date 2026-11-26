@@ -1,0 +1,13 @@
+{
+  "name": "industrie-education",
+  "private": true,
+  "description": "Site de cours, exercices interactifs et annales en sciences industrielles : génération et tests",
+  "scripts": {
+    "construire": "python3 outils/construire.py",
+    "test": "python3 outils/construire.py && playwright test"
+  },
+  "devDependencies": {
+    "@fontsource/barlow-condensed": "5.3.0",
+    "@playwright/test": "1.63.0"
+  }
+}

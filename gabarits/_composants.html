@@ -1,0 +1,51 @@
+{#- Composants partagés par les gabarits (DESIGN.md § 5). Aucune couleur, police ou épaisseur ici : tout vient de commun.css. -#}
+
+{#- Carte de contenu : bandeau typographique (thème + collection), badges, titre, collection.
+    filtrable : ajoute les attributs lus par les filtres du catalogue (commun.js). -#}
+{% macro carte(c, racine, numero=none, avec_theme=true, avec_collection=true, filtrable=false) -%}
+<li{% if filtrable %} data-theme="{{ c.theme.id }}" data-type="{{ c.type }}" data-publics="{{ c.publics|map(attribute='id')|join(' ') }}" data-niveau="{{ c.niveau if c.niveau else '' }}" data-texte="{{ c.texte }}"{% endif %}>
+<a class="carte" href="{{ racine }}{{ c.chemin }}">
+<span class="carte-bandeau"{% if avec_theme and avec_collection %} aria-hidden="true"{% endif %}><span class="theme">{{ c.theme.court }}</span><span class="collection">{{ c.collection.titre }}</span></span>
+<span class="carte-corps">
+<span class="carte-badges">{% if numero %}<span class="carte-num">{{ numero }}</span>{% endif %}<span class="badge">{{ c.type_nom }}</span>{% if c.niveau %}<span class="badge badge-niveau">Niveau {{ c.niveau }}</span>{% endif %}{% if avec_theme %}<span class="badge badge-theme">{{ c.theme.court }}</span>{% endif %}</span>
+<span class="carte-titre">{{ c.titre }}</span>
+{% if avec_collection %}<span class="carte-collection">{{ c.collection.titre }}</span>
+{% endif %}</span>
+</a>
+</li>
+{%- endmacro %}
+
+{#- Champ de recherche : envoie vers le catalogue (?q=). Fonctionne sans JavaScript. -#}
+{% macro recherche(action, id, indice, catalogue=false) -%}
+<form class="recherche" role="search" action="{{ action }}" method="get"{% if catalogue %} data-recherche-catalogue{% endif %}>
+<label class="visuellement-cache" for="{{ id }}">Rechercher un contenu</label>
+<input id="{{ id }}" type="search" name="q" placeholder="{{ indice }}" autocomplete="off" enterkeyhint="search">
+<button type="submit">Chercher</button>
+</form>
+{%- endmacro %}
+
+{#- Bloc de filtre du catalogue : en-tête encre à texte jaune, une option par ligne de 44 px. -#}
+{% macro filtre(cle, titre, tous, total, options) -%}
+<fieldset class="filtre">
+<legend class="visuellement-cache">{{ titre }}</legend>
+<p class="filtre-titre" aria-hidden="true">{{ titre }}</p>
+<button type="button" data-filtre="{{ cle }}" data-valeur="" aria-pressed="true"><span data-libelle>{{ tous }}</span><span class="filtre-nb">{{ total }}</span></button>
+{% for o in options -%}
+<button type="button" data-filtre="{{ cle }}" data-valeur="{{ o.valeur }}" aria-pressed="false"{% if o.inactif %} disabled{% endif %}><span data-libelle>{{ o.libelle }}</span><span class="filtre-nb">{{ 'bientôt' if o.inactif else o.nb }}</span></button>
+{% endfor -%}
+</fieldset>
+{%- endmacro %}
+
+{#- Titre de page sur rail jaune, dans la bande blanche des pages atelier. -#}
+{% macro bande(h1, lignes=[], recherche_html='') -%}
+<div class="bande">
+<div class="conteneur bande-titre">
+<div class="page-titre">
+<h1>{{ h1 }}</h1>
+{% for ligne in lignes %}<p>{{ ligne }}</p>
+{% endfor -%}
+</div>
+{{ recherche_html }}
+</div>
+</div>
+{%- endmacro %}

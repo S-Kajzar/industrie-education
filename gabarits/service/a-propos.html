@@ -1,0 +1,15 @@
+<p>{{ site.nom }} rassemble des cours, des exercices interactifs, des études de cas et des annales en sciences industrielles : spécialité SI, série STI2D, Bac Pro MSPC et BTS MS. Les contenus s’utilisent librement, en classe comme à la maison.</p>
+
+<h2 id="principes">Principes</h2>
+<ul>
+<li>Gratuit, sans compte, sans cookie.</li>
+<li>Aucune donnée personnelle collectée, aucune ressource chargée depuis un autre site{% if site.umami %}, à l’exception de la mesure d’audience Umami, sans cookie{% endif %}.</li>
+<li>Utilisable sur ordinateur, tablette et téléphone, et au vidéoprojecteur.</li>
+</ul>
+
+<h2 id="signaler">Signaler une erreur</h2>
+<p>Une erreur dans un énoncé, une correction ou une page ?
+{% if site.contact %}Écrivez à <a href="mailto:{{ site.contact }}?subject={{ 'Signaler une erreur'|urlencode }}">{{ site.contact }}</a> en indiquant l’adresse de la page concernée.{% else %}L’adresse de contact sera indiquée ici. <span class="a-renseigner">Adresse de contact à renseigner.</span>{% endif %}</p>
+
+<h2 id="editeur">Éditeur</h2>
+<p>Les informations sur l’éditeur et l’hébergeur du site figurent dans les <a href="{{ racine }}mentions-legales/">mentions légales</a>.</p>

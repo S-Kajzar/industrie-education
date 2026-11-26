@@ -29,7 +29,7 @@ a{color:inherit}
 p a,li a{color:var(--bleu)}
 button,input,select{font:inherit; color:inherit}
 :focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
-.visuellement-cache{position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+.visuellement-cache{position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; border:0!important; overflow:hidden!important; clip:rect(0 0 0 0)!important; white-space:nowrap!important}
 .conteneur{max-width:var(--largeur); margin:0 auto; padding:0 var(--marge)}
 .grille{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere)}
 
@@ -54,7 +54,7 @@ button,input,select{font:inherit; color:inherit}
 
 /* ---------- titres ---------- */
 .accueil-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:32px}
-.accueil-titre h1{margin:0; min-height:1.8em; font:800 clamp(3.75rem,9vw,9.25rem)/.88 var(--f-titre); white-space:pre-line}
+.accueil-titre h1,.accueil-titre-variante{margin:0; min-height:1.8em; font:800 clamp(3.75rem,9vw,9.25rem)/.88 var(--f-titre); white-space:pre-line}
 .accueil-moment{font-size:.875rem; font-weight:600; color:var(--encre-2)}
 .page-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:24px}
 .page-titre h1{margin:0; font:800 clamp(2.5rem,5vw,4.5rem)/.9 var(--f-titre)}
@@ -102,6 +102,192 @@ button,input,select{font:inherit; color:inherit}
 /* ---------- lien signaler ---------- */
 .signaler{font-size:.875rem; color:var(--encre-2); text-decoration:underline}
 
+/* ==========================================================================
+   Compléments du lot 0 : composants absents de la première version.
+   Aucun jeton n'est modifié ; les valeurs viennent de DESIGN.md et des maquettes M1.
+   ========================================================================== */
+
+/* ---------- utilitaires ---------- */
+[hidden]{display:none!important}
+.lien-evitement{position:absolute; left:16px; top:-200px; z-index:2000; background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:10px 16px; font-weight:700; text-decoration:none}
+.lien-evitement:focus{top:16px}
+.site-nav .btn-jaune{padding:8px 14px}
+.signaler{display:inline-flex; align-items:center; min-height:44px}
+.btn-contour{display:inline-flex; align-items:center; gap:8px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:8px 14px; font-weight:600; font-size:.875rem; line-height:1.2; text-decoration:none; cursor:pointer}
+.btn-contour:hover{background:var(--jaune-pale)}
+.recherche{min-width:0}
+/* Les liens-composants restent à l'encre ; « li a » (bleu) vise les liens dans le texte courant. */
+.index-themes a,.public,.carte{color:var(--encre)}
+.pied-liens a{color:inherit}
+
+/* ---------- accueil (maquette « Accueil retenue — M1 × charte atelier ») ---------- */
+.accueil-tete{padding-top:64px; padding-bottom:48px; align-items:start}
+.accueil-tete .accueil-moment{grid-column:span 2; margin:0}
+.accueil-tete .accueil-titre{grid-column:span 10; min-width:0}
+/* Les six titres sont empilés dans la même case : la hauteur réservée est celle du plus haut, le titre change sans saut. */
+.accueil-titre-pile{display:grid}
+.accueil-titre-pile>*{grid-area:1/1}
+.accueil-titre-variante{visibility:hidden}
+.accueil-suite{margin-top:36px; display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between}
+.accueil-accroche{margin:0; font-size:1.1875rem; line-height:1.45; max-width:460px}
+.accueil-suite .recherche{flex:0 1 520px}
+.rangee{padding-top:56px; align-items:start}
+.rangee-etiquette{grid-column:span 2; margin:0; font-size:.875rem; font-weight:600; color:var(--encre-2)}
+.rangee-corps{grid-column:span 10; min-width:0}
+.rangee-corps.cartes{grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px}
+.publics{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px}
+.publics>li{display:flex; min-width:0}
+.public{flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:6px; min-height:96px; border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); background:var(--papier); padding:12px 14px; text-decoration:none}
+a.public:hover{background:var(--jaune-pale)}
+.public-nom{font:700 2rem/1 var(--f-titre)}
+.public-nb{font-size:.875rem; color:var(--encre-2)}
+.public-bientot{border-color:var(--trait); border-left-color:var(--trait); color:var(--encre-2)}
+.renvoi{display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; justify-content:space-between; border-top:var(--trait-fort) solid var(--encre); padding-top:16px}
+.renvoi p{margin:0; max-width:640px; font-size:1.0625rem}
+
+/* ---------- bande blanche des pages atelier : en-tête + titre sur rail ---------- */
+.avec-bande .site-tete{border-bottom:0}
+.bande{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
+.bande-titre{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-end; justify-content:space-between; padding-top:32px; padding-bottom:28px}
+.bande-titre .recherche{flex:0 1 560px}
+.atelier-corps{padding-top:28px}
+
+/* ---------- fil d'Ariane, barre de contenu, interrupteur du mode projection ---------- */
+.fil-ariane ol{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; align-items:center; font-size:.875rem; color:var(--encre-2)}
+.fil-ariane li{display:flex; align-items:center; min-width:0}
+.fil-ariane li+li::before{content:"/"; content:"/" / ""; padding:0 8px}
+.fil-ariane a{display:inline-flex; align-items:center; min-height:44px; color:var(--encre-2)}
+.fil-ariane [aria-current="page"]{color:var(--encre); font-weight:600}
+.contenu-barre{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
+.contenu-barre .conteneur{display:flex; justify-content:space-between; align-items:center; gap:4px 24px; flex-wrap:wrap; padding-top:4px; padding-bottom:4px}
+.contenu-outils{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:4px 0}
+.interrupteur{display:inline-flex; align-items:center; gap:10px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:6px 12px; font-weight:600; cursor:pointer}
+.interrupteur::before{content:""; flex:none; width:14px; height:14px; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
+.interrupteur[aria-pressed="true"]{background:var(--jaune-pale)}
+.interrupteur[aria-pressed="true"]::before{background:var(--encre)}
+
+/* ---------- catalogue (maquette « Catalogue — M1 × charte atelier ») ---------- */
+.catalogue-corps{display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start; padding-top:28px}
+.filtres{flex:1 1 240px; max-width:280px; min-width:0}
+.filtre{min-width:0}
+.filtre button:hover{background:var(--jaune-pale)}
+.filtre button:disabled{color:var(--encre-2); background:var(--papier); cursor:not-allowed}
+.filtre-nb{color:var(--encre-2); font-weight:400; padding-left:12px}
+.filtres-ouvrir{display:none}
+.catalogue-resultats{flex:999 1 600px; min-width:0}
+.catalogue-barre{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px}
+.catalogue-compteur{margin:0; font-size:.9375rem}
+.etat-vide{margin:24px 0 0; background:var(--papier); border:var(--trait-fort) solid var(--encre); padding:20px}
+
+/* ---------- listes de cartes (catalogue, accueil, public, thème, collection) ---------- */
+ul.cartes{list-style:none; margin:0; padding:0}
+.cartes>li{display:flex; min-width:0}
+.cartes>li>.carte{flex:1; min-width:0}
+.carte-num{display:inline-flex; align-items:center; justify-content:center; min-width:24px; padding:0 6px; background:var(--encre); color:var(--jaune); font:800 .9375rem/1.4 var(--f-titre)}
+.groupes{display:flex; flex-direction:column; gap:40px}
+.groupe-tete{display:flex; justify-content:space-between; align-items:baseline; gap:8px 16px; flex-wrap:wrap; margin:0 0 14px; padding-bottom:8px; border-bottom:var(--trait-fort) solid var(--encre)}
+.groupe-tete h2{margin:0; font:700 1.45rem/1.15 var(--f-titre)}
+.groupe-tete h2 a{text-decoration:none}
+.groupe-tete h2 a:hover{text-decoration:underline}
+.groupe-nb{font-size:.875rem; color:var(--encre-2)}
+.atelier .index-themes a{background:var(--papier)}
+.atelier .index-themes a:hover{background:var(--jaune-pale)}
+
+/* ---------- pages de service (vitrine) ---------- */
+.service-tete{padding-top:56px; padding-bottom:32px}
+.service-corps{max-width:46rem}
+.service-corps h2{margin:40px 0 10px; font:700 1.45rem/1.15 var(--f-titre)}
+.service-corps h3{margin:24px 0 6px; font:700 1.15rem/1.2 var(--f-titre)}
+.service-corps p,.service-corps li{max-width:68ch}
+.principes{list-style:none; margin:0; padding:0; display:grid; gap:12px}
+.principes li{border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); padding:12px 16px}
+.fiche{margin:0; display:grid; grid-template-columns:minmax(0,14rem) minmax(0,1fr); border-top:1px solid var(--trait-fin)}
+.fiche dt,.fiche dd{margin:0; padding:10px 0; border-bottom:1px solid var(--trait-fin)}
+.fiche dt{font-weight:600; padding-right:16px}
+.a-renseigner{font-style:italic; color:var(--encre-2)}
+.liens-erreur{list-style:none; margin:24px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:12px}
+.service-corps .recherche{margin-top:24px}
+.liste-filieres{margin-top:28px}
+.pied-liens{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:0 20px}
+.pied-liens a{display:inline-flex; align-items:center; min-height:44px}
+.pied-mention{margin:0; align-self:center}
+.cartouche .carte-badges{margin-bottom:8px}
+
+/* ---------- charte atelier : cartouche, consignes, parties, barre de question, données, tableau ----------
+   Repris de la charte des dépôts de cours (gabarit d'exercice interactif) ; les traits principaux passent par le jeton. */
+.cartouche{background:var(--papier); border:var(--trait-fort) solid var(--encre); display:grid; grid-template-columns:1fr; margin-bottom:26px}
+.cartouche>div{border-right:1px solid var(--encre); border-bottom:1px solid var(--encre); padding:8px 12px}
+.cartouche>div:nth-child(3n){border-right:0}
+.cartouche .k{display:block; font:600 .72rem/1.2 var(--f-titre); letter-spacing:.02em; color:var(--encre-2)}
+.cartouche .v{font:600 1rem/1.3 var(--f-titre)}
+.cartouche .title{grid-column:1/-1; border-right:0; padding:18px 16px 16px}
+.cartouche h1{font:700 clamp(1.6rem,3.6vw,2.35rem)/1.08 var(--f-titre); margin:2px 0 6px; letter-spacing:-.01em}
+.cartouche .title p{margin:0; color:var(--encre-2)}
+.consignes{background:var(--papier); border-left:6px solid var(--jaune); padding:12px 16px; margin:0 0 30px}
+.consignes p{margin:.2rem 0}
+.part{background:var(--papier); margin:0 0 34px; padding:0 0 22px; border:1px solid var(--trait-fin)}
+.part-head{display:grid; grid-template-columns:64px 1fr; border-bottom:var(--trait-fort) solid var(--encre)}
+.part-num{background:var(--encre); color:var(--jaune); font:700 2.3rem/1 var(--f-titre); display:flex; align-items:center; justify-content:center}
+.part-head h2{font:700 1.45rem/1.15 var(--f-titre); margin:0; padding:12px 16px 2px}
+.part-head .duree{padding:0 16px 10px; font-size:.9rem; color:var(--encre-2)}
+.part-body{padding:4px 22px 0}
+.part-body>p,.part-body>ul{max-width:72ch}
+.qbar{display:grid; grid-template-columns:auto 1fr auto; align-items:stretch; margin:30px 0 10px; border:1.5px solid var(--encre); font:500 .95rem/1.2 var(--f-titre)}
+.qbar>*{padding:7px 10px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+.qbar .qb-num{background:var(--jaune); font-weight:700; font-size:1.1rem; border-right:1.5px solid var(--encre); min-width:64px; justify-content:center}
+.qbar .qb-ans{border-left:1.5px solid var(--encre)}
+.qbar .qb-title{grid-column:1/-1; border-top:1px solid var(--encre); font-weight:700; font-style:italic}
+.data{border:1px solid var(--encre); padding:8px 14px; margin:12px 0; max-width:72ch; background:#FBFBF9}
+.data p{margin:.25rem 0}
+.data .data-title{font:700 .95rem var(--f-titre); text-decoration:underline; text-underline-offset:3px}
+.data ul{margin:.2rem 0; padding-left:1.1rem}
+.data ul.cols{columns:2; column-gap:28px}
+table.t{border-collapse:collapse; margin:10px 0; font-size:.93rem; width:100%}
+table.t th,table.t td{border:1px solid var(--trait); padding:4px 8px; text-align:left; vertical-align:top}
+table.t th{background:#EEF0EC; font:600 .88rem var(--f-titre)}
+
+/* ---------- page de contenu natif ---------- */
+.contenu-page{max-width:900px; margin:0 auto; padding:28px 22px 0}
+.contenu-suite{display:flex; justify-content:space-between; gap:12px 16px; flex-wrap:wrap; margin:40px 0 0; padding-top:16px; border-top:var(--trait-fort) solid var(--encre)}
+.contenu-suite a{display:flex; flex-direction:column; gap:2px; min-height:44px; max-width:100%; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:10px 16px; text-decoration:none}
+.contenu-suite a:hover{background:var(--jaune-pale)}
+.contenu-suite .suivant{margin-left:auto; text-align:right}
+.contenu-suite-sens{font-size:.8125rem; font-weight:600; color:var(--encre-2)}
+.contenu-suite-titre{font:700 1.125rem/1.15 var(--f-titre)}
+.contenu-signaler{margin:16px 0 0; text-align:center}
+.demonstration{margin:0 0 26px; background:var(--jaune-pale); border:var(--trait-fort) solid var(--encre); padding:10px 14px}
+.correction{margin:8px 0 18px; max-width:72ch; border:1px solid var(--trait-fin); background:var(--papier)}
+.correction>summary{cursor:pointer; padding:10px 12px; font-weight:600}
+.correction>summary:hover{background:var(--jaune-pale)}
+.correction>:not(summary){margin:0; padding:4px 12px 12px}
+.qcm-question{border:0; margin:20px 0; padding:0; min-width:0}
+.qcm-question legend{padding:0; margin:0 0 6px; font-weight:600}
+.qcm-question label{display:flex; align-items:center; gap:10px; min-height:44px; padding:0 10px; border-top:1px solid var(--trait-fin); cursor:pointer}
+.qcm-question label:hover{background:var(--jaune-pale)}
+.qcm-retour{margin:6px 0 0}
+.qcm-retour:empty{display:none}
+
+/* ---------- enveloppe des contenus repris (TRAME § 5) ----------
+   Sur une page reprise, ce fichier est importé dans une couche (« @import … layer(site) ») : les styles du contenu
+   l'emportent toujours sur ceux-ci. L'enveloppe n'utilise donc aucune classe de la charte (pas de .btn). */
+.enveloppe-tete{background:var(--papier); color:var(--encre); border-bottom:var(--trait-fort) solid var(--encre); font:16px/1.55 var(--f-texte)}
+.enveloppe-tete-interieur{display:flex; align-items:center; justify-content:space-between; gap:4px 24px; flex-wrap:wrap; max-width:var(--largeur); margin:0 auto; padding:4px calc(var(--rail, 0px) + 16px) 4px 16px}
+.enveloppe-tete .logo{font-size:1.25rem}
+.enveloppe-tete .logo::before{height:24px}
+.enveloppe-pied{max-width:900px; margin:40px auto 0; padding:0 22px 24px; color:var(--encre); font:16px/1.55 var(--f-texte)}
+/* Le rail de documents de la charte (--rail, à droite) est masqué sous 760 px : inutile de lui garder la place. */
+@media (max-width:760px){ .enveloppe-tete-interieur{padding-right:16px} }
+
+/* ---------- calque Projeter ---------- */
+html.projeter-ouvert{overflow:hidden}
+.projeter{position:fixed; top:0; right:0; bottom:0; left:0; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; overflow:auto; background:var(--papier); color:var(--encre); font:16px/1.55 var(--f-texte); text-align:center}
+.projeter-titre{margin:0; font:700 1.45rem/1.15 var(--f-titre)}
+.projeter-qr{flex:none; width:min(64vh,88vw); height:min(64vh,88vw); color:var(--encre); background:var(--papier)}
+.projeter-qr svg{display:block; width:100%; height:100%}
+.projeter-adresse{margin:0; max-width:min(92vw,1200px); font:700 clamp(1.25rem,3vw,2.25rem)/1.15 var(--f-titre); overflow-wrap:anywhere}
+.projeter-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+.projeter-etat{margin:0; min-height:1.55em; font-weight:600}
+
 /* ---------- mobile ---------- */
 @media (max-width:640px){
   :root{--marge:16px}
@@ -111,12 +297,32 @@ button,input,select{font:inherit; color:inherit}
   .index-nom{font-size:1.75rem; padding:8px 12px 0}
   .index-ex,.index-nb{padding:0 12px 12px; text-align:left}
   .accueil-titre{padding-left:16px}
+  .accueil-tete{padding-top:32px; padding-bottom:32px}
+  .accueil-tete .accueil-moment{margin-bottom:12px}
+  .rangee{padding-top:40px}
+  .rangee-etiquette{margin-bottom:12px}
+  .publics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bande-titre{padding-top:24px; padding-bottom:20px}
+  .filtres{flex-basis:100%; max-width:none}
+  .filtres-ouvrir{display:flex; width:100%; justify-content:space-between}
+  .filtres:not(.ouvert) .filtres-panneau{display:none}
+  .filtres.ouvert .filtres-ouvrir{margin-bottom:16px}
+  .fiche{grid-template-columns:1fr}
+  .fiche dt{border-bottom:0; padding-bottom:0}
+  .contenu-page{padding:20px 16px 0}
+  .contenu-suite .suivant{margin-left:0; text-align:left}
+  .qbar{grid-template-columns:auto 1fr}
+  .qbar .qb-ans{grid-column:1/-1; border-left:0; border-top:1px solid var(--encre)}
 }
 
 /* ---------- mode projection ---------- */
-html[data-mode="projection"] body{background:#fff; font-size:20px}
+html[data-mode="projection"] body{background:#fff!important; font-size:20px!important}
 html[data-mode="projection"] .site-tete,html[data-mode="projection"] .site-pied,html[data-mode="projection"] .signaler{display:none}
 html[data-mode="projection"]{--trait-fort:3px}
+html[data-mode="projection"] .fil-ariane,html[data-mode="projection"] .contenu-suite,html[data-mode="projection"] .contenu-signaler,
+html[data-mode="projection"] .enveloppe-pied,html[data-mode="projection"] .enveloppe-tete .logo,html[data-mode="projection"] .contenu-outils [data-projeter],
+html[data-mode="projection"] .lien-evitement{display:none}
+html[data-mode="projection"] .contenu-barre .conteneur,html[data-mode="projection"] .enveloppe-tete-interieur{justify-content:flex-end}
 
 /* ---------- mouvement réduit ---------- */
 @media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
@@ -126,4 +332,7 @@ html[data-mode="projection"]{--trait-fort:3px}
   @page{size:A4; margin:12mm}
   body,body.atelier{background:#fff}
   .site-tete,.site-pied,.signaler,.recherche{display:none}
+  .lien-evitement,.contenu-barre,.contenu-outils,.contenu-suite,.contenu-signaler,.enveloppe-tete,.enveloppe-pied,
+  .projeter,.filtres,.catalogue-barre{display:none!important}
+  .correction,.part-head{break-inside:avoid}
 }

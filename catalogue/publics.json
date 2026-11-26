@@ -1,0 +1,6 @@
+[
+  { "id": "si", "nom": "SI", "actif": true },
+  { "id": "sti2d", "nom": "STI2D", "actif": true },
+  { "id": "bac-pro-mspc", "nom": "Bac Pro MSPC", "actif": false },
+  { "id": "bts-ms", "nom": "BTS MS", "actif": false }
+]

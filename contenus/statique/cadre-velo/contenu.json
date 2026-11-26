@@ -1,0 +1,11 @@
+{
+  "id": "cadre-velo",
+  "titre": "Cadre de vélo tout terrain",
+  "type": "exercice",
+  "niveau": 3,
+  "duree_min": 70,
+  "mots_cles": ["Statique analytique", "PFS", "Solide soumis à deux forces"],
+  "description": "Isolements successifs d'un cadre de VTT tout suspendu.",
+  "mode": "repris",
+  "source": "S-Kajzar/STATIQUE : cadre-velo.html"
+}
