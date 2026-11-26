@@ -68,8 +68,9 @@ style écrasé » échoue bien quand on introduit une fuite volontaire dans `com
 
 ## À faire par Sébastien
 
-1. **Activer GitHub Pages** : Settings → Pages → Build and deployment → Source : « GitHub Actions ». Puis fusionner
-   la pull request : la première publication part de `main`.
+1. **Activer GitHub Pages en mode « GitHub Actions »** : Settings → Pages → Build and deployment → Source :
+   « GitHub Actions ». Pages paraît déjà activé sur le dépôt : vérifier que la source n'est pas restée sur
+   « Deploy from a branch ». Puis fusionner la pull request : la première publication part de `main`.
 2. **Renseigner `site.json`** : `editeur.nom`, `editeur.adresse`, `editeur.directeur_publication`, `contact`
    (sert aussi à « Signaler une erreur » et « Devenir partenaire »). Vérifier `hebergeur`, prérempli avec GitHub.
    Plus tard : `umami` (identifiant du site), puis `indexable: true` à la bascule.
