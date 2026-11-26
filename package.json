@@ -4,6 +4,7 @@
   "description": "Site de cours, exercices interactifs et annales en sciences industrielles : génération et tests",
   "scripts": {
     "construire": "python3 outils/construire.py",
+    "servir": "node tests/serveur.js",
     "test": "python3 outils/construire.py && playwright test"
   },
   "devDependencies": {

@@ -492,6 +492,8 @@ class Constructeur:
     # --- écriture ---
 
     def preparer_sortie(self):
+        """Prépare un dossier de travail voisin de la sortie : la sortie n'est remplacée qu'en fin de construction
+        réussie, si bien qu'une construction arrêtée ne laisse jamais un site à moitié écrit."""
         sortie = self.sortie
         if sortie == self.racine or sortie in self.racine.parents:
             raise ErreurConstruction(f"Dossier de sortie refusé : {sortie}.")
@@ -502,8 +504,18 @@ class Constructeur:
                 raise ErreurConstruction(
                     f"Le dossier {sortie} n’est pas vide et ne ressemble pas à un site construit : supprimez-le à la main."
                 )
-            shutil.rmtree(sortie)
-        sortie.mkdir(parents=True)
+        self.travail = sortie.with_name(sortie.name + ".en-cours")
+        if self.travail.exists():
+            shutil.rmtree(self.travail)
+        self.travail.mkdir(parents=True)
+        self.sortie = self.travail
+        self.sortie_finale = sortie
+
+    def publier_sortie(self):
+        if self.sortie_finale.exists():
+            shutil.rmtree(self.sortie_finale)
+        self.travail.rename(self.sortie_finale)
+        self.sortie = self.sortie_finale
 
     def prefixe(self, chemin):
         """Chemin relatif vers la racine du site ; absolu pour 404.html, servie à n'importe quelle adresse."""
@@ -543,21 +555,27 @@ class Constructeur:
     def construire(self):
         self.charger()
         self.preparer_sortie()
-        shutil.copytree(self.racine / "statique" if (self.racine / "statique").is_dir() else DEPOT / "statique",
-                        self.sortie / "_")
-        self.page_accueil()
-        self.page_catalogue()
-        for theme in self.themes:
-            self.page_theme(theme)
-        for public in self.publics:
-            self.page_public(public)
-        for collection in self.collections:
-            self.page_collection(collection)
-            for contenu in collection["contenus"]:
-                self.page_contenu(contenu)
-        self.pages_annales()
-        self.pages_service()
-        self.ecrire_sitemap_robots()
+        try:
+            # gabarits/ vient toujours de ce dépôt ; statique/ aussi quand le dépôt lu n'en a pas (dépôts de test).
+            statique = self.racine / "statique" if (self.racine / "statique").is_dir() else DEPOT / "statique"
+            shutil.copytree(statique, self.sortie / "_")
+            self.page_accueil()
+            self.page_catalogue()
+            for theme in self.themes:
+                self.page_theme(theme)
+            for public in self.publics:
+                self.page_public(public)
+            for collection in self.collections:
+                self.page_collection(collection)
+                for contenu in collection["contenus"]:
+                    self.page_contenu(contenu)
+            self.pages_annales()
+            self.pages_service()
+            self.ecrire_sitemap_robots()
+        except BaseException:
+            shutil.rmtree(self.travail, ignore_errors=True)
+            raise
+        self.publier_sortie()
         return self.bilan()
 
     def page_accueil(self):

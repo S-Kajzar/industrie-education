@@ -1,0 +1,10 @@
+{
+  "explication": "Liens cassés connus, tous situés dans le corps d'un contenu repris : ce corps n'est jamais modifié (TRAME § 5). Chaque exception est signalée dans NOTE-DE-LIVRAISON.md. Le test échoue aussi si une exception n'a plus lieu d'être.",
+  "liens": [
+    {
+      "page": "statique/cadre-velo/",
+      "lien": "cours-statique-analytique.html",
+      "raison": "Lien d'origine vers le cours 3 de STATIQUE, qui sera repris au lot 1 sous une autre adresse."
+    }
+  ]
+}

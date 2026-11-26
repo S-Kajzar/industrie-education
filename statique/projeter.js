@@ -76,7 +76,7 @@
       + '<p class="projeter-adresse" data-adresse></p>'
       + '<div class="projeter-actions">'
       + '<button type="button" class="btn-jaune" data-copier>Copier le lien</button>'
-      + '<button type="button" class="btn-contour" data-fermer>Fermer <span aria-hidden="true">(Échap)</span></button>'
+      + '<button type="button" class="btn-contour" data-fermer>Fermer<span aria-hidden="true">(Échap)</span></button>'
       + '</div>'
       + '<p class="projeter-etat" data-etat aria-live="polite"></p>';
     document.body.appendChild(calque);
