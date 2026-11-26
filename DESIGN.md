@@ -81,8 +81,9 @@ Règles :
 | Titre de page | H1 sur rail jaune, sous-titre en `--encre-2` | `.page-titre` |
 | Recherche | Champ bordé 2 px + bouton jaune collé | `.recherche` |
 | Bloc de filtres | En-tête encre à texte jaune, options en lignes de 44 px min., sélection en `--jaune-pale` + gras | `.filtre` |
-| Carte de contenu | Bordure 2 px, rail jaune gauche 8 px, **bandeau typographique** en tête, badges, titre, collection | `.carte` |
-| Bandeau typographique | Fond encre, thème en petites capitales grises, collection en titre jaune. **Remplace toute vignette** | `.carte-bandeau` |
+| Carte de contenu | Bordure 2 px, rail jaune gauche 8 px, en tête **l'image de la carte si elle existe, sinon le bandeau typographique**, puis badges, titre, collection | `.carte` |
+| Image de carte | Format 16/9 recadré, fond blanc, bordure basse 2 px encre, `loading="lazy"`, texte alternatif ; même hauteur que le bandeau pour que la grille reste alignée | `.carte-image` |
+| Bandeau typographique | Fond encre, thème en petites capitales grises, collection en titre jaune. Utilisé quand la carte n'a pas d'image | `.carte-bandeau` |
 | Badges | Type : fond jaune. Niveau : fond vert, texte blanc. Thème : bordure `--trait` | `.badge`, `.badge-niveau`, `.badge-theme` |
 | Bouton principal | Fond jaune, bordure encre 2 px, texte encre | `.btn-jaune` |
 | Bouton secondaire | Fond encre, texte blanc (bouton `.btn` de la charte) | `.btn` |
@@ -120,7 +121,7 @@ défaut (lu par les moteurs et sans JavaScript), puis le script le remplace. La 
 
 ## 8. Ce qu'on ne fait pas
 
-- Pas de vignettes photo ou de scans dans les cartes de contenu : bandeau typographique.
+- Pas d'image de carte sans licence déclarée (TRAME § 10) ; pas de scan de manuel.
 - Pas d'image générée par IA, pas d'image de banque sous licence propriétaire (voir § 9).
 - Pas de police, d'image ou de script chargé depuis un tiers (sauf Umami).
 - Pas de couleur en dur dans une page : uniquement les jetons.

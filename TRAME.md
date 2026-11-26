@@ -6,6 +6,8 @@ dans le projet Claude « industrie.education » ; ce fichier en est la traductio
 
 Version 2.1 (26 novembre 2026) : ajout du back-office, des illustrations, des sections Labo et Maquettes, de la
 chaîne de production des annales, du référencement (moteurs de recherche et moteurs d'IA) et des articles Méthodes.
+Révision du même jour : image facultative sur chaque carte ; annales produites par le projet Claude « Exercices
+interactifs » (fichier HTML autonome) et déposées par le back-office.
 
 ## 1. Objet et priorités
 
@@ -27,10 +29,10 @@ personnelle, aucun traceur tiers, aucune ressource chargée depuis un tiers, sau
 | Indexation | **Interdite en préproduction** (`site.json` : `"indexable": false`). Ouverte à la bascule |
 | Génération | Python 3 + Jinja2. `outils/construire.py` lit `site.json`, `contenus/`, `annales/`, `methodes/`, `catalogue/` et écrit `_site/` |
 | Design | `DESIGN.md` et `statique/commun.css`. Vitrine minimaliste (accueil, service) ; registre « atelier » (catalogue, collections, contenus, annales) |
-| Vignettes | **Aucune image dans les cartes de contenu** : bandeau typographique (thème + collection) |
-| Illustrations | Planches techniques anciennes du **domaine public ou sous CC0**, jamais d'image générée par IA. Usage : accueil, thèmes, Labo, Maquettes, articles (§ 10) |
-| Back-office | **Pages CMS** (libre, MIT) branché sur le dépôt : téléversement d'illustrations et de PDF, édition des données et des articles sans toucher au code. Chaque enregistrement est un commit (§ 9) |
-| Annales | Une annale = **des données** (`annale.json`) rendues par un gabarit unique, jamais une page HTML écrite à la main. Production assistée par Claude, relecture humaine obligatoire avant publication (§ 11) |
+| Images de cartes | **Facultatives** : chaque contenu ou annale peut recevoir une image, téléversée par le back-office ; sans image, la carte garde le bandeau typographique (thème + collection) |
+| Illustrations et images | Planches techniques anciennes du domaine public ou sous CC0 pour l'accueil, les thèmes, Labo, Maquettes et articles ; images de cartes du domaine public, sous CC0, œuvres personnelles de Sébastien ou autorisées par écrit. **Jamais d'image générée par IA** (§ 10) |
+| Back-office | **Pages CMS** (libre, MIT) branché sur le dépôt : images, dépôt des contenus et annales autonomes, édition des données et des articles sans toucher au code. Chaque enregistrement est un commit (§ 9) |
+| Annales | Produites hors du dépôt par le **projet Claude « Exercices interactifs »** (gabarit `gabarit-exercice-interactif.html`) : un fichier HTML autonome par sujet. Déposées par le back-office avec une fiche (`annale.json`), enveloppées par le site comme les contenus repris, jamais modifiées. Publication seulement au statut `relu` (§ 11) |
 | Référencement | Socle technique dès le lot 1 ; contenus lisibles par les moteurs et les IA ; articles Méthodes relus, publiés à date programmée (§ 12) |
 | Mesure d'audience | Umami Cloud, offre gratuite, sans cookie. Google Search Console et Bing Webmaster Tools à la bascule |
 | Comptes élève / prof | Hors périmètre (V2 ultérieure) |
@@ -50,7 +52,7 @@ Adresses relatives à la racine du site (préfixe `/industrie-education/` en pr�
 | Collection | `/<collection>/` (ex. `/statique/`) | `collection` |
 | Contenu | `/<collection>/<contenu>/` (ex. `/statique/cadre-velo/`) | `contenu` |
 | Annales | `/annales/`, `/annales/<filiere>/` | `annales` |
-| Annale | `/annales/<filiere>/<session>-<epreuve>/` (ex. `/annales/bts-ms/2025-e41/`) | `annale` |
+| Annale | `/annales/<annale>/` (nom neutre, ex. `/annales/levage-dechargement-sacs-linge/`) | `annale` |
 | Labo | `/labo/`, puis `/labo/<tp>/` | `vitrine-section`, puis `labo` |
 | Maquettes | `/maquettes/`, puis `/maquettes/<maquette>/` | `vitrine-section`, puis `maquette` |
 | Méthodes | `/methodes/`, `/methodes/<article>/` | `methodes`, `article` |
@@ -79,21 +81,22 @@ catalogue/
   partenaires.json       vide en V1
   a-venir.json           labos et maquettes annoncés (§ 10)
 contenus/<collection>/   collection.json, puis un dossier par contenu (contenu.json, index.html, ressources)
-annales/<filiere>/<session>-<epreuve>/
-  sources/               PDF déposés (sujet, corrigé officiel éventuel) — jamais publiés tels quels
-  annale.json            l'annale structurée (§ 11)
-  documents/             DT et DR extraits en images (WebP)
+annales/<annale>/
+  annale.json            fiche de l'annale : titre, origine, statut, image, notions (§ 11)
+  index.html             le fichier autonome produit par le projet Claude, jamais modifié
 methodes/<article>.md    articles Méthodes (front matter + Markdown, § 12)
 medias/
-  illustrations/         originaux téléversés (domaine public / CC0)
-  CREDITS.json           source, auteur, date, licence de chaque illustration
+  illustrations/         originaux des planches (accueil, thèmes, labo, maquettes, articles)
+  cartes/                originaux des images de cartes
+  depots/                fichiers HTML autonomes téléversés, en attente de rangement par la construction
+  CREDITS.json           source, auteur, date, licence de chaque image
 gabarits/                gabarits Jinja2
 statique/                publié sous /_/ : commun.css, commun.js, projeter.js, polices/, lib/
 outils/
   construire.py          génération du site
   reprendre.py           lot 1 : import d'un ancien dépôt
   illustrations.py       traitement des illustrations (§ 10)
-  annale.py              extraction des pages d'un PDF d'annale et contrôle de annale.json (§ 11)
+  annale.py              contrôle d'une annale ou d'un contenu autonome (§ 11)
 prompts/                 un prompt par lot, plus ANNALE.md et METHODE.md
 tests/
 .github/workflows/       publier.yml (envoi sur main), quotidien.yml (publication programmée)
@@ -114,6 +117,7 @@ tests/
   "requete_cible": "exercice statique corrigé PFS",
   "description": "Isolements successifs d'un cadre de VTT tout suspendu.",
   "notions": ["pfs", "solide-deux-forces"],
+  "image": {"fichier": "medias/cartes/cadre-velo.jpg", "alt": "Cadre de VTT et ses liaisons"},
   "mode": "repris",
   "source": "S-Kajzar/STATIQUE : cadre-velo.html",
   "mis_a_jour": "2026-11-26"
@@ -123,10 +127,12 @@ tests/
 - `type` ∈ `cours`, `exercice`, `activite`, `etude`, `qcm`, `formulaire`.
 - Thème et publics sont hérités de `collection.json` (surchargeables dans `contenu.json`).
 - `requete_cible` (facultatif) : la recherche principale visée, utilisée pour le titre et la description (§ 12).
+- `image` (facultatif) : image de la carte, déclarée dans `medias/CREDITS.json` ; sans image, bandeau typographique.
 - `notions` : identifiants de notions partagés entre contenus, annales et articles ; ils servent au maillage interne
   (« Pour s'entraîner », « Tombé à l'examen », « Méthode associée »).
-- `mode: "repris"` : `index.html` est le fichier existant, copié tel quel. La construction l'enveloppe (fil d'Ariane,
-  précédent / suivant, Signaler) sans modifier son corps.
+- `mode: "repris"` : `index.html` est un fichier autonome (ancien dépôt, ou nouvel exercice produit par le projet
+  Claude « Exercices interactifs »), copié tel quel. La construction l'enveloppe (fil d'Ariane, précédent / suivant,
+  Signaler) sans modifier son corps.
 - `mode: "natif"` : le corps est écrit pour le gabarit `contenu`.
 
 ## 6. Gabarits
@@ -134,12 +140,12 @@ tests/
 | Gabarit | Contenu | Maquette |
 |---|---|---|
 | `accueil` | Titre évolutif sur illustration (DESIGN § 7 et § 9), recherche, index des 5 thèmes, 4 publics, contenus à la une, Annales, bloc « Bientôt : Labo et Maquettes », bloc Enseignants | Canvas, « Accueil retenue — M1 × charte atelier » |
-| `catalogue` | Filtres Thème / Type / Filière / Niveau ; cartes ; compteur ; fonctionne sans JavaScript | Canvas, « Catalogue — M1 × charte atelier » |
+| `catalogue` | Filtres Thème / Type / Filière / Niveau ; cartes (image si elle existe, sinon bandeau) ; compteur ; fonctionne sans JavaScript | Canvas, « Catalogue — M1 × charte atelier » |
 | `liste` | Public ou thème : titre sur rail, illustration du thème, collections groupées, cartes | — |
 | `collection` | Titre, description, contenus dans l'ordre | — |
 | `contenu` | Enveloppe des contenus repris ; gabarit complet pour les contenus natifs ; bloc de maillage (§ 12) | Charte atelier existante |
 | `annales` | Index par filière, épreuve, session | — |
-| `annale` | Rendu de `annale.json` : énoncé en HTML, DT en panneau, DR interactifs, entraînement / examen chronométré, correction, notions et cours liés | Lot 2 |
+| `annale` | Enveloppe du fichier autonome (fil d'Ariane, Signaler, annales voisines) + fiche indexable (titre, présentation, notions, durée, liens vers les cours) | Lot 1b |
 | `vitrine-section` | Labo et Maquettes tant qu'ils sont « à venir » : illustration, promesse, liste de `a-venir.json` | Lot 1b |
 | `labo`, `maquette` | TP virtuel ; maquette numérique 3D | Lot 6 |
 | `methodes`, `article` | Liste des articles ; article (auteur, date, sommaire, contenus liés) | Lot 4 |
@@ -154,16 +160,16 @@ Chaque lot : une session Claude Code, des tests verts, une pull request, une `NO
 |---|---|---|
 | **0 Socle** | Structure, gabarits, construction, démonstrations, 1 contenu repris, publication, tests | **livré** (PR n° 1) |
 | **1 Reprise + référencement de base** | `reprendre.py` : import des 37 dépôts ; pages relais (y compris `?ex=`) ; doublons ; socle SEO technique (§ 12.1 et 12.2) ; bascule du domaine | à faire |
-| **1b Back-office + illustrations + vitrines** | `.pages.yml` (§ 9) ; `outils/illustrations.py` et `medias/CREDITS.json` (§ 10) ; illustration de l'accueil et des 5 thèmes ; page Crédits ; pages `/labo/` et `/maquettes/` « à venir » et bloc d'accueil | à faire |
-| **2 Annales** | Format `annale.json` + validation ; gabarit `annale` ; `outils/annale.py` ; `prompts/ANNALE.md` ; un sujet pilote de bout en bout (§ 11) | à faire |
+| **1b Back-office, images, dépôts** | Pages CMS (§ 9) ; images de cartes et planches (§ 10) ; dépôt des contenus et annales autonomes (§ 11) ; index des annales et première annale ; page Crédits ; pages Labo et Maquettes « à venir ». Prompt : `prompts/LOT-1B.md` | à faire |
+| **2 Annales** | Amélioration du gabarit d'exercice (tracés en priorité) **dans le projet Claude**, puis re-dépôt des annales ; côté site : filtres de l'index des annales | plus tard |
 | **3 Qualité + maillage** | Une page par contenu pour les gros dépôts ; notions et blocs de maillage ; mode projection ; Signaler relié à un formulaire ; checklist qualité | à faire |
 | **4 Méthodes** | Gabarits `methodes` / `article` ; publication programmée (`quotidien.yml`) ; `prompts/METHODE.md` ; 4 premiers articles relus (§ 12.4) | à faire |
-| **5 Automatisation annales** (optionnel) | La conversion PDF → `annale.json` lancée par une étiquette GitHub via l'Action Claude Code (clé d'API payante) | plus tard |
+| **5 Automatisation** (optionnel) | Production d'une annale lancée depuis GitHub via l'Action Claude Code (clé d'API payante), avec les instructions du projet Claude | plus tard |
 | **6 Labo et Maquettes** | Gabarits `labo` et `maquette` (visionneuse 3D auto-hébergée) ; premiers TP et maquettes | plus tard |
 
 ## 8. Critères de qualité (tous les lots)
 
-- Accueil < 300 Ko au premier affichage, illustration comprise ; aucune page > 1 Mo hors contenus repris.
+- Accueil < 300 Ko au premier affichage, illustration comprise ; aucune page > 1 Mo hors fichiers autonomes (contenus repris, annales) ; image de carte ≤ 40 Ko.
 - Aucune requête vers un tiers, sauf Umami quand il est configuré (test automatique).
 - Aucun lien interne cassé (test automatique).
 - Contraste AA (y compris le titre posé sur l'illustration), focus visible, clavier, `lang="fr"`, un seul `h1`.
@@ -184,79 +190,85 @@ auto-hébergée plus tard.
 
 | Rubrique | Fichiers | Champs |
 |---|---|---|
-| Médias | `medias/illustrations/` (images), `annales/*/*/sources/` (PDF) | Téléversement par glisser-déposer |
-| Illustrations | `medias/CREDITS.json` | Fichier, titre, auteur, date, source (URL), licence (liste fermée : domaine public, CC0), usage (accueil, thème, labo, maquette, article) |
+| Médias | `medias/illustrations/`, `medias/cartes/` (images), `medias/depots/` (fichiers HTML) | Téléversement par glisser-déposer |
+| Crédits | `medias/CREDITS.json` | Fichier, titre, auteur, date, source (URL), licence (liste fermée § 10), usage |
+| Contenus | fiches des contenus (`contenu.json`) | Titre, collection, type, niveau, durée, description, notions, **image de carte**, fichier HTML autonome (nouveaux contenus) |
 | Accueil | `catalogue/a-la-une.json`, `site.json` → `titres_accueil` | Contenus à la une, titres par moment |
 | Thèmes | `catalogue/themes.json` | Nom, exemples, illustration |
 | À venir | `catalogue/a-venir.json` | Titre, type (labo, maquette), description, échéance indicative |
 | Articles | `methodes/*.md` | Titre, résumé, date de publication, statut (brouillon, relu), notions, corps |
-| Annales | `annales/*/*/annale.json` (statut, métadonnées) | Filière, épreuve, session, statut |
+| Annales | fiches des annales (`annale.json`) | Titre, présentation, fichier HTML autonome, image de carte, filières, thème, notions, durée, origine (diplôme, épreuve, session), affichage de l'origine, statut |
 | Site | `site.json` | Éditeur, contact, Umami, indexable |
 
-Règles : la construction refuse une illustration absente de `CREDITS.json` ou sous une licence hors liste, un
-article ou une annale au statut `brouillon` (jamais publiés), et un PDF placé ailleurs que dans `sources/`.
+Règles : la construction refuse une image absente de `CREDITS.json` ou sous une licence hors liste ; elle ne publie
+pas un article, un contenu ou une annale au statut `brouillon` ; elle refuse un fichier autonome qui charge une
+ressource extérieure. Attention : le dépôt étant public, un fichier au statut `brouillon` est invisible sur le site
+mais lisible sur GitHub.
 
 ## 10. Illustrations
 
-- **Sources autorisées** : œuvres du domaine public (planches de l'Encyclopédie de Diderot et d'Alembert via
+- **Licences acceptées** (liste fermée de `CREDITS.json`) : `domaine-public`, `cc0`, `oeuvre-personnelle` (photo ou
+  dessin de Sébastien), `autorisation-ecrite` (référence de l'autorisation obligatoire, ex. un constructeur). Les
+  anciennes vignettes du site ne sont reprises qu'une fois leur licence vérifiée et déclarée.
+- **Sources des planches** : œuvres du domaine public (planches de l'Encyclopédie de Diderot et d'Alembert via
   Wikimedia Commons, dessins de brevets américains sans mention de droit d'auteur, gravures techniques anciennes)
   et fichiers sous CC0 (Smithsonian Open Access, autres musées en accès ouvert). **Interdits** : images générées par
   IA, banques d'images à licence propriétaire, copies Gallica (réutilisation commerciale payante, incompatible avec
   une monétisation future).
 - **Traitement** (`outils/illustrations.py`, à partir de l'original de `medias/illustrations/`) : niveaux de gris,
   contraste renforcé, fond rendu blanc pur, recadrage, export WebP en plusieurs largeurs (`srcset`). Budgets : 150 Ko
-  pour l'illustration d'accueil en grand écran, 60 Ko pour une illustration de thème.
+  pour l'illustration d'accueil en grand écran, 60 Ko pour une illustration de thème, 40 Ko pour une image de carte
+  (480 px, plus une variante 960 px pour les écrans denses), recadrée au format de la carte.
 - **Affichage** : voir DESIGN § 9. Texte alternatif obligatoire (ou `alt=""` si purement décoratif, déclaré dans
   `CREDITS.json`).
 - **Crédits** : page `/credits/` générée depuis `CREDITS.json` (titre, auteur, date, source, licence).
 - **Circuit** : Claude propose des planches (lien, licence) ; Sébastien les télécharge et les téléverse par le
   back-office ; la construction les traite et les publie.
 
-## 11. Annales : chaîne de production
+## 11. Annales et contenus autonomes : chaîne de production
 
-Objectif : passer d'un PDF de sujet à une annale interactive publiée **sans écrire de HTML**, avec une relecture
-humaine obligatoire.
+Les annales et les nouveaux exercices sont produits **hors du dépôt**, dans le projet Claude « Exercices
+interactifs ». Ses instructions et son gabarit `gabarit-exercice-interactif.html` (charte, modes entraînement et
+examen, chronomètre, notation pondérée, tracés, impression) font foi pour l'intérieur de ces fichiers. Le site ne
+les modifie jamais : il les range, les enveloppe et les référence. Exemple de référence : l'étude « Système de
+levage et de déchargement des sacs de linge » (fichier autonome de 1,8 Mo).
 
-1. **Dépôt** : Sébastien crée l'annale dans le back-office (filière, épreuve, session) et téléverse le sujet PDF
-   (et le corrigé officiel s'il existe) dans `sources/`. Statut `brouillon`.
-2. **Extraction** : `outils/annale.py` découpe les pages en images (documents techniques et réponses) dans
-   `documents/` et extrait le texte du PDF.
-3. **Structuration** : une session Claude Code avec `prompts/ANNALE.md` produit `annale.json` (schéma ci-dessous) et
-   un **rapport de relecture** listant chaque réponse attendue, sa justification et les points incertains. Elle
-   ouvre une pull request.
-4. **Relecture** : Sébastien vérifie les réponses et les tolérances (aperçu de préproduction de la branche), corrige
-   dans le back-office ou la PR, puis passe le statut à `relu`.
-5. **Publication** : fusion. La construction refuse toute annale `brouillon` ou non conforme au schéma.
+1. **Production** : Sébastien dépose le sujet (PDF ou Word) dans le projet Claude, qui livre un fichier HTML
+   autonome et une note de livraison. Sébastien le teste.
+2. **Dépôt** : dans le back-office, « Nouvelle annale » (ou « Nouveau contenu ») : il remplit la fiche, téléverse
+   le fichier HTML et, s'il le souhaite, une image de carte. Statut `brouillon` ou `relu`.
+3. **Construction** : `outils/annale.py` contrôle le fichier (HTML complet, aucune ressource extérieure, aucune
+   erreur de structure, poids) ; la construction le range dans `annales/<annale>/index.html`, l'enveloppe et génère
+   la fiche, l'index des annales, les cartes, le sitemap.
+4. **Publication** : seulement au statut `relu`.
 
-Plus tard (lot 5), l'étape 3 peut être lancée par une étiquette GitHub via l'Action officielle Claude Code (clé
-d'API Anthropic, coût par annale à mesurer sur le sujet pilote).
+**Origine du sujet.** Les instructions du projet Claude imposent un fichier neutre (ni diplôme, ni session, ni
+épreuve), pour servir dans plusieurs filières. La fiche `annale.json` enregistre quand même l'origine (diplôme,
+épreuve, session) pour le classement interne, et un champ `afficher_origine` décide si le site l'affiche dans la
+fiche, le titre de page et l'index. Valeur par défaut : à trancher par Sébastien (§ 13). Le fichier HTML reste neutre
+dans tous les cas.
 
-Schéma de `annale.json` (validé par `outils/annale.py`) :
+`annale.json` :
 
 ```json
 {
-  "id": "bts-ms-2025-e41",
-  "filiere": "bts-ms", "epreuve": "E41", "session": 2025,
-  "titre": "… (exemple de structure, valeurs fictives)",
-  "duree_min": 240, "statut": "brouillon",
-  "source": "Sujet officiel, session 2025",
-  "mise_en_situation": "…",
-  "documents": [{"id": "DT1", "titre": "…", "image": "documents/dt1.webp", "credit": "…"}],
-  "parties": [{
-    "id": "A", "titre": "…", "duree_min": 60, "notions": ["…"],
-    "questions": [{
-      "id": "A1", "enonce": "…", "documents": ["DT1"], "points": 2,
-      "reponse": {"type": "nombre", "valeur": 219.6, "unite": "N", "tolerance": 0.5},
-      "correction": "…", "cours_lies": ["statique/cours-pfs"]
-    }]
-  }]
+  "id": "levage-dechargement-sacs-linge",
+  "titre": "Système de levage et de déchargement des sacs de linge",
+  "presentation": "…",
+  "fichier": "medias/depots/levage-dechargement-sacs-linge.html",
+  "image": {"fichier": "medias/cartes/levage-linge.jpg", "alt": "…"},
+  "publics": ["bts-ms"], "theme": "mecanique",
+  "notions": ["statique", "cinematique-graphique", "roulements"],
+  "duree_min": 240,
+  "origine": {"diplome": "", "epreuve": "", "session": null},
+  "afficher_origine": false,
+  "statut": "relu",
+  "mis_a_jour": "2026-11-26"
 }
 ```
 
-Types de réponse : `nombre` (valeur, unité, tolérance), `choix` (options, bonne(s) réponse(s)), `texte_court`
-(réponses acceptées), `trace` (sur un DR, correction visuelle) et `ouverte` (correction affichée, auto-évaluation).
-Les documents constructeurs inclus dans un sujet sont signalés dans le rapport : à redessiner ou à faire autoriser
-avant publication.
+Améliorations du gabarit d'exercice (tracés en premier) : dans le projet Claude, puis re-dépôt des fichiers
+concernés. Plus tard (lot 5), la production pourra être lancée depuis GitHub par l'Action Claude Code.
 
 ## 12. Référencement (moteurs de recherche et moteurs d'IA)
 
@@ -266,8 +278,8 @@ notion + filière. Le référencement s'ouvre à la bascule ; tout ce qui suit e
 ### 12.1 Socle technique (lot 1)
 
 - Titre et description uniques par page, générés depuis les données. Modèles : contenu « {Titre} — {type} corrigé
-  de {collection} ({filières}) | industrie.education » ; annale « Annale {filière} {session} {épreuve} corrigée :
-  {titre} ». Test : aucun doublon, longueur raisonnable.
+  de {collection} ({filières}) | industrie.education » ; annale « {Titre} : sujet corrigé interactif ({filières}) », complété
+  de « {diplôme} {session} {épreuve} » seulement si `afficher_origine` vaut `true`. Test : aucun doublon, longueur raisonnable.
 - URL propres et stables, `canonical` sur chaque page, `sitemap.xml` avec `lastmod`, `robots.txt` à la racine du
   domaine.
 - Fil d'Ariane visible sur toutes les pages internes.
@@ -317,7 +329,9 @@ compréhension des pages par les moteurs et les IA, sans promesse d'affichage en
 titre d'accueil, n° 5 champs ajoutés aux données. Sébastien les tranche avant la livraison finale ; d'ici là, les
 choix du lot 0 s'appliquent.
 
+Autre point à trancher : valeur par défaut de `afficher_origine` pour les annales (§ 11).
+
 ## 14. Hors périmètre
 
-Comptes, base de données, publicité, encarts partenaires, monétisation, réécriture des contenus repris (au-delà de
-l'enveloppe), vignettes de contenus, génération automatique d'articles en masse.
+Comptes, base de données, publicité, encarts partenaires, monétisation, réécriture des fichiers autonomes (contenus repris, annales) au-delà de l'enveloppe, génération automatique
+d'articles en masse.
