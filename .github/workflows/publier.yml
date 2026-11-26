@@ -1,0 +1,68 @@
+# Publication du site sur GitHub Pages.
+# À chaque envoi sur main : installation, construction de _site/, tests ; si les tests passent, mise en ligne.
+# Prérequis (une fois) : Settings → Pages → Build and deployment → Source : « GitHub Actions ».
+name: Publier le site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  construire:
+    name: Construire et tester
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v5
+
+      - name: Installer Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Installer Jinja2
+        run: pip install -r requirements.txt
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer Playwright et les polices
+        run: npm ci
+
+      - name: Installer Chromium pour les tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Construire le site et lancer les tests
+        run: npm test
+
+      - name: Préparer _site/ pour GitHub Pages
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  publier:
+    name: Mettre en ligne
+    needs: construire
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - name: Déployer sur GitHub Pages
+        id: deploiement
+        uses: actions/deploy-pages@v4

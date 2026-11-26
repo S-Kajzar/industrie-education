@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ titre_document }}</title>
+<meta name="description" content="{{ description }}">
+{% if not site.indexable %}<meta name="robots" content="noindex, nofollow">
+{% endif %}<link rel="stylesheet" href="{{ racine }}_/commun.css">
+<script src="{{ racine }}_/commun.js" defer></script>
+<script src="{{ racine }}_/projeter.js" defer></script>
+{% if site.umami %}<script defer src="{{ umami_script }}" data-website-id="{{ site.umami }}"></script>
+{% endif %}</head>
+<body class="{{ registre }}{% if avec_bande %} avec-bande{% endif %}">
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
+<header class="site-tete">
+<div class="conteneur">
+<a class="logo" href="{{ racine }}">{{ site.nom }}</a>
+<nav class="site-nav" aria-label="Navigation principale">
+<a href="{{ racine }}catalogue/"{% if rubrique == 'catalogue' %} aria-current="page"{% endif %}>Catalogue</a>
+<a href="{{ racine }}annales/"{% if rubrique == 'annales' %} aria-current="page"{% endif %}>Annales</a>
+<a href="{{ racine }}enseignants/"{% if rubrique == 'enseignants' %} aria-current="page"{% endif %}>Enseignants</a>
+<a class="btn-jaune" href="{{ racine }}enseignants/#projeter" data-projeter>Projeter</a>
+</nav>
+</div>
+</header>
+{% block corps %}{% endblock %}
+<footer class="site-pied">
+<div class="conteneur">
+<nav aria-label="Pages de service">
+<ul class="pied-liens">
+<li><a href="{{ racine }}enseignants/">Enseignants</a></li>
+<li><a href="{{ racine }}partenaires/">Partenaires</a></li>
+<li><a href="{{ racine }}a-propos/">À propos</a></li>
+<li><a href="{{ racine }}mentions-legales/">Mentions légales</a></li>
+</ul>
+</nav>
+<p class="pied-mention">Gratuit, sans compte, sans cookie.</p>
+</div>
+</footer>
+</body>
+</html>

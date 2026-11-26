@@ -1,0 +1,7 @@
+{
+  "titre": "Statique",
+  "theme": "mecanique",
+  "publics": ["si", "sti2d"],
+  "ordre": ["cadre-velo"],
+  "description": "Cours et exercices interactifs de statique : isoler un solide, modéliser les actions mécaniques, appliquer le principe fondamental de la statique."
+}

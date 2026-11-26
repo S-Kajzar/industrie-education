@@ -1,0 +1,67 @@
+{#- Accueil (vitrine) — maquette « Accueil retenue — M1 × charte atelier » : titre évolutif, recherche,
+    index des 5 thèmes, 4 publics, contenus à la une, lien Annales, bloc Enseignants. -#}
+{% extends "base.html" %}
+{% from "_composants.html" import carte, recherche %}
+{% block corps %}
+<main id="contenu">
+<section class="conteneur grille accueil-tete" aria-labelledby="titre-accueil">
+<p class="accueil-moment" data-moment-texte></p>
+<div class="accueil-titre">
+<div class="accueil-titre-pile">
+<h1 id="titre-accueil" data-titre-evolutif data-moment="cours">{{ titres['cours'] }}</h1>
+{% for moment, texte in titres.items() -%}
+<span class="accueil-titre-variante" aria-hidden="true" data-moment="{{ moment }}">{{ texte }}</span>
+{% endfor -%}
+</div>
+<div class="accueil-suite">
+<p class="accueil-accroche">{{ nb_contenus }} cours, exercices et études de cas, corrigés automatiquement. Gratuits, sans compte.</p>
+{{ recherche(racine ~ 'catalogue/', 'q-accueil', 'Statique, rendement, réseau…') }}
+</div>
+</div>
+</section>
+
+<section class="conteneur" aria-labelledby="titre-themes">
+<h2 class="visuellement-cache" id="titre-themes">Thèmes</h2>
+<ul class="index-themes">
+{% for t in themes -%}
+<li><a href="{{ racine }}{{ t.id }}/"><span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{{ t.nom }}</span><span class="index-ex">{{ t.exemples|join(', ') }}</span><span class="index-nb">{{ t.nb }}<span class="visuellement-cache"> {{ 'contenus' if t.nb > 1 else 'contenu' }}</span></span></a></li>
+{% endfor -%}
+</ul>
+</section>
+
+<section class="conteneur grille rangee" aria-labelledby="titre-filieres">
+<h2 class="rangee-etiquette" id="titre-filieres">Filières</h2>
+<ul class="rangee-corps publics">
+{% for p in publics -%}
+<li>{% if p.actif %}<a class="public" href="{{ racine }}{{ p.id }}/"><span class="public-nom">{{ p.nom }}</span><span class="public-nb">{{ p.nb|pluriel('contenu') }}</span></a>{% else %}<span class="public public-bientot"><span class="public-nom">{{ p.nom }}</span><span class="public-nb">Bientôt</span></span>{% endif %}</li>
+{% endfor -%}
+</ul>
+</section>
+
+{% if a_la_une -%}
+<section class="conteneur grille rangee" aria-labelledby="titre-une">
+<h2 class="rangee-etiquette" id="titre-une">À la une</h2>
+<ul class="rangee-corps cartes">
+{% for c in a_la_une %}{{ carte(c, racine, avec_theme=false, avec_collection=false) }}
+{% endfor -%}
+</ul>
+</section>
+{% endif -%}
+
+<section class="conteneur grille rangee" aria-labelledby="titre-annales">
+<h2 class="rangee-etiquette" id="titre-annales">Annales</h2>
+<div class="rangee-corps renvoi">
+<p>Les sujets d’examen par filière, épreuve et session, avec leurs documents. Premières annales en préparation.</p>
+<a class="btn-contour" href="{{ racine }}annales/">Voir les annales</a>
+</div>
+</section>
+
+<section class="conteneur grille rangee" aria-labelledby="titre-enseignants">
+<h2 class="rangee-etiquette" id="titre-enseignants">Enseignants</h2>
+<div class="rangee-corps renvoi">
+<p>Projeter une page avec son QR code, la partager dans Pronote, l’imprimer pour une évaluation : sans compte, sans installation.</p>
+<a class="btn-jaune" href="{{ racine }}enseignants/">Utiliser en classe</a>
+</div>
+</section>
+</main>
+{% endblock %}

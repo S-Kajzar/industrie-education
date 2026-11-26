@@ -1,0 +1,7 @@
+{
+  "titre": "Binaire (démonstration)",
+  "theme": "numerique",
+  "publics": ["si", "sti2d"],
+  "ordre": ["compter-binaire", "qcm-octets", "puissances-de-2"],
+  "description": "Démonstration : collection factice qui sert à tester le site. Compter en base 2, bits et octets."
+}

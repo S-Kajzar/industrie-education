@@ -1,0 +1,71 @@
+{#- Enveloppe des contenus (TRAME § 5), partagée par le gabarit « contenu » :
+    - contenus natifs : fil d'Ariane, outils, suite et signalement sont placés par contenu.html ;
+    - contenus repris : outils/construire.py insère « tete » avant </head>, « haut » après <body…> et « bas » avant
+      </body>, sans rien changer d'autre au fichier. Chaque insertion est bornée par deux commentaires repères. -#}
+
+{% macro fil_ariane(c, racine) -%}
+<nav class="fil-ariane" aria-label="Fil d’Ariane"><ol>
+<li><a href="{{ racine }}{{ c.theme.id }}/">{{ c.theme.court }}</a></li>
+<li><a href="{{ racine }}{{ c.collection.id }}/">{{ c.collection.titre }}</a></li>
+<li><span aria-current="page">{{ c.titre }}</span></li>
+</ol></nav>
+{%- endmacro %}
+
+{#- Interrupteur du mode projection (révélé par commun.js) et bouton Projeter (lien de secours sans JavaScript). -#}
+{% macro outils(racine, projeter=true) -%}
+<div class="contenu-outils">
+<button type="button" class="interrupteur" data-projection aria-pressed="false" aria-keyshortcuts="P" title="Raccourci : touche P" hidden>Mode projection</button>
+{% if projeter %}<a class="btn-jaune" href="{{ racine }}enseignants/#projeter" data-projeter>Projeter</a>
+{% endif %}</div>
+{%- endmacro %}
+
+{% macro suite(c, racine) -%}
+<nav class="contenu-suite" aria-label="Autres contenus de la collection">
+{% if c.precedent %}<a class="precedent" href="{{ racine }}{{ c.precedent.chemin }}" rel="prev"><span class="contenu-suite-sens">← Contenu précédent</span><span class="contenu-suite-titre">{{ c.precedent.titre }}</span></a>
+{% endif %}{% if c.suivant %}<a class="suivant" href="{{ racine }}{{ c.suivant.chemin }}" rel="next"><span class="contenu-suite-sens">Contenu suivant →</span><span class="contenu-suite-titre">{{ c.suivant.titre }}</span></a>
+{% endif %}{% if not c.precedent and not c.suivant %}<a href="{{ racine }}{{ c.collection.id }}/"><span class="contenu-suite-sens">Toute la collection</span><span class="contenu-suite-titre">{{ c.collection.titre }}</span></a>
+{% endif %}</nav>
+{%- endmacro %}
+
+{#- « Signaler une erreur » : courriel prérempli si site.json donne un contact, sinon la rubrique d'À propos. -#}
+{% macro signaler(c, racine, site, url_absolue) -%}
+{% if site.contact -%}
+<a class="signaler" href="mailto:{{ site.contact }}?subject={{ ('Signaler une erreur : ' ~ c.titre)|urlencode }}&amp;body={{ ('Page : ' ~ url_absolue ~ '\n\nErreur constatée : ')|urlencode }}">Signaler une erreur</a>
+{%- else -%}
+<a class="signaler" href="{{ racine }}a-propos/#signaler">Signaler une erreur</a>
+{%- endif %}
+{%- endmacro %}
+
+{% macro debut() %}<!-- début de l’enveloppe industrie.education -->{% endmacro %}
+{% macro fin() %}<!-- fin de l’enveloppe industrie.education -->{% endmacro %}
+
+{#- Ajouts dans <head> : commun.css est importé dans une couche (layer) placée après les styles du contenu,
+    pour qu'aucune de ses règles ne l'emporte sur celles du contenu. -#}
+{% macro tete(racine, site, umami_script) -%}
+{{ debut() }}
+{% if not site.indexable %}<meta name="robots" content="noindex, nofollow">
+{% endif %}<style>@import url("{{ racine }}_/commun.css") layer(site);</style>
+<script src="{{ racine }}_/commun.js" defer></script>
+<script src="{{ racine }}_/projeter.js" defer></script>
+{% if site.umami %}<script defer src="{{ umami_script }}" data-website-id="{{ site.umami }}"></script>
+{% endif %}{{ fin() }}
+{%- endmacro %}
+
+{% macro haut(c, racine, site) -%}
+{{ debut() }}
+<header class="enveloppe-tete"><div class="enveloppe-tete-interieur">
+<a class="logo" href="{{ racine }}">{{ site.nom }}</a>
+{{ fil_ariane(c, racine) }}
+{{ outils(racine) }}
+</div></header>
+{{ fin() }}
+{%- endmacro %}
+
+{% macro bas(c, racine, site, url_absolue) -%}
+{{ debut() }}
+<footer class="enveloppe-pied">
+{{ suite(c, racine) }}
+<p class="contenu-signaler">{{ signaler(c, racine, site, url_absolue) }}</p>
+</footer>
+{{ fin() }}
+{%- endmacro %}

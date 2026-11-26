@@ -1,0 +1,16 @@
+{
+  "id": "puissance-rendement",
+  "titre": "Puissance et rendement",
+  "type": "cours",
+  "niveau": 1,
+  "duree_min": 15,
+  "mots_cles": [
+    "Puissance",
+    "Énergie",
+    "Rendement",
+    "Pertes",
+    "Démonstration"
+  ],
+  "description": "Démonstration : puissance, énergie, rendement et pertes d’un convertisseur.",
+  "mode": "natif"
+}

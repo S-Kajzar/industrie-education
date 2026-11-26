@@ -1,6 +1,14 @@
 /* industrie.education — feuille de style commune.
    Source : DESIGN.md. Les jetons reprennent la charte « atelier » des dépôts de cours.
-   Toute page du site charge ce fichier ; aucune page ne redéfinit un jeton. */
+   Toute page du site charge ce fichier ; aucune page ne redéfinit un jeton.
+
+   Portée des règles. Un contenu repris (TRAME § 5) charge aussi ce fichier, sans que ses propres styles soient
+   écrasés : il l'importe dans une couche (« @import … layer(site) »), et toute règle qui vise un élément HTML ou une
+   classe susceptible d'exister dans un contenu est limitée par un préfixe :where(…), de spécificité nulle :
+     :where(.vitrine,.atelier)                                             pages du site (classe de <body>) ;
+     :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter)  pages du site et pièces de l'enveloppe.
+   Restent sans préfixe : polices, jetons, classes propres à l'enveloppe et au calque Projeter (.enveloppe-…,
+   .projeter…), et le mode projection, qui agit volontairement sur toute la page. */
 
 @font-face{font-family:"Barlow Condensed";font-weight:600;font-display:swap;src:url("polices/barlow-condensed-600.woff2") format("woff2")}
 @font-face{font-family:"Barlow Condensed";font-weight:700;font-display:swap;src:url("polices/barlow-condensed-700.woff2") format("woff2")}
@@ -20,110 +28,333 @@
 }
 
 /* ---------- base ---------- */
-*{box-sizing:border-box}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter),
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) *{box-sizing:border-box}
 html{scroll-padding-top:16px}
-body{margin:0; background:var(--papier); color:var(--encre); font:16px/1.55 var(--f-texte); font-variant-numeric:tabular-nums}
+body:where(.vitrine,.atelier){margin:0; background:var(--papier); color:var(--encre); font:16px/1.55 var(--f-texte); font-variant-numeric:tabular-nums}
 body.atelier{background:var(--beton)}
-img{max-width:100%; height:auto}
-a{color:inherit}
-p a,li a{color:var(--bleu)}
-button,input,select{font:inherit; color:inherit}
-:focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
-.visuellement-cache{position:absolute!important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
-.conteneur{max-width:var(--largeur); margin:0 auto; padding:0 var(--marge)}
-.grille{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere)}
+:where(.vitrine,.atelier) img{max-width:100%; height:auto}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) a{color:inherit}
+:where(.vitrine,.atelier) p a,:where(.vitrine,.atelier) li a{color:var(--bleu)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) button,
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) input,
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) select{font:inherit; color:inherit}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) :focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
+.visuellement-cache{position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; border:0!important; overflow:hidden!important; clip:rect(0 0 0 0)!important; white-space:nowrap!important}
+:where(.vitrine,.atelier) .conteneur{max-width:var(--largeur); margin:0 auto; padding:0 var(--marge)}
+:where(.vitrine,.atelier) .grille{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere)}
 
 /* ---------- en-tête et pied ---------- */
-.site-tete{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
-.site-tete .conteneur{display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; padding-top:18px; padding-bottom:18px}
-.logo{display:flex; align-items:center; gap:10px; font:800 1.5rem/1 var(--f-titre); text-decoration:none}
-.logo::before{content:""; width:8px; height:28px; background:var(--jaune)}
-.site-nav{display:flex; gap:24px; flex-wrap:wrap; align-items:center; font-weight:600}
-.site-nav a{text-decoration:none; padding:6px 0}
-.site-nav a[aria-current="page"]{border-bottom:4px solid var(--jaune)}
-.site-pied{border-top:var(--trait-fort) solid var(--encre); margin-top:56px; background:var(--papier)}
-.site-pied .conteneur{display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-top:24px; padding-bottom:24px; font-size:.875rem; color:var(--encre-2)}
+:where(.vitrine,.atelier) .site-tete{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier) .site-tete .conteneur{display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; padding-top:18px; padding-bottom:18px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .logo{display:flex; align-items:center; gap:10px; font:800 1.5rem/1 var(--f-titre); text-decoration:none}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .logo::before{content:""; width:8px; height:28px; background:var(--jaune)}
+:where(.vitrine,.atelier) .site-nav{display:flex; gap:24px; flex-wrap:wrap; align-items:center; font-weight:600}
+:where(.vitrine,.atelier) .site-nav a{text-decoration:none; padding:6px 0}
+:where(.vitrine,.atelier) .site-nav a[aria-current="page"]{border-bottom:4px solid var(--jaune)}
+:where(.vitrine,.atelier) .site-pied{border-top:var(--trait-fort) solid var(--encre); margin-top:56px; background:var(--papier)}
+:where(.vitrine,.atelier) .site-pied .conteneur{display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; padding-top:24px; padding-bottom:24px; font-size:.875rem; color:var(--encre-2)}
 
 /* ---------- boutons, badges ---------- */
-.btn{border:1.5px solid var(--encre); background:var(--encre); color:#fff; padding:7px 14px; border-radius:2px; cursor:pointer; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
-.btn-jaune{background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:8px 16px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
-.btn-jaune:hover{background:var(--jaune-pale)}
-.badge{display:inline-block; background:var(--jaune); color:var(--encre); font:700 .75rem/1.4 var(--f-texte); padding:2px 8px}
-.badge-niveau{background:var(--vert); color:#fff}
-.badge-theme{background:none; border:1px solid var(--trait); padding:1px 7px; font-weight:600}
+:where(.vitrine,.atelier) .btn{border:1.5px solid var(--encre); background:var(--encre); color:#fff; padding:7px 14px; border-radius:2px; cursor:pointer; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-jaune{background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:8px 16px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-jaune:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .badge{display:inline-block; background:var(--jaune); color:var(--encre); font:700 .75rem/1.4 var(--f-texte); padding:2px 8px}
+:where(.vitrine,.atelier) .badge-niveau{background:var(--vert); color:#fff}
+:where(.vitrine,.atelier) .badge-theme{background:none; border:1px solid var(--trait); padding:1px 7px; font-weight:600}
 
 /* ---------- titres ---------- */
-.accueil-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:32px}
-.accueil-titre h1{margin:0; min-height:1.8em; font:800 clamp(3.75rem,9vw,9.25rem)/.88 var(--f-titre); white-space:pre-line}
-.accueil-moment{font-size:.875rem; font-weight:600; color:var(--encre-2)}
-.page-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:24px}
-.page-titre h1{margin:0; font:800 clamp(2.5rem,5vw,4.5rem)/.9 var(--f-titre)}
-.page-titre p{margin:10px 0 0; color:var(--encre-2)}
+:where(.vitrine,.atelier) .accueil-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:32px}
+:where(.vitrine,.atelier) .accueil-titre h1,:where(.vitrine,.atelier) .accueil-titre-variante{margin:0; min-height:1.8em; font:800 clamp(3.75rem,9vw,9.25rem)/.88 var(--f-titre); white-space:pre-line}
+:where(.vitrine,.atelier) .accueil-moment{font-size:.875rem; font-weight:600; color:var(--encre-2)}
+:where(.vitrine,.atelier) .page-titre{border-left:var(--rail-titre) solid var(--jaune); padding-left:24px}
+:where(.vitrine,.atelier) .page-titre h1{margin:0; font:800 clamp(2.5rem,5vw,4.5rem)/.9 var(--f-titre)}
+:where(.vitrine,.atelier) .page-titre p{margin:10px 0 0; color:var(--encre-2)}
 
 /* ---------- recherche ---------- */
-.recherche{display:flex; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
-.recherche input{flex:1; min-width:0; border:0; outline:none; padding:14px 16px; font-size:1.0625rem}
-.recherche input:focus-visible{outline:3px solid var(--bleu); outline-offset:-3px}
-.recherche button{border:0; border-left:var(--trait-fort) solid var(--encre); background:var(--jaune); font-weight:700; padding:0 22px; cursor:pointer; min-height:50px}
+:where(.vitrine,.atelier) .recherche{display:flex; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
+:where(.vitrine,.atelier) .recherche input{flex:1; min-width:0; border:0; outline:none; padding:14px 16px; font-size:1.0625rem}
+:where(.vitrine,.atelier) .recherche input:focus-visible{outline:3px solid var(--bleu); outline-offset:-3px}
+:where(.vitrine,.atelier) .recherche button{border:0; border-left:var(--trait-fort) solid var(--encre); background:var(--jaune); font-weight:700; padding:0 22px; cursor:pointer; min-height:50px}
 
 /* ---------- index des thèmes (accueil) ---------- */
-.index-themes{border-top:var(--trait-fort) solid var(--encre); list-style:none; margin:0; padding:0}
-.index-themes a{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere); align-items:center; border-bottom:var(--trait-fort) solid var(--encre); text-decoration:none}
-.index-themes a:hover{background:var(--jaune-pale)}
-.index-num{grid-column:span 1; align-self:stretch; min-height:76px; display:flex; align-items:center; justify-content:center; background:var(--encre); color:var(--jaune); font:800 2.25rem/1 var(--f-titre)}
-.index-nom{grid-column:span 6; font:700 2.5rem/1 var(--f-titre)}
-.index-ex{grid-column:span 4; font-size:.9375rem; color:var(--encre-2)}
-.index-nb{grid-column:span 1; text-align:right; padding-right:12px; font-weight:700}
+:where(.vitrine,.atelier) .index-themes{border-top:var(--trait-fort) solid var(--encre); list-style:none; margin:0; padding:0}
+:where(.vitrine,.atelier) .index-themes a{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere); align-items:center; border-bottom:var(--trait-fort) solid var(--encre); text-decoration:none}
+:where(.vitrine,.atelier) .index-themes a:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .index-num{grid-column:span 1; align-self:stretch; min-height:76px; display:flex; align-items:center; justify-content:center; background:var(--encre); color:var(--jaune); font:800 2.25rem/1 var(--f-titre)}
+:where(.vitrine,.atelier) .index-nom{grid-column:span 6; font:700 2.5rem/1 var(--f-titre)}
+:where(.vitrine,.atelier) .index-ex{grid-column:span 4; font-size:.9375rem; color:var(--encre-2)}
+:where(.vitrine,.atelier) .index-nb{grid-column:span 1; text-align:right; padding-right:12px; font-weight:700}
 
 /* ---------- filtres (catalogue) ---------- */
-.filtre{border:var(--trait-fort) solid var(--encre); background:var(--papier); margin:0 0 20px; padding:0}
-.filtre legend,.filtre-titre{display:block; width:100%; margin:0; background:var(--encre); color:var(--jaune); font:700 1.25rem/1.2 var(--f-titre); padding:8px 14px}
-.filtre button{display:flex; justify-content:space-between; width:100%; border:0; border-top:1px solid var(--trait-fin); background:var(--papier); padding:12px 14px; min-height:44px; cursor:pointer; text-align:left}
-.filtre button[aria-pressed="true"]{background:var(--jaune-pale); font-weight:700}
+:where(.vitrine,.atelier) .filtre{border:var(--trait-fort) solid var(--encre); background:var(--papier); margin:0 0 20px; padding:0}
+:where(.vitrine,.atelier) .filtre legend,:where(.vitrine,.atelier) .filtre-titre{display:block; width:100%; margin:0; background:var(--encre); color:var(--jaune); font:700 1.25rem/1.2 var(--f-titre); padding:8px 14px}
+:where(.vitrine,.atelier) .filtre button{display:flex; justify-content:space-between; width:100%; border:0; border-top:1px solid var(--trait-fin); background:var(--papier); padding:12px 14px; min-height:44px; cursor:pointer; text-align:left}
+:where(.vitrine,.atelier) .filtre button[aria-pressed="true"]{background:var(--jaune-pale); font-weight:700}
 
 /* ---------- cartes ---------- */
-.cartes{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px}
-.carte{background:var(--papier); border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); display:flex; flex-direction:column; text-decoration:none; transition:transform .15s ease, box-shadow .15s ease}
-.carte:hover{transform:translateY(-2px); box-shadow:4px 4px 0 var(--encre)}
-.carte-bandeau{aspect-ratio:16/7; display:flex; flex-direction:column; justify-content:space-between; padding:12px 14px; background:var(--encre); color:var(--jaune); border-bottom:var(--trait-fort) solid var(--encre); font-family:var(--f-titre)}
-.carte-bandeau .theme{font-size:.8125rem; font-weight:700; letter-spacing:.06em; color:var(--trait-fin)}
-.carte-bandeau .collection{font-size:1.75rem; font-weight:800; line-height:1}
-.carte-corps{padding:14px; display:flex; flex-direction:column; gap:8px; flex:1}
-.carte-badges{display:flex; gap:6px; flex-wrap:wrap}
-.carte-titre{font:700 1.5rem/1.05 var(--f-titre)}
-.carte-collection{margin-top:auto; font-size:.8125rem; color:var(--encre-2)}
+:where(.vitrine,.atelier) .cartes{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px}
+:where(.vitrine,.atelier) .carte{background:var(--papier); border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); display:flex; flex-direction:column; text-decoration:none; transition:transform .15s ease, box-shadow .15s ease}
+:where(.vitrine,.atelier) .carte:hover{transform:translateY(-2px); box-shadow:4px 4px 0 var(--encre)}
+:where(.vitrine,.atelier) .carte-bandeau{aspect-ratio:16/7; display:flex; flex-direction:column; justify-content:space-between; padding:12px 14px; background:var(--encre); color:var(--jaune); border-bottom:var(--trait-fort) solid var(--encre); font-family:var(--f-titre)}
+:where(.vitrine,.atelier) .carte-bandeau .theme{font-size:.8125rem; font-weight:700; letter-spacing:.06em; color:var(--trait-fin)}
+:where(.vitrine,.atelier) .carte-bandeau .collection{font-size:1.75rem; font-weight:800; line-height:1}
+:where(.vitrine,.atelier) .carte-corps{padding:14px; display:flex; flex-direction:column; gap:8px; flex:1}
+:where(.vitrine,.atelier) .carte-badges{display:flex; gap:6px; flex-wrap:wrap}
+:where(.vitrine,.atelier) .carte-titre{font:700 1.5rem/1.05 var(--f-titre)}
+:where(.vitrine,.atelier) .carte-collection{margin-top:auto; font-size:.8125rem; color:var(--encre-2)}
 
 /* ---------- retours juste / faux (complète la charte) ---------- */
-.retour-juste{color:var(--vert); font-weight:600}
-.retour-juste::before{content:"✓ "}
-.retour-faux{color:var(--rouge); font-weight:600}
-.retour-faux::before{content:"✕ "}
+:where(.vitrine,.atelier) .retour-juste{color:var(--vert); font-weight:600}
+:where(.vitrine,.atelier) .retour-juste::before{content:"✓ "}
+:where(.vitrine,.atelier) .retour-faux{color:var(--rouge); font-weight:600}
+:where(.vitrine,.atelier) .retour-faux::before{content:"✕ "}
 
 /* ---------- lien signaler ---------- */
-.signaler{font-size:.875rem; color:var(--encre-2); text-decoration:underline}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler{font-size:.875rem; color:var(--encre-2); text-decoration:underline}
+
+/* ==========================================================================
+   Compléments du lot 0 : composants absents de la première version.
+   Aucun jeton n'est modifié ; les valeurs viennent de DESIGN.md et des maquettes M1.
+   ========================================================================== */
+
+/* ---------- utilitaires ---------- */
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) [hidden],.projeter[hidden]{display:none!important}
+:where(.vitrine,.atelier) .lien-evitement{position:absolute; left:16px; top:-200px; z-index:2000; background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:10px 16px; font-weight:700; text-decoration:none}
+:where(.vitrine,.atelier) .lien-evitement:focus{top:16px}
+:where(.vitrine,.atelier) .site-nav .btn-jaune{padding:8px 14px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler{display:inline-flex; align-items:center; min-height:44px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-contour{display:inline-flex; align-items:center; gap:8px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:8px 14px; font-weight:600; font-size:.875rem; line-height:1.2; text-decoration:none; cursor:pointer}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-contour:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .recherche{min-width:0}
+/* Les liens-composants restent à l'encre ; « li a » (bleu) vise les liens dans le texte courant. */
+:where(.vitrine,.atelier) .index-themes a,:where(.vitrine,.atelier) .public,:where(.vitrine,.atelier) .carte{color:var(--encre)}
+:where(.vitrine,.atelier) .pied-liens a{color:inherit}
+
+/* ---------- accueil (maquette « Accueil retenue — M1 × charte atelier ») ---------- */
+:where(.vitrine,.atelier) .accueil-tete{padding-top:64px; padding-bottom:48px; align-items:start}
+/* Hauteur d'une ligne réservée pour le moment (rempli par commun.js), pour que rien ne bouge. */
+:where(.vitrine,.atelier) .accueil-tete .accueil-moment{grid-column:span 2; margin:0; min-height:1.55em}
+:where(.vitrine,.atelier) .accueil-tete .accueil-titre{grid-column:span 10; min-width:0}
+/* Les six titres sont empilés dans la même case : la hauteur réservée est celle du plus haut, le titre change sans saut. */
+:where(.vitrine,.atelier) .accueil-titre-pile{display:grid}
+:where(.vitrine,.atelier) .accueil-titre-pile>*{grid-area:1/1}
+:where(.vitrine,.atelier) .accueil-titre-variante{visibility:hidden}
+:where(.vitrine,.atelier) .accueil-suite{margin-top:36px; display:flex; flex-wrap:wrap; gap:24px; align-items:center; justify-content:space-between}
+:where(.vitrine,.atelier) .accueil-accroche{margin:0; font-size:1.1875rem; line-height:1.45; max-width:460px}
+:where(.vitrine,.atelier) .accueil-suite .recherche{flex:0 1 520px}
+:where(.vitrine,.atelier) .rangee{padding-top:56px; align-items:start}
+:where(.vitrine,.atelier) .rangee-etiquette{grid-column:span 2; margin:0; font-size:.875rem; font-weight:600; color:var(--encre-2)}
+:where(.vitrine,.atelier) .rangee-corps{grid-column:span 10; min-width:0}
+:where(.vitrine,.atelier) .rangee-corps.cartes{grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px}
+:where(.vitrine,.atelier) .publics{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px}
+:where(.vitrine,.atelier) .publics>li{display:flex; min-width:0}
+:where(.vitrine,.atelier) .public{flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:6px; min-height:96px; border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); background:var(--papier); padding:12px 14px; text-decoration:none}
+:where(.vitrine,.atelier) a.public:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .public-nom{font:700 2rem/1 var(--f-titre)}
+:where(.vitrine,.atelier) .public-nb{font-size:.875rem; color:var(--encre-2)}
+:where(.vitrine,.atelier) .public-bientot{border-color:var(--trait); border-left-color:var(--trait); color:var(--encre-2)}
+:where(.vitrine,.atelier) .renvoi{display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; justify-content:space-between; border-top:var(--trait-fort) solid var(--encre); padding-top:16px}
+:where(.vitrine,.atelier) .renvoi p{margin:0; max-width:640px; font-size:1.0625rem}
+
+/* ---------- bande blanche des pages atelier : en-tête + titre sur rail ---------- */
+.avec-bande .site-tete{border-bottom:0}
+:where(.vitrine,.atelier) .bande{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier) .bande-titre{display:flex; flex-wrap:wrap; gap:24px; align-items:flex-end; justify-content:space-between; padding-top:32px; padding-bottom:28px}
+:where(.vitrine,.atelier) .bande-titre .recherche{flex:0 1 560px}
+:where(.vitrine,.atelier) .atelier-corps{padding-top:28px}
+
+/* ---------- fil d'Ariane, barre de contenu, interrupteur du mode projection ---------- */
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane ol{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; align-items:center; font-size:.875rem; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane li{display:flex; align-items:center; min-width:0}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane li+li::before{content:"/"; content:"/" / ""; padding:0 8px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane a{display:inline-flex; align-items:center; min-height:44px; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane [aria-current="page"]{color:var(--encre); font-weight:600}
+:where(.vitrine,.atelier) .contenu-barre{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier) .contenu-barre .conteneur{display:flex; justify-content:space-between; align-items:center; gap:4px 24px; flex-wrap:wrap; padding-top:4px; padding-bottom:4px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-outils{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:4px 0}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur{display:inline-flex; align-items:center; gap:10px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:6px 12px; font-weight:600; cursor:pointer}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur::before{content:""; flex:none; width:14px; height:14px; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur[aria-pressed="true"]{background:var(--jaune-pale)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur[aria-pressed="true"]::before{background:var(--encre)}
+
+/* ---------- catalogue (maquette « Catalogue — M1 × charte atelier ») ---------- */
+:where(.vitrine,.atelier) .catalogue-corps{display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start; padding-top:28px}
+:where(.vitrine,.atelier) .filtres{flex:1 1 240px; max-width:280px; min-width:0}
+:where(.vitrine,.atelier) .filtre{min-width:0}
+:where(.vitrine,.atelier) .filtre button:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .filtre button:disabled{color:var(--encre-2); background:var(--papier); cursor:not-allowed}
+:where(.vitrine,.atelier) .filtre-nb{color:var(--encre-2); font-weight:400; padding-left:12px}
+:where(.vitrine,.atelier) .filtres-ouvrir{display:none}
+:where(.vitrine,.atelier) .catalogue-resultats{flex:999 1 600px; min-width:0}
+:where(.vitrine,.atelier) .catalogue-barre{display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px}
+:where(.vitrine,.atelier) .catalogue-compteur{margin:0; font-size:.9375rem}
+:where(.vitrine,.atelier) .etat-vide{margin:24px 0 0; background:var(--papier); border:var(--trait-fort) solid var(--encre); padding:20px}
+
+/* ---------- listes de cartes (catalogue, accueil, public, thème, collection) ---------- */
+:where(.vitrine,.atelier) ul.cartes{list-style:none; margin:0; padding:0}
+:where(.vitrine,.atelier) .cartes>li{display:flex; min-width:0}
+:where(.vitrine,.atelier) .cartes>li>.carte{flex:1; min-width:0}
+:where(.vitrine,.atelier) .carte-num{display:inline-flex; align-items:center; justify-content:center; min-width:24px; padding:0 6px; background:var(--encre); color:var(--jaune); font:800 .9375rem/1.4 var(--f-titre)}
+:where(.vitrine,.atelier) .groupes{display:flex; flex-direction:column; gap:40px}
+:where(.vitrine,.atelier) .groupe-tete{display:flex; justify-content:space-between; align-items:baseline; gap:8px 16px; flex-wrap:wrap; margin:0 0 14px; padding-bottom:8px; border-bottom:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier) .groupe-tete h2{margin:0; font:700 1.45rem/1.15 var(--f-titre)}
+:where(.vitrine,.atelier) .groupe-tete h2 a{text-decoration:none}
+:where(.vitrine,.atelier) .groupe-tete h2 a:hover{text-decoration:underline}
+:where(.vitrine,.atelier) .groupe-nb{font-size:.875rem; color:var(--encre-2)}
+.atelier .index-themes a{background:var(--papier)}
+.atelier .index-themes a:hover{background:var(--jaune-pale)}
+
+/* ---------- pages de service (vitrine) ---------- */
+:where(.vitrine,.atelier) .service-tete{padding-top:56px; padding-bottom:32px}
+:where(.vitrine,.atelier) .service-corps{max-width:46rem}
+:where(.vitrine,.atelier) .service-corps h2{margin:40px 0 10px; font:700 1.45rem/1.15 var(--f-titre)}
+:where(.vitrine,.atelier) .service-corps h3{margin:24px 0 6px; font:700 1.15rem/1.2 var(--f-titre)}
+:where(.vitrine,.atelier) .service-corps p,:where(.vitrine,.atelier) .service-corps li{max-width:68ch}
+:where(.vitrine,.atelier) .principes{list-style:none; margin:0; padding:0; display:grid; gap:12px}
+:where(.vitrine,.atelier) .principes li{border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); padding:12px 16px}
+:where(.vitrine,.atelier) .fiche{margin:0; display:grid; grid-template-columns:minmax(0,14rem) minmax(0,1fr); border-top:1px solid var(--trait-fin)}
+:where(.vitrine,.atelier) .fiche dt,:where(.vitrine,.atelier) .fiche dd{margin:0; padding:10px 0; border-bottom:1px solid var(--trait-fin)}
+:where(.vitrine,.atelier) .fiche dt{font-weight:600; padding-right:16px}
+:where(.vitrine,.atelier) .a-renseigner{font-style:italic; color:var(--encre-2)}
+:where(.vitrine,.atelier) .liens-erreur{list-style:none; margin:24px 0 0; padding:0; display:flex; flex-wrap:wrap; gap:12px}
+:where(.vitrine,.atelier) .service-corps .recherche{margin-top:24px}
+:where(.vitrine,.atelier) .liste-filieres{margin-top:28px}
+:where(.vitrine,.atelier) .pied-liens{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:0 20px}
+:where(.vitrine,.atelier) .pied-liens a{display:inline-flex; align-items:center; min-height:44px}
+:where(.vitrine,.atelier) .pied-mention{margin:0; align-self:center}
+:where(.vitrine,.atelier) .cartouche .carte-badges{margin-bottom:8px}
+
+/* ---------- charte atelier : cartouche, consignes, parties, barre de question, données, tableau ----------
+   Repris de la charte des dépôts de cours (gabarit d'exercice interactif) ; les traits principaux passent par le jeton. */
+:where(.vitrine,.atelier) .cartouche{background:var(--papier); border:var(--trait-fort) solid var(--encre); display:grid; grid-template-columns:1fr; margin-bottom:26px}
+:where(.vitrine,.atelier) .cartouche>div{border-right:1px solid var(--encre); border-bottom:1px solid var(--encre); padding:8px 12px}
+:where(.vitrine,.atelier) .cartouche>div:nth-child(3n){border-right:0}
+:where(.vitrine,.atelier) .cartouche .k{display:block; font:600 .72rem/1.2 var(--f-titre); letter-spacing:.02em; color:var(--encre-2)}
+:where(.vitrine,.atelier) .cartouche .v{font:600 1rem/1.3 var(--f-titre)}
+:where(.vitrine,.atelier) .cartouche .title{grid-column:1/-1; border-right:0; padding:18px 16px 16px}
+:where(.vitrine,.atelier) .cartouche h1{font:700 clamp(1.6rem,3.6vw,2.35rem)/1.08 var(--f-titre); margin:2px 0 6px; letter-spacing:-.01em}
+:where(.vitrine,.atelier) .cartouche .title p{margin:0; color:var(--encre-2)}
+:where(.vitrine,.atelier) .consignes{background:var(--papier); border-left:6px solid var(--jaune); padding:12px 16px; margin:0 0 30px}
+:where(.vitrine,.atelier) .consignes p{margin:.2rem 0}
+:where(.vitrine,.atelier) .part{background:var(--papier); margin:0 0 34px; padding:0 0 22px; border:1px solid var(--trait-fin)}
+:where(.vitrine,.atelier) .part-head{display:grid; grid-template-columns:64px 1fr; border-bottom:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier) .part-num{background:var(--encre); color:var(--jaune); font:700 2.3rem/1 var(--f-titre); display:flex; align-items:center; justify-content:center}
+:where(.vitrine,.atelier) .part-head h2{font:700 1.45rem/1.15 var(--f-titre); margin:0; padding:12px 16px 2px}
+:where(.vitrine,.atelier) .part-head .duree{padding:0 16px 10px; font-size:.9rem; color:var(--encre-2)}
+:where(.vitrine,.atelier) .part-body{padding:4px 22px 0}
+:where(.vitrine,.atelier) .part-body>p,:where(.vitrine,.atelier) .part-body>ul{max-width:72ch}
+:where(.vitrine,.atelier) .qbar{display:grid; grid-template-columns:auto 1fr auto; align-items:stretch; margin:30px 0 10px; border:1.5px solid var(--encre); font:500 .95rem/1.2 var(--f-titre)}
+:where(.vitrine,.atelier) .qbar>*{padding:7px 10px; display:flex; align-items:center; gap:6px; flex-wrap:wrap}
+:where(.vitrine,.atelier) .qbar .qb-num{background:var(--jaune); font-weight:700; font-size:1.1rem; border-right:1.5px solid var(--encre); min-width:64px; justify-content:center}
+:where(.vitrine,.atelier) .qbar .qb-ans{border-left:1.5px solid var(--encre)}
+:where(.vitrine,.atelier) .qbar .qb-title{grid-column:1/-1; border-top:1px solid var(--encre); font-weight:700; font-style:italic}
+:where(.vitrine,.atelier) .data{border:1px solid var(--encre); padding:8px 14px; margin:12px 0; max-width:72ch; background:#FBFBF9}
+:where(.vitrine,.atelier) .data p{margin:.25rem 0}
+:where(.vitrine,.atelier) .data .data-title{font:700 .95rem var(--f-titre); text-decoration:underline; text-underline-offset:3px}
+:where(.vitrine,.atelier) .data ul{margin:.2rem 0; padding-left:1.1rem}
+:where(.vitrine,.atelier) .data ul.cols{columns:2; column-gap:28px}
+:where(.vitrine,.atelier) table.t{border-collapse:collapse; margin:10px 0; font-size:.93rem; width:100%}
+:where(.vitrine,.atelier) table.t th,:where(.vitrine,.atelier) table.t td{border:1px solid var(--trait); padding:4px 8px; text-align:left; vertical-align:top}
+:where(.vitrine,.atelier) table.t th{background:#EEF0EC; font:600 .88rem var(--f-titre)}
+
+/* ---------- page de contenu natif ---------- */
+:where(.vitrine,.atelier) .contenu-page{max-width:900px; margin:0 auto; padding:28px 22px 0}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite{display:flex; justify-content:space-between; gap:12px 16px; flex-wrap:wrap; margin:40px 0 0; padding-top:16px; border-top:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite a{display:flex; flex-direction:column; gap:2px; min-height:44px; max-width:100%; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:10px 16px; text-decoration:none}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite a:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite .suivant{margin-left:auto; text-align:right}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite-sens{font-size:.8125rem; font-weight:600; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite-titre{font:700 1.125rem/1.15 var(--f-titre)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-signaler{margin:16px 0 0; text-align:center}
+:where(.vitrine,.atelier) .demonstration{margin:0 0 26px; background:var(--jaune-pale); border:var(--trait-fort) solid var(--encre); padding:10px 14px}
+:where(.vitrine,.atelier) .correction{margin:8px 0 18px; max-width:72ch; border:1px solid var(--trait-fin); background:var(--papier)}
+:where(.vitrine,.atelier) .correction>summary{cursor:pointer; padding:10px 12px; font-weight:600}
+:where(.vitrine,.atelier) .correction>summary:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .correction>:not(summary){margin:0; padding:4px 12px 12px}
+:where(.vitrine,.atelier) .qcm-question{border:0; margin:20px 0; padding:0; min-width:0}
+:where(.vitrine,.atelier) .qcm-question legend{padding:0; margin:0 0 6px; font-weight:600}
+:where(.vitrine,.atelier) .qcm-question label{display:flex; align-items:center; gap:10px; min-height:44px; padding:0 10px; border-top:1px solid var(--trait-fin); cursor:pointer}
+:where(.vitrine,.atelier) .qcm-question label:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .qcm-retour{margin:6px 0 0}
+:where(.vitrine,.atelier) .qcm-retour:empty{display:none}
+
+/* ---------- enveloppe des contenus repris (TRAME § 5) ----------
+   Les styles du contenu l'emportent toujours (couche « site ») : l'enveloppe n'utilise aucune classe de la charte. */
+.enveloppe-tete{background:var(--papier); color:var(--encre); border-bottom:var(--trait-fort) solid var(--encre); font:16px/1.55 var(--f-texte)}
+.enveloppe-tete-interieur{display:flex; align-items:center; justify-content:space-between; gap:4px 24px; flex-wrap:wrap; max-width:var(--largeur); margin:0 auto; padding:4px calc(var(--rail, 0px) + 16px) 4px 16px}
+.enveloppe-tete .logo{font-size:1.25rem}
+.enveloppe-tete .logo::before{height:24px}
+.enveloppe-pied{max-width:900px; margin:40px auto 0; padding:0 22px 24px; color:var(--encre); font:16px/1.55 var(--f-texte)}
+/* Le rail de documents de la charte (--rail, à droite) est masqué sous 760 px : inutile de lui garder la place. */
+@media (max-width:760px){ .enveloppe-tete-interieur{padding-right:16px} }
+
+/* ---------- calque Projeter ---------- */
+html.projeter-ouvert{overflow:hidden}
+.projeter{position:fixed; top:0; right:0; bottom:0; left:0; z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:16px; overflow:auto; background:var(--papier); color:var(--encre); font:16px/1.55 var(--f-texte); text-align:center}
+.projeter-titre{margin:0; font:700 1.45rem/1.15 var(--f-titre)}
+.projeter-qr{flex:none; width:min(64vh,88vw); height:min(64vh,88vw); color:var(--encre); background:var(--papier)}
+.projeter-qr svg{display:block; width:100%; height:100%}
+.projeter-adresse{margin:0; max-width:min(92vw,1200px); font:700 clamp(1.25rem,3vw,2.25rem)/1.15 var(--f-titre); overflow-wrap:anywhere}
+.projeter-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
+.projeter-etat{margin:0; min-height:1.55em; font-weight:600}
 
 /* ---------- mobile ---------- */
 @media (max-width:640px){
   :root{--marge:16px}
-  .grille,.index-themes a{grid-template-columns:1fr}
-  .grille>*,.index-themes a>*{grid-column:1/-1!important}
-  .index-num{min-height:48px; justify-content:flex-start; padding-left:12px}
-  .index-nom{font-size:1.75rem; padding:8px 12px 0}
-  .index-ex,.index-nb{padding:0 12px 12px; text-align:left}
-  .accueil-titre{padding-left:16px}
+  :where(.vitrine,.atelier) .grille,:where(.vitrine,.atelier) .index-themes a{grid-template-columns:1fr}
+  :where(.vitrine,.atelier) .grille>*,:where(.vitrine,.atelier) .index-themes a>*{grid-column:1/-1!important}
+  :where(.vitrine,.atelier) .index-num{min-height:48px; justify-content:flex-start; padding-left:12px}
+  :where(.vitrine,.atelier) .index-nom{font-size:1.75rem; padding:8px 12px 0}
+  :where(.vitrine,.atelier) .index-ex,:where(.vitrine,.atelier) .index-nb{padding:0 12px 12px; text-align:left}
+  :where(.vitrine,.atelier) .accueil-titre{padding-left:16px}
+  :where(.vitrine,.atelier) .accueil-tete{padding-top:32px; padding-bottom:32px}
+  :where(.vitrine,.atelier) .accueil-tete .accueil-moment{margin-bottom:12px}
+  :where(.vitrine,.atelier) .rangee{padding-top:40px}
+  :where(.vitrine,.atelier) .rangee-etiquette{margin-bottom:12px}
+  :where(.vitrine,.atelier) .publics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  :where(.vitrine,.atelier) .bande-titre{padding-top:24px; padding-bottom:20px}
+  :where(.vitrine,.atelier) .filtres{flex-basis:100%; max-width:none}
+  :where(.vitrine,.atelier) .filtres-ouvrir{display:flex; width:100%; justify-content:space-between}
+  :where(.vitrine,.atelier) .filtres:not(.ouvert) .filtres-panneau{display:none}
+  :where(.vitrine,.atelier) .filtres.ouvert .filtres-ouvrir{margin-bottom:16px}
+  :where(.vitrine,.atelier) .fiche{grid-template-columns:1fr}
+  :where(.vitrine,.atelier) .fiche dt{border-bottom:0; padding-bottom:0}
+  :where(.vitrine,.atelier) .contenu-page{padding:20px 16px 0}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite .suivant{margin-left:0; text-align:left}
+  :where(.vitrine,.atelier) .qbar{grid-template-columns:auto 1fr}
+  :where(.vitrine,.atelier) .qbar .qb-ans{grid-column:1/-1; border-left:0; border-top:1px solid var(--encre)}
 }
 
-/* ---------- mode projection ---------- */
-html[data-mode="projection"] body{background:#fff; font-size:20px}
-html[data-mode="projection"] .site-tete,html[data-mode="projection"] .site-pied,html[data-mode="projection"] .signaler{display:none}
+/* ---------- mode projection : agit sur toute la page, contenus repris compris ---------- */
+html[data-mode="projection"] body{background:#fff!important; font-size:20px!important}
+html[data-mode="projection"] :where(.vitrine,.atelier) .site-tete,html[data-mode="projection"] :where(.vitrine,.atelier) .site-pied,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler{display:none}
 html[data-mode="projection"]{--trait-fort:3px}
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-signaler,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-outils [data-projeter],
+html[data-mode="projection"] .enveloppe-pied,html[data-mode="projection"] .enveloppe-tete .logo,
+html[data-mode="projection"] :where(.vitrine,.atelier) .lien-evitement{display:none}
+html[data-mode="projection"] :where(.vitrine,.atelier) .contenu-barre .conteneur,html[data-mode="projection"] .enveloppe-tete-interieur{justify-content:flex-end}
 
 /* ---------- mouvement réduit ---------- */
-@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+@media (prefers-reduced-motion:reduce){
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter),
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) *{transition:none!important; animation:none!important}
+}
 
 /* ---------- impression ---------- */
 @media print{
   @page{size:A4; margin:12mm}
-  body,body.atelier{background:#fff}
-  .site-tete,.site-pied,.signaler,.recherche{display:none}
+  body:where(.vitrine,.atelier),body.atelier{background:#fff}
+  :where(.vitrine,.atelier) .site-tete,:where(.vitrine,.atelier) .site-pied,
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler,:where(.vitrine,.atelier) .recherche{display:none}
+  :where(.vitrine,.atelier) .lien-evitement,:where(.vitrine,.atelier) .contenu-barre,
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-outils,
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite,
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-signaler,
+  .enveloppe-tete,.enveloppe-pied,.projeter,:where(.vitrine,.atelier) .filtres,:where(.vitrine,.atelier) .catalogue-barre{display:none!important}
+  :where(.vitrine,.atelier) .correction,:where(.vitrine,.atelier) .part-head{break-inside:avoid}
 }

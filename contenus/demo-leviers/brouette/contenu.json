@@ -1,0 +1,15 @@
+{
+  "id": "brouette",
+  "titre": "La brouette",
+  "type": "exercice",
+  "niveau": 2,
+  "duree_min": 25,
+  "mots_cles": [
+    "Équilibre",
+    "Moment",
+    "Levier",
+    "Démonstration"
+  ],
+  "description": "Démonstration : équilibre d’une brouette chargée, force aux poignées et action du sol sur la roue.",
+  "mode": "natif"
+}

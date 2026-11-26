@@ -1,0 +1,8 @@
+{%- from "_composants.html" import recherche -%}
+<p>Cette page n’existe pas ou a changé d’adresse. Cherchez un contenu :</p>
+{{ recherche(racine ~ 'catalogue/', 'q-erreur', 'Statique, rendement, réseau…') }}
+<ul class="liens-erreur">
+<li><a class="btn-contour" href="{{ racine }}">Accueil</a></li>
+<li><a class="btn-contour" href="{{ racine }}catalogue/">Catalogue</a></li>
+<li><a class="btn-contour" href="{{ racine }}annales/">Annales</a></li>
+</ul>

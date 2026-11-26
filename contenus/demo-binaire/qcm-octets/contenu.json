@@ -1,0 +1,15 @@
+{
+  "id": "qcm-octets",
+  "titre": "QCM : bits et octets",
+  "type": "qcm",
+  "niveau": 1,
+  "duree_min": 10,
+  "mots_cles": [
+    "Bit",
+    "Octet",
+    "Binaire",
+    "Démonstration"
+  ],
+  "description": "Démonstration : trois questions pour vérifier ses acquis sur les bits et les octets.",
+  "mode": "natif"
+}

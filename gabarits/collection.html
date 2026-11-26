@@ -1,0 +1,23 @@
+{#- Collection : titre, description, contenus dans l'ordre (cours puis exercices par niveau), cartes numérotées. -#}
+{% extends "base.html" %}
+{% from "_composants.html" import carte %}
+{% block corps %}
+<main id="contenu">
+<div class="bande">
+<div class="conteneur bande-titre">
+<div class="page-titre">
+<h1>{{ collection.titre }}</h1>
+<p>{{ collection.description }}</p>
+<p><a href="{{ racine }}{{ collection.theme.id }}/">{{ collection.theme.nom }}</a>
+{%- for p in collection.publics %} · {% if p.actif %}<a href="{{ racine }}{{ p.id }}/">{{ p.nom }}</a>{% else %}{{ p.nom }}{% endif %}{% endfor %} · {{ collection.contenus|length|pluriel('contenu') }}</p>
+</div>
+</div>
+</div>
+<div class="conteneur atelier-corps">
+<ul class="cartes">
+{% for c in collection.contenus %}{{ carte(c, racine, numero=loop.index, avec_collection=false) }}
+{% endfor -%}
+</ul>
+</div>
+</main>
+{% endblock %}

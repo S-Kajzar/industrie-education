@@ -1,0 +1,15 @@
+{
+  "id": "treuil",
+  "titre": "Le treuil de chantier",
+  "type": "activite",
+  "niveau": 2,
+  "duree_min": 30,
+  "mots_cles": [
+    "Travail",
+    "Puissance utile",
+    "Rendement",
+    "Démonstration"
+  ],
+  "description": "Démonstration : énergie, puissance utile et rendement d’un treuil électrique qui soulève une charge.",
+  "mode": "natif"
+}

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "mecanique",
+    "nom": "Mécanique et conception",
+    "court": "Mécanique",
+    "exemples": ["Statique", "RDM", "cinématique", "frottement"]
+  },
+  {
+    "id": "energie",
+    "nom": "Énergie",
+    "court": "Énergie",
+    "exemples": ["Énergétique", "chaîne d’énergie", "solaire"]
+  },
+  {
+    "id": "numerique",
+    "nom": "Information et numérique",
+    "court": "Numérique",
+    "exemples": ["Réseau", "binaire", "logique", "capteurs"]
+  },
+  {
+    "id": "systemes",
+    "nom": "Analyse des systèmes",
+    "court": "Systèmes",
+    "exemples": ["Chaîne fonctionnelle", "ACV"]
+  },
+  {
+    "id": "habitat",
+    "nom": "Habitat et construction",
+    "court": "Habitat",
+    "exemples": ["Isolation", "descente de charges"]
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "nom": "industrie.education",
+  "base": "/industrie-education/",
+  "origine": "https://s-kajzar.github.io",
+  "indexable": false,
+  "umami": "",
+  "editeur": {
+    "nom": "",
+    "adresse": "",
+    "directeur_publication": ""
+  },
+  "contact": "",
+  "hebergeur": {
+    "nom": "GitHub, Inc.",
+    "adresse": "88 Colin P. Kelly Jr. Street, San Francisco, CA 94107, États-Unis"
+  },
+  "titres_accueil": {
+    "cours": "Comprendre\ncomment ça marche.",
+    "matin": "Bien réveillé ?\nUn exercice avant le cours.",
+    "midi": "Pause midi.\nCinq minutes, un exercice.",
+    "soir": "Ce soir,\non s’entraîne.",
+    "nuit": "Encore debout ?\nUn dernier pour la route.",
+    "week-end": "Le week-end aussi,\nça tourne."
+  }
+}
