@@ -1,9 +1,9 @@
-// Poids au premier affichage (TRAME § 8) : accueil < 300 Ko ; aucune page > 1 Mo, hors contenus repris.
+// Poids au premier affichage (TRAME § 8) : accueil < 300 Ko ; aucune page > 1 Mo, hors fichiers autonomes.
 // Mesure : tout ce que le navigateur télécharge jusqu'au repos du réseau, cache vide, sans compression.
 'use strict';
 
 const { test, expect } = require('@playwright/test');
-const { pagesConstruites, estRepris } = require('./outils');
+const { pagesConstruites, estAutonome } = require('./outils');
 
 async function poids(page, chemin) {
   const mesures = [];
@@ -22,8 +22,8 @@ test('accueil < 300 Ko au premier affichage', async ({ page }) => {
   expect(total, JSON.stringify(liste, null, 1)).toBeLessThan(300 * 1000);
 });
 
-test.describe('aucune page > 1 Mo hors contenus repris', () => {
-  for (const chemin of pagesConstruites().filter((c) => !estRepris(c))) {
+test.describe('aucune page > 1 Mo hors fichiers autonomes (contenus repris, annales)', () => {
+  for (const chemin of pagesConstruites().filter((c) => !estAutonome(c))) {
     test(chemin || '(accueil)', async ({ page }) => {
       const { total, liste } = await poids(page, chemin);
       expect(total, JSON.stringify(liste, null, 1)).toBeLessThan(1000 * 1000);

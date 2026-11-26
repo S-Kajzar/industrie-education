@@ -6,7 +6,7 @@
    écrasés : il l'importe dans une couche (« @import … layer(site) »), et toute règle qui vise un élément HTML ou une
    classe susceptible d'exister dans un contenu est limitée par un préfixe :where(…), de spécificité nulle :
      :where(.vitrine,.atelier)                                             pages du site (classe de <body>) ;
-     :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter)  pages du site et pièces de l'enveloppe.
+     :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter)  pages du site et pièces de l'enveloppe.
    Restent sans préfixe : polices, jetons, classes propres à l'enveloppe et au calque Projeter (.enveloppe-…,
    .projeter…), et le mode projection, qui agit volontairement sur toute la page. */
 
@@ -28,18 +28,18 @@
 }
 
 /* ---------- base ---------- */
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter),
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) *{box-sizing:border-box}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter),
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) *{box-sizing:border-box}
 html{scroll-padding-top:16px}
 body:where(.vitrine,.atelier){margin:0; background:var(--papier); color:var(--encre); font:16px/1.55 var(--f-texte); font-variant-numeric:tabular-nums}
 body.atelier{background:var(--beton)}
 :where(.vitrine,.atelier) img{max-width:100%; height:auto}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) a{color:inherit}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) a{color:inherit}
 :where(.vitrine,.atelier) p a,:where(.vitrine,.atelier) li a{color:var(--bleu)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) button,
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) input,
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) select{font:inherit; color:inherit}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) :focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) button,
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) input,
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) select{font:inherit; color:inherit}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) :focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
 .visuellement-cache{position:absolute!important; width:1px!important; height:1px!important; padding:0!important; margin:-1px!important; border:0!important; overflow:hidden!important; clip:rect(0 0 0 0)!important; white-space:nowrap!important}
 :where(.vitrine,.atelier) .conteneur{max-width:var(--largeur); margin:0 auto; padding:0 var(--marge)}
 :where(.vitrine,.atelier) .grille{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere)}
@@ -47,8 +47,8 @@ body.atelier{background:var(--beton)}
 /* ---------- en-tête et pied ---------- */
 :where(.vitrine,.atelier) .site-tete{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
 :where(.vitrine,.atelier) .site-tete .conteneur{display:flex; justify-content:space-between; align-items:center; gap:24px; flex-wrap:wrap; padding-top:18px; padding-bottom:18px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .logo{display:flex; align-items:center; gap:10px; font:800 1.5rem/1 var(--f-titre); text-decoration:none}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .logo::before{content:""; width:8px; height:28px; background:var(--jaune)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .logo{display:flex; align-items:center; gap:10px; font:800 1.5rem/1 var(--f-titre); text-decoration:none}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .logo::before{content:""; width:8px; height:28px; background:var(--jaune)}
 :where(.vitrine,.atelier) .site-nav{display:flex; gap:24px; flex-wrap:wrap; align-items:center; font-weight:600}
 :where(.vitrine,.atelier) .site-nav a{text-decoration:none; padding:6px 0}
 :where(.vitrine,.atelier) .site-nav a[aria-current="page"]{border-bottom:4px solid var(--jaune)}
@@ -57,8 +57,8 @@ body.atelier{background:var(--beton)}
 
 /* ---------- boutons, badges ---------- */
 :where(.vitrine,.atelier) .btn{border:1.5px solid var(--encre); background:var(--encre); color:#fff; padding:7px 14px; border-radius:2px; cursor:pointer; font-weight:600; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-jaune{background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:8px 16px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-jaune:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .btn-jaune{background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:8px 16px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; min-height:44px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .btn-jaune:hover{background:var(--jaune-pale)}
 :where(.vitrine,.atelier) .badge{display:inline-block; background:var(--jaune); color:var(--encre); font:700 .75rem/1.4 var(--f-texte); padding:2px 8px}
 :where(.vitrine,.atelier) .badge-niveau{background:var(--vert); color:#fff}
 :where(.vitrine,.atelier) .badge-theme{background:none; border:1px solid var(--trait); padding:1px 7px; font-weight:600}
@@ -96,7 +96,10 @@ body.atelier{background:var(--beton)}
 :where(.vitrine,.atelier) .cartes{display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px}
 :where(.vitrine,.atelier) .carte{background:var(--papier); border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); display:flex; flex-direction:column; text-decoration:none; transition:transform .15s ease, box-shadow .15s ease}
 :where(.vitrine,.atelier) .carte:hover{transform:translateY(-2px); box-shadow:4px 4px 0 var(--encre)}
-:where(.vitrine,.atelier) .carte-bandeau{aspect-ratio:16/7; display:flex; flex-direction:column; justify-content:space-between; padding:12px 14px; background:var(--encre); color:var(--jaune); border-bottom:var(--trait-fort) solid var(--encre); font-family:var(--f-titre)}
+:where(.vitrine,.atelier) .carte-bandeau{aspect-ratio:16/9; display:flex; flex-direction:column; justify-content:space-between; padding:12px 14px; background:var(--encre); color:var(--jaune); border-bottom:var(--trait-fort) solid var(--encre); font-family:var(--f-titre)}
+/* Image de carte (DESIGN § 5) : même format 16/9 que le bandeau, dimensions fixées, fond blanc. */
+:where(.vitrine,.atelier) .carte-image{display:block; aspect-ratio:16/9; overflow:hidden; background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier) .carte-image img{display:block; width:100%; height:100%; object-fit:cover}
 :where(.vitrine,.atelier) .carte-bandeau .theme{font-size:.8125rem; font-weight:700; letter-spacing:.06em; color:var(--trait-fin)}
 :where(.vitrine,.atelier) .carte-bandeau .collection{font-size:1.75rem; font-weight:800; line-height:1}
 :where(.vitrine,.atelier) .carte-corps{padding:14px; display:flex; flex-direction:column; gap:8px; flex:1}
@@ -111,7 +114,7 @@ body.atelier{background:var(--beton)}
 :where(.vitrine,.atelier) .retour-faux::before{content:"✕ "}
 
 /* ---------- lien signaler ---------- */
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler{font-size:.875rem; color:var(--encre-2); text-decoration:underline}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .signaler{font-size:.875rem; color:var(--encre-2); text-decoration:underline}
 
 /* ==========================================================================
    Compléments du lot 0 : composants absents de la première version.
@@ -119,13 +122,13 @@ body.atelier{background:var(--beton)}
    ========================================================================== */
 
 /* ---------- utilitaires ---------- */
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) [hidden],.projeter[hidden]{display:none!important}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) [hidden],.projeter[hidden]{display:none!important}
 :where(.vitrine,.atelier) .lien-evitement{position:absolute; left:16px; top:-200px; z-index:2000; background:var(--jaune); color:var(--encre); border:var(--trait-fort) solid var(--encre); padding:10px 16px; font-weight:700; text-decoration:none}
 :where(.vitrine,.atelier) .lien-evitement:focus{top:16px}
 :where(.vitrine,.atelier) .site-nav .btn-jaune{padding:8px 14px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler{display:inline-flex; align-items:center; min-height:44px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-contour{display:inline-flex; align-items:center; gap:8px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:8px 14px; font-weight:600; font-size:.875rem; line-height:1.2; text-decoration:none; cursor:pointer}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .btn-contour:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .signaler{display:inline-flex; align-items:center; min-height:44px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .btn-contour{display:inline-flex; align-items:center; gap:8px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:8px 14px; font-weight:600; font-size:.875rem; line-height:1.2; text-decoration:none; cursor:pointer}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .btn-contour:hover{background:var(--jaune-pale)}
 :where(.vitrine,.atelier) .recherche{min-width:0}
 /* Les liens-composants restent à l'encre ; « li a » (bleu) vise les liens dans le texte courant. */
 :where(.vitrine,.atelier) .index-themes a,:where(.vitrine,.atelier) .public,:where(.vitrine,.atelier) .carte{color:var(--encre)}
@@ -165,18 +168,18 @@ body.atelier{background:var(--beton)}
 :where(.vitrine,.atelier) .atelier-corps{padding-top:28px}
 
 /* ---------- fil d'Ariane, barre de contenu, interrupteur du mode projection ---------- */
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane ol{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; align-items:center; font-size:.875rem; color:var(--encre-2)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane li{display:flex; align-items:center; min-width:0}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane li+li::before{content:"/"; content:"/" / ""; padding:0 8px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane a{display:inline-flex; align-items:center; min-height:44px; color:var(--encre-2)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane [aria-current="page"]{color:var(--encre); font-weight:600}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .fil-ariane ol{list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; align-items:center; font-size:.875rem; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .fil-ariane li{display:flex; align-items:center; min-width:0}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .fil-ariane li+li::before{content:"/"; content:"/" / ""; padding:0 8px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .fil-ariane a{display:inline-flex; align-items:center; min-height:44px; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .fil-ariane [aria-current="page"]{color:var(--encre); font-weight:600}
 :where(.vitrine,.atelier) .contenu-barre{background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
 :where(.vitrine,.atelier) .contenu-barre .conteneur{display:flex; justify-content:space-between; align-items:center; gap:4px 24px; flex-wrap:wrap; padding-top:4px; padding-bottom:4px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-outils{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:4px 0}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur{display:inline-flex; align-items:center; gap:10px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:6px 12px; font-weight:600; cursor:pointer}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur::before{content:""; flex:none; width:14px; height:14px; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur[aria-pressed="true"]{background:var(--jaune-pale)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .interrupteur[aria-pressed="true"]::before{background:var(--encre)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-outils{display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:4px 0}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .interrupteur{display:inline-flex; align-items:center; gap:10px; min-height:44px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:6px 12px; font-weight:600; cursor:pointer}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .interrupteur::before{content:""; flex:none; width:14px; height:14px; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .interrupteur[aria-pressed="true"]{background:var(--jaune-pale)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .interrupteur[aria-pressed="true"]::before{background:var(--encre)}
 
 /* ---------- catalogue (maquette « Catalogue — M1 × charte atelier ») ---------- */
 :where(.vitrine,.atelier) .catalogue-corps{display:flex; flex-wrap:wrap; gap:28px; align-items:flex-start; padding-top:28px}
@@ -260,13 +263,13 @@ body.atelier{background:var(--beton)}
 
 /* ---------- page de contenu natif ---------- */
 :where(.vitrine,.atelier) .contenu-page{max-width:900px; margin:0 auto; padding:28px 22px 0}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite{display:flex; justify-content:space-between; gap:12px 16px; flex-wrap:wrap; margin:40px 0 0; padding-top:16px; border-top:var(--trait-fort) solid var(--encre)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite a{display:flex; flex-direction:column; gap:2px; min-height:44px; max-width:100%; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:10px 16px; text-decoration:none}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite a:hover{background:var(--jaune-pale)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite .suivant{margin-left:auto; text-align:right}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite-sens{font-size:.8125rem; font-weight:600; color:var(--encre-2)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite-titre{font:700 1.125rem/1.15 var(--f-titre)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-signaler{margin:16px 0 0; text-align:center}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite{display:flex; justify-content:space-between; gap:12px 16px; flex-wrap:wrap; margin:40px 0 0; padding-top:16px; border-top:var(--trait-fort) solid var(--encre)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite a{display:flex; flex-direction:column; gap:2px; min-height:44px; max-width:100%; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:10px 16px; text-decoration:none}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite a:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite .suivant{margin-left:auto; text-align:right}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite-sens{font-size:.8125rem; font-weight:600; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite-titre{font:700 1.125rem/1.15 var(--f-titre)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-signaler{margin:16px 0 0; text-align:center}
 :where(.vitrine,.atelier) .demonstration{margin:0 0 26px; background:var(--jaune-pale); border:var(--trait-fort) solid var(--encre); padding:10px 14px}
 :where(.vitrine,.atelier) .correction{margin:8px 0 18px; max-width:72ch; border:1px solid var(--trait-fin); background:var(--papier)}
 :where(.vitrine,.atelier) .correction>summary{cursor:pointer; padding:10px 12px; font-weight:600}
@@ -299,6 +302,45 @@ html.projeter-ouvert{overflow:hidden}
 .projeter-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center}
 .projeter-etat{margin:0; min-height:1.55em; font-weight:600}
 
+/* ==========================================================================
+   Compléments du lot 1b : planches d'illustration, fiche d'annale, crédits. Aucun jeton n'est modifié.
+   ========================================================================== */
+
+/* ---------- planches (DESIGN § 9) : niveaux de gris, fond blanc, jamais colorisées ---------- */
+/* Accueil : moitié droite de la zone du titre, derrière lui (pile en contexte d'empilement), jamais sous la recherche ;
+   en position absolue, elle ne change pas la hauteur réservée au titre. */
+:where(.vitrine,.atelier) .accueil-titre-pile{position:relative; z-index:0}
+:where(.vitrine,.atelier) .illustration-accueil{position:absolute; top:0; right:0; z-index:-1; width:50%; height:100%; object-fit:contain; object-position:right top; opacity:.2; mix-blend-mode:multiply; pointer-events:none}
+/* Page de thème : en tête, à droite du titre sur rail. */
+:where(.vitrine,.atelier) .illustration-theme{display:block; flex:0 1 360px; min-width:0; width:360px; max-width:40%; height:auto; max-height:200px; object-fit:contain; object-position:right bottom; opacity:.25; mix-blend-mode:multiply}
+/* Index des thèmes (accueil) : vignette carrée de 64 px, encre pleine, après le carré numéroté. */
+:where(.vitrine,.atelier) .illustration-vignette{display:inline-block; width:64px; height:64px; margin:6px 16px 6px 0; vertical-align:middle; object-fit:cover; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
+
+/* ---------- annales ---------- */
+:where(.vitrine,.atelier) .cartes-annales{margin-bottom:0}
+:where(.vitrine,.atelier) .renvoi-annales{margin:16px 0 0; display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; justify-content:space-between}
+:where(.vitrine,.atelier) .annales-filieres{margin:40px 0 0; font:700 1.45rem/1.15 var(--f-titre)}
+:where(.vitrine,.atelier) .annales-retour{margin:24px 0 0}
+
+/* ---------- fiche d'annale, au-dessus du fichier autonome (enveloppe) ---------- */
+.enveloppe-fiche{background:var(--papier); color:var(--encre); border-bottom:var(--trait-fort) solid var(--encre); font:16px/1.55 var(--f-texte)}
+.enveloppe-fiche-interieur{max-width:900px; margin:0 auto; padding:20px calc(var(--rail, 0px) + 22px) 22px 22px; border-left:var(--rail-titre) solid var(--jaune)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-surtitre{margin:0; font-size:.875rem; font-weight:600; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-titre{margin:4px 0 8px; font:800 clamp(1.6rem,3.6vw,2.35rem)/1.05 var(--f-titre)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-presentation{margin:0 0 12px; max-width:72ch}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos{margin:0 0 12px; display:flex; flex-wrap:wrap; gap:8px 28px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos dt{font-size:.8125rem; font-weight:600; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos dd{margin:0; font-weight:600}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos a,:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-liens a{color:var(--bleu)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-liens{margin:0 0 12px; max-width:72ch}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-action{margin:0}
+.enveloppe-ancre{display:block; height:0}
+
+/* ---------- page Crédits ---------- */
+:where(.vitrine,.atelier) .credits{list-style:none; margin:0; padding:0; display:grid; gap:16px}
+:where(.vitrine,.atelier) .credit{border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); padding:12px 16px}
+:where(.vitrine,.atelier) .credit-titre{margin:0 0 8px; font:700 1.25rem/1.15 var(--f-titre)}
+
 /* ---------- mobile ---------- */
 @media (max-width:640px){
   :root{--marge:16px}
@@ -321,28 +363,31 @@ html.projeter-ouvert{overflow:hidden}
   :where(.vitrine,.atelier) .fiche{grid-template-columns:1fr}
   :where(.vitrine,.atelier) .fiche dt{border-bottom:0; padding-bottom:0}
   :where(.vitrine,.atelier) .contenu-page{padding:20px 16px 0}
-  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite .suivant{margin-left:0; text-align:left}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite .suivant{margin-left:0; text-align:left}
   :where(.vitrine,.atelier) .qbar{grid-template-columns:auto 1fr}
   :where(.vitrine,.atelier) .qbar .qb-ans{grid-column:1/-1; border-left:0; border-top:1px solid var(--encre)}
+  :where(.vitrine,.atelier) .accueil-titre-pile>*{grid-area:2/1}
+  :where(.vitrine,.atelier) .illustration-accueil{position:static; grid-area:1/1; z-index:auto; width:100%; height:120px; margin-bottom:12px; object-fit:cover; object-position:center}
+  :where(.vitrine,.atelier) .illustration-theme{max-width:100%; width:100%; max-height:120px; object-position:center}
 }
 
 /* ---------- mode projection : agit sur toute la page, contenus repris compris ---------- */
 html[data-mode="projection"] body{background:#fff!important; font-size:20px!important}
 html[data-mode="projection"] :where(.vitrine,.atelier) .site-tete,html[data-mode="projection"] :where(.vitrine,.atelier) .site-pied,
-html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler{display:none}
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .signaler{display:none}
 html[data-mode="projection"]{--trait-fort:3px}
-html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .fil-ariane,
-html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite,
-html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-signaler,
-html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-outils [data-projeter],
-html[data-mode="projection"] .enveloppe-pied,html[data-mode="projection"] .enveloppe-tete .logo,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .fil-ariane,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-signaler,
+html[data-mode="projection"] :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-outils [data-projeter],
+html[data-mode="projection"] .enveloppe-pied,html[data-mode="projection"] .enveloppe-fiche,html[data-mode="projection"] .enveloppe-tete .logo,
 html[data-mode="projection"] :where(.vitrine,.atelier) .lien-evitement{display:none}
 html[data-mode="projection"] :where(.vitrine,.atelier) .contenu-barre .conteneur,html[data-mode="projection"] .enveloppe-tete-interieur{justify-content:flex-end}
 
 /* ---------- mouvement réduit ---------- */
 @media (prefers-reduced-motion:reduce){
-  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter),
-  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) *{transition:none!important; animation:none!important}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter),
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) *{transition:none!important; animation:none!important}
 }
 
 /* ---------- impression ---------- */
@@ -350,11 +395,11 @@ html[data-mode="projection"] :where(.vitrine,.atelier) .contenu-barre .conteneur
   @page{size:A4; margin:12mm}
   body:where(.vitrine,.atelier),body.atelier{background:#fff}
   :where(.vitrine,.atelier) .site-tete,:where(.vitrine,.atelier) .site-pied,
-  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .signaler,:where(.vitrine,.atelier) .recherche{display:none}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .signaler,:where(.vitrine,.atelier) .recherche{display:none}
   :where(.vitrine,.atelier) .lien-evitement,:where(.vitrine,.atelier) .contenu-barre,
-  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-outils,
-  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-suite,
-  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.projeter) .contenu-signaler,
-  .enveloppe-tete,.enveloppe-pied,.projeter,:where(.vitrine,.atelier) .filtres,:where(.vitrine,.atelier) .catalogue-barre{display:none!important}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-outils,
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-suite,
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .contenu-signaler,
+  .enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter,:where(.vitrine,.atelier) .filtres,:where(.vitrine,.atelier) .catalogue-barre{display:none!important}
   :where(.vitrine,.atelier) .correction,:where(.vitrine,.atelier) .part-head{break-inside:avoid}
 }

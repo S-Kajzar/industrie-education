@@ -1,0 +1,30 @@
+{
+  "id": "levage-dechargement-sacs-linge",
+  "titre": "Système de levage et de déchargement des sacs de linge",
+  "presentation": "Étude d'un système industriel de manutention, dans une blanchisserie. Sujet complet : 5 parties, 5 h de travail conseillées, 39 questions notées (unités comprises) et 4 tracés sur documents réponses, avec les dossiers de présentation et technique intégrés.",
+  "fichier": "medias/depots/levage-dechargement-sacs-linge.html",
+  "image": {
+    "fichier": null,
+    "alt": ""
+  },
+  "publics": [
+    "bts-ms"
+  ],
+  "theme": "mecanique",
+  "notions": [
+    "statique",
+    "dynamique",
+    "cinematique-graphique",
+    "roulements",
+    "liaisons"
+  ],
+  "duree_min": 300,
+  "origine": {
+    "diplome": "",
+    "epreuve": "",
+    "session": null
+  },
+  "afficher_origine": false,
+  "statut": "relu",
+  "mis_a_jour": "2026-11-26"
+}

@@ -52,7 +52,7 @@ const ECHECS = [
     ecrire('contenus/autre/collection.json', collection('Autre'));
     ecrire('contenus/autre/un/contenu.json', contenu('un'));
     ecrire('contenus/autre/un/index.html', '<p>Doublon.</p>\n');
-  }, /Identifiant en double : « un » \(contenus\/autre\/un\/ et contenus\/essai\/un\/\)/],
+  }, /Identifiant en double : « un » \(contenus\/autre\/un\/contenu\.json et contenus\/essai\/un\/contenu\.json\)/],
   ['identifiant différent du dossier', (ecrire) => {
     ecrire('contenus/essai/trois/contenu.json', contenu('quatre'));
   }, /L’identifiant « quatre » de contenus\/essai\/trois\/contenu\.json doit être le nom de son dossier/],
@@ -62,7 +62,7 @@ const ECHECS = [
   ['contenu repris sans balise <body> explicite', (ecrire) => {
     ecrire('contenus/essai/trois/contenu.json', contenu('trois', { mode: 'repris' }));
     ecrire('contenus/essai/trois/index.html', '<!DOCTYPE html>\n<title>Sans corps</title>\n<p>Texte.</p>\n');
-  }, /un contenu repris doit avoir une balise <\/head>, une balise <body> et une balise <\/body>/],
+  }, /contenus\/essai\/trois\/index\.html : document incomplet : une seule balise <body> attendue/],
 ];
 
 for (const [nom, modifier, message] of ECHECS) {

@@ -38,7 +38,23 @@ function collections() {
   });
 }
 
-const contenus = () => collections().flatMap((c) => c.contenus);
+const contenus = () => collections().flatMap((c) => c.contenus).filter((c) => c.statut !== 'brouillon');
+
+// Fiches d'annales (à plat annales/<id>.json ou en dossier annales/<id>/annale.json) ; publiées = statut « relu ».
+function annales({ toutes = false } = {}) {
+  const dossier = path.join(DEPOT, 'annales');
+  if (!fs.existsSync(dossier)) return [];
+  const fiches = [];
+  for (const e of fs.readdirSync(dossier, { withFileTypes: true })) {
+    if (e.name.startsWith('.')) continue;
+    if (e.isDirectory()) fiches.push(lireJSON(`annales/${e.name}/annale.json`));
+    else if (e.name.endsWith('.json')) fiches.push(lireJSON(`annales/${e.name}`));
+  }
+  return fiches.filter((a) => toutes || a.statut === 'relu').map((a) => ({ ...a, chemin: `annales/${a.id}/`, type: 'annale' }));
+}
+
+// Toutes les cartes du catalogue : contenus publiés puis annales publiées.
+const cartesCatalogue = () => [...contenus(), ...annales()];
 
 // Pages de TRAME § 3 (sauf « annale », lot 2) : [adresse relative à la base, gabarit].
 function pagesAttendues() {
@@ -51,7 +67,8 @@ function pagesAttendues() {
   }
   pages.push(['annales/', 'annales']);
   for (const p of publics) pages.push([`annales/${p.id}/`, 'annales']);
-  for (const s of ['enseignants/', 'partenaires/', 'a-propos/', 'mentions-legales/', '404.html']) pages.push([s, 'service']);
+  for (const a of annales()) pages.push([a.chemin, 'annale']);
+  for (const s of ['enseignants/', 'partenaires/', 'a-propos/', 'mentions-legales/', 'credits/', '404.html']) pages.push([s, 'service']);
   return pages;
 }
 
@@ -71,7 +88,9 @@ function pagesConstruites() {
 }
 
 const fichierDePage = (chemin) => path.join(SITE, chemin.endsWith('.html') ? chemin : `${chemin}index.html`);
-const estRepris = (chemin) => contenus().some((c) => c.chemin === chemin && c.mode === 'repris');
+const estRepris = (chemin) => contenus().some((c) => c.chemin === chemin && (c.mode === 'repris' || c.fichier));
+// Fichier autonome publié tel quel (contenu repris ou annale) : exclu de la limite de 1 Mo (TRAME § 8).
+const estAutonome = (chemin) => estRepris(chemin) || annales().some((a) => a.chemin === chemin);
 
 // Dépôt factice minimal (site.json et catalogue/ du vrai dépôt, une collection « essai » de trois contenus natifs),
 // modifiable par une fonction avant la construction.
@@ -104,6 +123,6 @@ function construire(racine) {
 }
 
 module.exports = {
-  DEPOT, SITE, site, themes, publics, collections, contenus, pagesAttendues, pagesConstruites, fichierDePage,
-  estRepris, depotFactice, construire, lireJSON,
+  DEPOT, SITE, site, themes, publics, collections, contenus, annales, cartesCatalogue, pagesAttendues,
+  pagesConstruites, fichierDePage, estRepris, estAutonome, depotFactice, construire, lireJSON,
 };
