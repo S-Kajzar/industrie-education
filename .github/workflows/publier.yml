@@ -29,8 +29,15 @@ jobs:
           python-version: '3.12'
           cache: pip
 
-      - name: Installer Jinja2
+      - name: Installer Jinja2 et Pillow
         run: pip install -r requirements.txt
+
+      - name: Reprendre les images déjà traitées (cache hors dépôt)
+        uses: actions/cache@v4
+        with:
+          path: .cache/images
+          key: images-${{ hashFiles('medias/cartes/**', 'medias/illustrations/**', 'outils/illustrations.py') }}
+          restore-keys: images-
 
       - name: Installer Node.js
         uses: actions/setup-node@v5

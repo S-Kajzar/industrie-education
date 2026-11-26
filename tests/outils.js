@@ -4,7 +4,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const DEPOT = path.resolve(__dirname, '..');
 const SITE = path.join(DEPOT, '_site');
@@ -117,6 +117,42 @@ function depotFactice(modifier) {
   return racine;
 }
 
+// Sert un site construit (dossier quelconque) comme GitHub Pages, le temps d'un test : { adresse, arreter }.
+async function servirSite(dossier, port) {
+  const processus = spawn(process.execPath, [path.join(__dirname, 'serveur.js')], {
+    env: { ...process.env, PORT: String(port), DOSSIER_SITE: dossier }, stdio: 'ignore',
+  });
+  const adresse = `http://127.0.0.1:${port}${site.base}`;
+  for (let i = 0; i < 100; i++) {
+    try { if ((await fetch(adresse)).status) break; } catch { await new Promise((r) => setTimeout(r, 50)); }
+  }
+  return { adresse, arreter: () => processus.kill() };
+}
+
+// Styles calculés de chaque élément du corps d'une page, pièces de l'enveloppe exclues (garde-fou « aucun style du
+// fichier autonome n'est écrasé ») ; « apres » permet d'agir sur la page avant le relevé (ex. choisir un mode).
+const PROPRIETES_RELEVEES = ['display', 'position', 'visibility', 'boxSizing', 'color', 'backgroundColor', 'fontFamily',
+  'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'textDecorationLine', 'textTransform', 'textAlign',
+  'whiteSpace', 'listStyleType', 'marginTop', 'marginBottom', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+  'borderTopWidth', 'borderTopStyle', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'minHeight', 'cursor',
+  'opacity', 'zIndex'];
+
+async function stylesDuCorps(browser, adresse, apres) {
+  const contexte = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await contexte.newPage();
+  page.on('dialog', (d) => d.accept());
+  await page.goto(adresse);
+  if (apres) await apres(page);
+  const styles = await page.evaluate((proprietes) => [...document.body.querySelectorAll('*')]
+    .filter((e) => !e.closest('.enveloppe-tete, .enveloppe-pied, .enveloppe-fiche, .enveloppe-ancre'))
+    .map((e) => {
+      const s = getComputedStyle(e);
+      return `${e.tagName}.${typeof e.className === 'string' ? e.className : ''} ${proprietes.map((p) => s[p]).join('|')}`;
+    }), PROPRIETES_RELEVEES);
+  await contexte.close();
+  return styles;
+}
+
 function construire(racine) {
   return spawnSync('python3', [path.join(DEPOT, 'outils', 'construire.py'), '--racine', racine,
     '--sortie', path.join(racine, '_site')], { encoding: 'utf8' });
@@ -124,5 +160,5 @@ function construire(racine) {
 
 module.exports = {
   DEPOT, SITE, site, themes, publics, collections, contenus, annales, cartesCatalogue, pagesAttendues,
-  pagesConstruites, fichierDePage, estRepris, estAutonome, depotFactice, construire, lireJSON,
+  pagesConstruites, fichierDePage, estRepris, estAutonome, depotFactice, construire, servirSite, stylesDuCorps, lireJSON,
 };

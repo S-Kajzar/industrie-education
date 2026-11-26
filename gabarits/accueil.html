@@ -58,7 +58,7 @@
 {% for a in annales %}{{ carte(a, racine, avec_theme=false) }}
 {% endfor -%}
 </ul>
-<p class="renvoi renvoi-annales"><span>{{ nb_annales|pluriel('annale corrigée et interactive', 'annales corrigées et interactives') }}, avec leurs documents.</span> <a class="btn-contour" href="{{ racine }}annales/">Toutes les annales</a></p>
+<p class="renvoi renvoi-annales"><span>Annales corrigées et interactives, avec leurs documents : {{ nb_annales|pluriel('sujet') }} en ligne.</span> <a class="btn-contour" href="{{ racine }}annales/">Toutes les annales</a></p>
 </div>
 {%- else -%}
 <div class="rangee-corps renvoi">

@@ -317,7 +317,7 @@ html.projeter-ouvert{overflow:hidden}
 :where(.vitrine,.atelier) .illustration-vignette{display:inline-block; width:64px; height:64px; margin:6px 16px 6px 0; vertical-align:middle; object-fit:cover; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
 
 /* ---------- annales ---------- */
-:where(.vitrine,.atelier) .cartes-annales{margin-bottom:0}
+:where(.vitrine,.atelier) .cartes-annales{grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:20px}
 :where(.vitrine,.atelier) .renvoi-annales{margin:16px 0 0; display:flex; flex-wrap:wrap; gap:12px 24px; align-items:center; justify-content:space-between}
 :where(.vitrine,.atelier) .annales-filieres{margin:40px 0 0; font:700 1.45rem/1.15 var(--f-titre)}
 :where(.vitrine,.atelier) .annales-retour{margin:24px 0 0}
