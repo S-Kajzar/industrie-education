@@ -1,0 +1,30 @@
+{#- Page /credits/ : générée depuis medias/CREDITS.json (TRAME § 10). -#}
+<p>Les images du site sont des planches techniques anciennes du domaine public ou sous CC0, des photos et dessins de
+l’auteur, ou des images publiées avec l’autorisation écrite de leur propriétaire. Aucune n’est générée par une
+intelligence artificielle.</p>
+
+{% if credits -%}
+<h2 id="images">Images</h2>
+<ul class="credits">
+{% for c in credits -%}
+<li class="credit">
+<p class="credit-titre">{{ c.titre }}</p>
+<dl class="fiche">
+<dt>Auteur</dt><dd>{{ c.auteur or 'Inconnu' }}</dd>
+{% if c.date %}<dt>Date</dt><dd>{{ c.date }}</dd>
+{% endif %}<dt>Licence</dt><dd>{{ c.licence_nom }}{% if c.reference_autorisation %} ({{ c.reference_autorisation }}){% endif %}</dd>
+{% if c.source %}<dt>Source</dt><dd>{% if c.source.startswith('http') %}<a href="{{ c.source }}">{{ c.source }}</a>{% else %}{{ c.source }}{% endif %}</dd>
+{% endif %}{% if c.usage %}<dt>Usage sur le site</dt><dd>{{ c.usage }}</dd>
+{% endif %}</dl>
+</li>
+{% endfor -%}
+</ul>
+{%- else -%}
+<p class="etat-vide">Aucune image n’est encore publiée : les cartes affichent un bandeau typographique.</p>
+{%- endif %}
+
+<h2 id="polices-et-programmes">Polices et programmes</h2>
+<ul>
+<li>Police Barlow Condensed, The Barlow Project Authors, sous licence SIL Open Font License 1.1 (<a href="{{ racine }}_/polices/OFL.txt">texte de la licence</a>).</li>
+<li>Génération des QR codes : qrcode-generator, Kazuhiko Arase, sous licence MIT (<a href="{{ racine }}_/lib/LICENCE-qrcode.txt">texte de la licence</a>).</li>
+</ul>

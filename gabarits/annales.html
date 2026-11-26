@@ -1,18 +1,45 @@
-{#- Annales : index par filière, épreuve et session (lot 2). En lot 0, état vide « Premières annales en préparation ». -#}
+{#- Annales : /annales/ (toutes, groupées par filière) et /annales/<filiere>/. Seules les annales au statut « relu »
+    sont publiées. L'origine du sujet (diplôme, session, épreuve) n'apparaît sur les cartes que si afficher_origine
+    vaut true. Les filtres par épreuve et session viendront avec le lot 2. -#}
 {% extends "base.html" %}
-{% from "_composants.html" import bande %}
+{% from "_composants.html" import bande, carte %}
 {% block corps %}
 <main id="contenu">
 {{ bande(h1, lignes) }}
 <div class="conteneur atelier-corps">
 {% if filiere -%}
+{% if annales -%}
+<ul class="cartes">
+{% for a in annales %}{{ carte(a, racine) }}
+{% endfor -%}
+</ul>
+<p class="annales-retour"><a href="{{ racine }}annales/">Toutes les filières</a></p>
+{%- else -%}
 <p class="etat-vide">Premières annales en préparation. <a href="{{ racine }}annales/">Toutes les filières</a>.</p>
+{%- endif %}
+{%- else -%}
+{% if annales -%}
+<div class="groupes">
+{% for p in publics if p.nb_annales -%}
+<section class="groupe" aria-labelledby="annales-{{ p.id }}">
+<div class="groupe-tete">
+<h2 id="annales-{{ p.id }}"><a href="{{ racine }}annales/{{ p.id }}/">{{ p.nom }}</a></h2>
+<span class="groupe-nb">{{ p.nb_annales|pluriel('sujet') }}</span>
+</div>
+<ul class="cartes">
+{% for a in annales if p in a.publics %}{{ carte(a, racine) }}
+{% endfor -%}
+</ul>
+</section>
+{% endfor -%}
+</div>
 {%- else -%}
 <p class="etat-vide">Premières annales en préparation : les sujets seront classés par filière, épreuve et session.</p>
-<h2 class="visuellement-cache">Filières</h2>
+{%- endif %}
+<h2 class="annales-filieres">Par filière</h2>
 <ul class="index-themes liste-filieres">
 {% for p in publics -%}
-<li><a href="{{ racine }}annales/{{ p.id }}/"><span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{{ p.nom }}</span><span class="index-ex">En préparation</span><span class="index-nb">0<span class="visuellement-cache"> sujet</span></span></a></li>
+<li><a href="{{ racine }}annales/{{ p.id }}/"><span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{{ p.nom }}</span><span class="index-ex">{{ p.nb_annales|pluriel('sujet') if p.nb_annales else 'En préparation' }}</span><span class="index-nb">{{ p.nb_annales }}<span class="visuellement-cache"> {{ 'sujets' if p.nb_annales > 1 else 'sujet' }}</span></span></a></li>
 {% endfor -%}
 </ul>
 {%- endif %}

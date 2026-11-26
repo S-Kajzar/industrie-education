@@ -4,7 +4,7 @@
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
+const { spawn, spawnSync } = require('node:child_process');
 
 const DEPOT = path.resolve(__dirname, '..');
 const SITE = path.join(DEPOT, '_site');
@@ -38,7 +38,23 @@ function collections() {
   });
 }
 
-const contenus = () => collections().flatMap((c) => c.contenus);
+const contenus = () => collections().flatMap((c) => c.contenus).filter((c) => c.statut !== 'brouillon');
+
+// Fiches d'annales (à plat annales/<id>.json ou en dossier annales/<id>/annale.json) ; publiées = statut « relu ».
+function annales({ toutes = false } = {}) {
+  const dossier = path.join(DEPOT, 'annales');
+  if (!fs.existsSync(dossier)) return [];
+  const fiches = [];
+  for (const e of fs.readdirSync(dossier, { withFileTypes: true })) {
+    if (e.name.startsWith('.')) continue;
+    if (e.isDirectory()) fiches.push(lireJSON(`annales/${e.name}/annale.json`));
+    else if (e.name.endsWith('.json')) fiches.push(lireJSON(`annales/${e.name}`));
+  }
+  return fiches.filter((a) => toutes || a.statut === 'relu').map((a) => ({ ...a, chemin: `annales/${a.id}/`, type: 'annale' }));
+}
+
+// Toutes les cartes du catalogue : contenus publiés puis annales publiées.
+const cartesCatalogue = () => [...contenus(), ...annales()];
 
 // Pages de TRAME § 3 (sauf « annale », lot 2) : [adresse relative à la base, gabarit].
 function pagesAttendues() {
@@ -51,7 +67,8 @@ function pagesAttendues() {
   }
   pages.push(['annales/', 'annales']);
   for (const p of publics) pages.push([`annales/${p.id}/`, 'annales']);
-  for (const s of ['enseignants/', 'partenaires/', 'a-propos/', 'mentions-legales/', '404.html']) pages.push([s, 'service']);
+  for (const a of annales()) pages.push([a.chemin, 'annale']);
+  for (const s of ['enseignants/', 'partenaires/', 'a-propos/', 'mentions-legales/', 'credits/', '404.html']) pages.push([s, 'service']);
   return pages;
 }
 
@@ -71,7 +88,9 @@ function pagesConstruites() {
 }
 
 const fichierDePage = (chemin) => path.join(SITE, chemin.endsWith('.html') ? chemin : `${chemin}index.html`);
-const estRepris = (chemin) => contenus().some((c) => c.chemin === chemin && c.mode === 'repris');
+const estRepris = (chemin) => contenus().some((c) => c.chemin === chemin && (c.mode === 'repris' || c.fichier));
+// Fichier autonome publié tel quel (contenu repris ou annale) : exclu de la limite de 1 Mo (TRAME § 8).
+const estAutonome = (chemin) => estRepris(chemin) || annales().some((a) => a.chemin === chemin);
 
 // Dépôt factice minimal (site.json et catalogue/ du vrai dépôt, une collection « essai » de trois contenus natifs),
 // modifiable par une fonction avant la construction.
@@ -98,12 +117,48 @@ function depotFactice(modifier) {
   return racine;
 }
 
+// Sert un site construit (dossier quelconque) comme GitHub Pages, le temps d'un test : { adresse, arreter }.
+async function servirSite(dossier, port) {
+  const processus = spawn(process.execPath, [path.join(__dirname, 'serveur.js')], {
+    env: { ...process.env, PORT: String(port), DOSSIER_SITE: dossier }, stdio: 'ignore',
+  });
+  const adresse = `http://127.0.0.1:${port}${site.base}`;
+  for (let i = 0; i < 100; i++) {
+    try { if ((await fetch(adresse)).status) break; } catch { await new Promise((r) => setTimeout(r, 50)); }
+  }
+  return { adresse, arreter: () => processus.kill() };
+}
+
+// Styles calculés de chaque élément du corps d'une page, pièces de l'enveloppe exclues (garde-fou « aucun style du
+// fichier autonome n'est écrasé ») ; « apres » permet d'agir sur la page avant le relevé (ex. choisir un mode).
+const PROPRIETES_RELEVEES = ['display', 'position', 'visibility', 'boxSizing', 'color', 'backgroundColor', 'fontFamily',
+  'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'textDecorationLine', 'textTransform', 'textAlign',
+  'whiteSpace', 'listStyleType', 'marginTop', 'marginBottom', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+  'borderTopWidth', 'borderTopStyle', 'borderTopColor', 'borderLeftWidth', 'borderLeftColor', 'minHeight', 'cursor',
+  'opacity', 'zIndex'];
+
+async function stylesDuCorps(browser, adresse, apres) {
+  const contexte = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await contexte.newPage();
+  page.on('dialog', (d) => d.accept());
+  await page.goto(adresse);
+  if (apres) await apres(page);
+  const styles = await page.evaluate((proprietes) => [...document.body.querySelectorAll('*')]
+    .filter((e) => !e.closest('.enveloppe-tete, .enveloppe-pied, .enveloppe-fiche, .enveloppe-ancre'))
+    .map((e) => {
+      const s = getComputedStyle(e);
+      return `${e.tagName}.${typeof e.className === 'string' ? e.className : ''} ${proprietes.map((p) => s[p]).join('|')}`;
+    }), PROPRIETES_RELEVEES);
+  await contexte.close();
+  return styles;
+}
+
 function construire(racine) {
   return spawnSync('python3', [path.join(DEPOT, 'outils', 'construire.py'), '--racine', racine,
     '--sortie', path.join(racine, '_site')], { encoding: 'utf8' });
 }
 
 module.exports = {
-  DEPOT, SITE, site, themes, publics, collections, contenus, pagesAttendues, pagesConstruites, fichierDePage,
-  estRepris, depotFactice, construire, lireJSON,
+  DEPOT, SITE, site, themes, publics, collections, contenus, annales, cartesCatalogue, pagesAttendues,
+  pagesConstruites, fichierDePage, estRepris, estAutonome, depotFactice, construire, servirSite, stylesDuCorps, lireJSON,
 };

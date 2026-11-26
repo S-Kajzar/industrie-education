@@ -5,7 +5,7 @@
 {% from "_composants.html" import carte, recherche, filtre, bande %}
 {% block corps %}
 <main id="contenu">
-{{ bande('Catalogue', [contenus|length|pluriel('contenu') ~ ' · cours, exercices, études de cas, QCM, formulaires'], recherche('./', 'q-catalogue', 'Rechercher : traction, rendement, réseau…', catalogue=true)) }}
+{{ bande('Catalogue', [contenus|length|pluriel('contenu') ~ ' · cours, exercices, études de cas, QCM, formulaires' ~ (', annales' if avec_annales else '')], recherche('./', 'q-catalogue', 'Rechercher : traction, rendement, réseau…', catalogue=true)) }}
 <div class="conteneur catalogue-corps" data-catalogue>
 <aside class="filtres" aria-label="Filtres" data-filtres hidden>
 <button type="button" class="btn-contour filtres-ouvrir" data-filtres-ouvrir aria-expanded="false" aria-controls="filtres-panneau"><span>Filtres</span><span data-filtres-actifs></span></button>

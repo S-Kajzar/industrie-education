@@ -10,7 +10,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const DEPOT = path.resolve(__dirname, '..');
-const SITE = path.join(DEPOT, '_site');
+// DOSSIER_SITE : autre site construit à servir (sites factices des tests) ; par défaut _site/.
+const SITE = path.resolve(process.env.DOSSIER_SITE || path.join(DEPOT, '_site'));
 const BASE = JSON.parse(fs.readFileSync(path.join(DEPOT, 'site.json'), 'utf8')).base;
 const PORT = Number(process.env.PORT || 4173);
 

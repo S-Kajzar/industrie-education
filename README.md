@@ -19,14 +19,16 @@ GitHub Action construit le site, lance les tests et, s'ils passent, le publie su
 | `CLAUDE.md` | Consignes pour Claude Code |
 | `prompts/LOT-<n>.md` | Le travail de chaque lot |
 | `NOTE-DE-LIVRAISON.md` | Ce qui a été fait, testé, ce qui reste à faire, les écarts |
+| `GUIDE-BACK-OFFICE.md` | Mode d'emploi du back-office (Pages CMS) : annales, images, planches, crédits |
 
 ## Commandes
 
 ```sh
-pip install -r requirements.txt     # Jinja2
+pip install -r requirements.txt     # Jinja2, Pillow
 npm install                         # Playwright, @fontsource/barlow-condensed
 npx playwright install chromium     # navigateur des tests, une seule fois
 python3 outils/construire.py        # écrit _site/
+python3 outils/annale.py F.html     # contrôle un fichier autonome avant dépôt
 npm run servir                      # http://127.0.0.1:4173/industrie-education/, comme GitHub Pages
 npm test                            # construit le site puis lance tous les tests (sans réseau)
 ```
@@ -35,7 +37,13 @@ npm test                            # construit le site puis lance tous les test
 liens de la page 404, écrits pour l'adresse de préproduction. Le dossier `_site/` est généré : on ne le modifie
 jamais à la main et on ne le versionne pas.
 
-## Ajouter un contenu en 3 étapes
+## Back-office
+
+Le plus simple : le back-office **Pages CMS**, branché sur ce dépôt (`.pages.yml`). Il permet de déposer une annale
+ou un exercice autonome, d'ajouter une image de carte ou une planche et de déclarer les crédits, sans toucher au
+code : voir `GUIDE-BACK-OFFICE.md`. Chaque enregistrement est un commit sur `main`, publié par l'Action habituelle.
+
+## Ajouter un contenu à la main, en 3 étapes
 
 1. **Créer le dossier** `contenus/<collection>/<contenu>/` (minuscules, sans accent, avec des tirets). Pour une
    nouvelle collection, créer aussi `contenus/<collection>/collection.json` (titre, thème, publics, ordre,
@@ -54,16 +62,22 @@ identifiant en double, ou un contenu de `a-la-une.json` introuvable.
 ## Organisation
 
 ```
-site.json                nom, base, origine, indexable, Umami, éditeur, contact, hébergeur, titres d'accueil
+.pages.yml               configuration du back-office (Pages CMS)
+site.json                nom, base, origine, indexable, Umami, éditeur, contact, hébergeur, titres et planche d'accueil
 catalogue/               thèmes, publics, contenus à la une, partenaires (vide en V1)
-contenus/<collection>/   collection.json, puis un dossier par contenu (contenu.json, index.html, ressources)
-annales/                 lot 2
+contenus/<collection>/   collection.json, puis un contenu par dossier (contenu.json, index.html, ressources)
+                         ou par fiche à plat déposée par le back-office (<id>.json, fichier dans medias/depots/)
+annales/                 une fiche par annale (<id>.json), fichier HTML dans medias/depots/
+medias/                  cartes/, illustrations/ (originaux des images), depots/ (fichiers HTML), CREDITS.json
 gabarits/                base, accueil, catalogue, liste, collection, contenu, annales, service (+ textes)
 statique/                publié sous /_/ : commun.css, commun.js, projeter.js, polices/, lib/ (QR code)
 outils/construire.py     génération du site dans _site/
+outils/annale.py         contrôle d'un fichier autonome (HTML complet, aucune ressource extérieure, 5 Mo)
+outils/illustrations.py  variantes WebP des images (cache hors dépôt dans .cache/)
 tests/                   tests Playwright (npm test) et serveur local
 .github/workflows/       publication sur GitHub Pages
 ```
 
 Licences des fichiers tiers copiés dans le dépôt : Barlow Condensed (SIL Open Font License 1.1,
-`statique/polices/OFL.txt`) et qrcode-generator (MIT, `statique/lib/LICENCE-qrcode.txt`).
+`statique/polices/OFL.txt`), qrcode-generator (MIT, `statique/lib/LICENCE-qrcode.txt`) et, pour les tests, le
+schéma de configuration de Pages CMS (MIT, `tests/pages-cms/LICENSE`).

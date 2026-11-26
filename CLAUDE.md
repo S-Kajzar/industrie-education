@@ -28,6 +28,11 @@ Ce qui n'est pas décrit n'est pas à faire. Une contradiction entre ces documen
 - **URL** : une fois le domaine posé (lot 1), aucune URL publiée ne change. Ajouter une redirection si besoin.
 - Le dossier `_site/` est généré : ne jamais le modifier à la main ni le versionner.
 - Pas de nouvelle dépendance sans la justifier dans la note de livraison.
+- **Images** : uniquement des illustrations du domaine public ou sous CC0, déclarées dans `medias/CREDITS.json`.
+  Jamais d'image générée par IA.
+- **Relecture humaine** : une annale ou un article au statut `brouillon` n'est jamais publié. Les réponses
+  attendues d'une annale ne sont jamais publiées sans le statut `relu` posé par Sébastien.
+- **Référencement** : aucune page créée seulement pour se classer ; aucune génération d'articles en masse.
 
 ## Langue
 

@@ -1,13 +1,15 @@
-{#- Enveloppe des contenus (TRAME § 5), partagée par le gabarit « contenu » :
+{#- Enveloppe des fichiers autonomes (TRAME § 5 et § 11), partagée par les gabarits « contenu » et « annale » :
     - contenus natifs : fil d'Ariane, outils, suite et signalement sont placés par contenu.html ;
-    - contenus repris : outils/construire.py insère « tete » avant </head>, « haut » après <body…> et « bas » avant
-      </body>, sans rien changer d'autre au fichier. Chaque insertion est bornée par deux commentaires repères. -#}
+    - contenus repris et annales : outils/construire.py insère « tete » avant </head>, « haut » après <body…> et
+      « bas » avant </body> (pour une annale, aussi « debut_tete » juste après <meta charset>), sans rien changer
+      d'autre au fichier. Chaque insertion est bornée par deux commentaires repères. -#}
 
+{#- c.fil : liste d'étapes {libelle, chemin} ; la dernière (chemin vide) est la page elle-même. -#}
 {% macro fil_ariane(c, racine) -%}
 <nav class="fil-ariane" aria-label="Fil d’Ariane"><ol>
-<li><a href="{{ racine }}{{ c.theme.id }}/">{{ c.theme.court }}</a></li>
-<li><a href="{{ racine }}{{ c.collection.id }}/">{{ c.collection.titre }}</a></li>
-<li><span aria-current="page">{{ c.titre }}</span></li>
+{% for etape in c.fil -%}
+<li>{% if etape.chemin %}<a href="{{ racine }}{{ etape.chemin }}">{{ etape.libelle }}</a>{% else %}<span aria-current="page">{{ etape.libelle }}</span>{% endif %}</li>
+{% endfor -%}
 </ol></nav>
 {%- endmacro %}
 
@@ -19,11 +21,13 @@
 {% endif %}</div>
 {%- endmacro %}
 
+{#- Précédent / suivant (contenus d'une collection, ou annales voisines) ; à défaut, retour à la liste. -#}
 {% macro suite(c, racine) -%}
-<nav class="contenu-suite" aria-label="Autres contenus de la collection">
-{% if c.precedent %}<a class="precedent" href="{{ racine }}{{ c.precedent.chemin }}" rel="prev"><span class="contenu-suite-sens">← Contenu précédent</span><span class="contenu-suite-titre">{{ c.precedent.titre }}</span></a>
-{% endif %}{% if c.suivant %}<a class="suivant" href="{{ racine }}{{ c.suivant.chemin }}" rel="next"><span class="contenu-suite-sens">Contenu suivant →</span><span class="contenu-suite-titre">{{ c.suivant.titre }}</span></a>
-{% endif %}{% if not c.precedent and not c.suivant %}<a href="{{ racine }}{{ c.collection.id }}/"><span class="contenu-suite-sens">Toute la collection</span><span class="contenu-suite-titre">{{ c.collection.titre }}</span></a>
+{% set annale = c.type == 'annale' -%}
+<nav class="contenu-suite" aria-label="{{ 'Annales voisines' if annale else 'Autres contenus de la collection' }}">
+{% if c.precedent %}<a class="precedent" href="{{ racine }}{{ c.precedent.chemin }}" rel="prev"><span class="contenu-suite-sens">← {{ 'Annale précédente' if annale else 'Contenu précédent' }}</span><span class="contenu-suite-titre">{{ c.precedent.titre }}</span></a>
+{% endif %}{% if c.suivant %}<a class="suivant" href="{{ racine }}{{ c.suivant.chemin }}" rel="next"><span class="contenu-suite-sens">{{ 'Annale suivante' if annale else 'Contenu suivant' }} →</span><span class="contenu-suite-titre">{{ c.suivant.titre }}</span></a>
+{% endif %}{% if not c.precedent and not c.suivant %}<a href="{{ racine }}{{ c.retour.chemin }}"><span class="contenu-suite-sens">{{ c.retour.sens }}</span><span class="contenu-suite-titre">{{ c.retour.libelle }}</span></a>
 {% endif %}</nav>
 {%- endmacro %}
 
@@ -36,11 +40,42 @@
 {%- endif %}
 {%- endmacro %}
 
+{#- Fiche indexable d'une annale, au-dessus du fichier autonome : titre, présentation, durée, filières, notions,
+    contenus liés, bouton « Commencer » (ancre placée juste avant le début du fichier). L'origine du sujet n'y
+    figure que si afficher_origine vaut true. -#}
+{% macro fiche(c, racine) -%}
+<section class="enveloppe-fiche" aria-label="Fiche de l’annale">
+<div class="enveloppe-fiche-interieur">
+<p class="enveloppe-fiche-surtitre">Annale corrigée et interactive · {{ c.filieres }}{% if c.origine_texte %} · {{ c.origine_texte }}{% endif %}</p>
+<p class="enveloppe-fiche-titre">{{ c.titre }}</p>
+<p class="enveloppe-fiche-presentation">{{ c.presentation }}</p>
+<dl class="enveloppe-fiche-infos">
+{% if c.duree_min %}<div><dt>Durée conseillée</dt><dd>{{ c.duree_min|duree }}</dd></div>
+{% endif %}<div><dt>{{ 'Filières' if c.publics|length > 1 else 'Filière' }}</dt><dd>{% for p in c.publics %}<a href="{{ racine }}annales/{{ p.id }}/">{{ p.nom }}</a>{{ ', ' if not loop.last }}{% endfor %}</dd></div>
+<div><dt>Thème</dt><dd><a href="{{ racine }}{{ c.theme.id }}/">{{ c.theme.nom }}</a></dd></div>
+{% if c.notions %}<div><dt>Notions</dt><dd>{{ c.notions|map('notion')|join(', ')|capitalize }}</dd></div>
+{% endif %}{% if c.origine_texte %}<div><dt>Origine du sujet</dt><dd>{{ c.origine_texte }}</dd></div>
+{% endif %}</dl>
+{% if c.contenus_lies %}<p class="enveloppe-fiche-liens">Pour réviser : {% for l in c.contenus_lies %}<a href="{{ racine }}{{ l.chemin }}">{{ l.titre }}</a> ({{ l.type_nom|lower }}){{ ', ' if not loop.last }}{% endfor %}.</p>
+{% endif %}<p class="enveloppe-fiche-action"><a class="btn-jaune" href="#debut-annale">Commencer</a></p>
+</div>
+</section>
+{%- endmacro %}
+
 {% macro debut() %}<!-- début de l’enveloppe industrie.education -->{% endmacro %}
 {% macro fin() %}<!-- fin de l’enveloppe industrie.education -->{% endmacro %}
 
-{#- Ajouts dans <head> : commun.css est importé dans une couche (layer) placée après les styles du contenu,
-    pour qu'aucune de ses règles ne l'emporte sur celles du contenu. -#}
+{#- Annale : titre et description du site, placés en tête de <head> (le premier <title> d'un document est celui
+    qu'affichent les navigateurs et les moteurs) ; ceux du fichier restent en place, inchangés. -#}
+{% macro debut_tete(titre, description) -%}
+{{ debut() }}
+<title>{{ titre }}</title>
+<meta name="description" content="{{ description }}">
+{{ fin() }}
+{%- endmacro %}
+
+{#- Ajouts dans <head> : commun.css est importé dans une couche (layer) placée après les styles du fichier,
+    pour qu'aucune de ses règles ne l'emporte sur celles du fichier. -#}
 {% macro tete(racine, site, umami_script) -%}
 {{ debut() }}
 {% if not site.indexable %}<meta name="robots" content="noindex, nofollow">
@@ -51,14 +86,16 @@
 {% endif %}{{ fin() }}
 {%- endmacro %}
 
-{% macro haut(c, racine, site) -%}
+{% macro haut(c, racine, site, avec_fiche=false) -%}
 {{ debut() }}
 <header class="enveloppe-tete"><div class="enveloppe-tete-interieur">
 <a class="logo" href="{{ racine }}">{{ site.nom }}</a>
 {{ fil_ariane(c, racine) }}
 {{ outils(racine) }}
 </div></header>
-{{ fin() }}
+{% if avec_fiche %}{{ fiche(c, racine) }}
+<span class="enveloppe-ancre" id="debut-annale"></span>
+{% endif %}{{ fin() }}
 {%- endmacro %}
 
 {% macro bas(c, racine, site, url_absolue) -%}

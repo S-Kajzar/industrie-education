@@ -6,7 +6,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { test, expect } = require('@playwright/test');
-const { DEPOT, SITE, contenus } = require('./outils');
+const { DEPOT, SITE, contenus, annales, stylesDuCorps } = require('./outils');
 const REPONSES = require('./reponses-cadre-velo');
 
 const CHEMIN = 'statique/cadre-velo/';
@@ -78,34 +78,22 @@ test('commun.css n’écrase aucun style du contenu', async ({ browser, baseURL 
   expect(enveloppe).toEqual(original);
 });
 
-// Garde-fou général (servira au lot 1) : pour chaque contenu repris, chaque élément du corps a exactement les mêmes
-// styles calculés qu'avec le fichier d'origine ; seuls les éléments de l'enveloppe sont ignorés.
+// Garde-fou général : pour chaque fichier autonome publié (contenu repris, en dossier ou déposé par le back-office, et
+// annale), chaque élément du corps a exactement les mêmes styles calculés qu'avec le fichier d'origine ; seules les
+// pièces de l'enveloppe sont ignorées.
+const AUTONOMES = [
+  ...contenus().filter((c) => c.mode === 'repris' || c.fichier)
+    .map((c) => [c.chemin, c.fichier ? path.join(DEPOT, c.fichier) : path.join(DEPOT, 'contenus', c.chemin, 'index.html')]),
+  ...annales().map((a) => [a.chemin, a.fichier ? path.join(DEPOT, a.fichier) : path.join(DEPOT, 'annales', a.id, 'index.html')]),
+];
+
 test.describe('aucun style écrasé, élément par élément', () => {
-  for (const contenu of contenus().filter((c) => c.mode === 'repris')) {
-    test(contenu.chemin, async ({ browser, baseURL }) => {
-      const PROPRIETES = ['display', 'position', 'visibility', 'boxSizing', 'color', 'backgroundColor', 'fontFamily',
-        'fontSize', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'textDecorationLine', 'textTransform',
-        'textAlign', 'whiteSpace', 'listStyleType', 'marginTop', 'marginBottom', 'paddingTop', 'paddingRight',
-        'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderTopStyle', 'borderTopColor', 'borderLeftWidth',
-        'borderLeftColor', 'minHeight', 'cursor', 'opacity', 'zIndex'];
-      const releve = async (adresse) => {
-        const contexte = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-        const page = await contexte.newPage();
-        page.on('dialog', (d) => d.accept());
-        await page.goto(adresse);
-        const styles = await page.evaluate((proprietes) => [...document.body.querySelectorAll('*')]
-          .filter((e) => !e.closest('.enveloppe-tete, .enveloppe-pied'))
-          .map((e) => {
-            const s = getComputedStyle(e);
-            return `${e.tagName}.${e.className && e.className.baseVal === undefined ? e.className : ''} ${proprietes.map((p) => s[p]).join('|')}`;
-          }), PROPRIETES);
-        await contexte.close();
-        return styles;
-      };
-      const original = await releve(`file://${path.join(DEPOT, 'contenus', contenu.chemin, 'index.html')}`);
-      const enveloppe = await releve(new URL(contenu.chemin, baseURL).href);
-      expect(enveloppe.length).toBe(original.length);
-      const differences = original.map((o, i) => [i, o, enveloppe[i]]).filter(([, o, e]) => o !== e).slice(0, 5);
+  for (const [chemin, original] of AUTONOMES) {
+    test(chemin, async ({ browser, baseURL }) => {
+      const avant = await stylesDuCorps(browser, `file://${original}`);
+      const apres = await stylesDuCorps(browser, new URL(chemin, baseURL).href);
+      expect(apres.length).toBe(avant.length);
+      const differences = avant.map((o, i) => [i, o, apres[i]]).filter(([, o, e]) => o !== e).slice(0, 5);
       expect(differences).toEqual([]);
     });
   }

@@ -81,14 +81,17 @@ Règles :
 | Titre de page | H1 sur rail jaune, sous-titre en `--encre-2` | `.page-titre` |
 | Recherche | Champ bordé 2 px + bouton jaune collé | `.recherche` |
 | Bloc de filtres | En-tête encre à texte jaune, options en lignes de 44 px min., sélection en `--jaune-pale` + gras | `.filtre` |
-| Carte de contenu | Bordure 2 px, rail jaune gauche 8 px, **bandeau typographique** en tête, badges, titre, collection | `.carte` |
-| Bandeau typographique | Fond encre, thème en petites capitales grises, collection en titre jaune. **Remplace toute vignette** | `.carte-bandeau` |
+| Carte de contenu | Bordure 2 px, rail jaune gauche 8 px, en tête **l'image de la carte si elle existe, sinon le bandeau typographique**, puis badges, titre, collection | `.carte` |
+| Image de carte | Format 16/9 recadré, fond blanc, bordure basse 2 px encre, `loading="lazy"`, texte alternatif ; même hauteur que le bandeau pour que la grille reste alignée | `.carte-image` |
+| Bandeau typographique | Fond encre, thème en petites capitales grises, collection en titre jaune. Utilisé quand la carte n'a pas d'image | `.carte-bandeau` |
 | Badges | Type : fond jaune. Niveau : fond vert, texte blanc. Thème : bordure `--trait` | `.badge`, `.badge-niveau`, `.badge-theme` |
 | Bouton principal | Fond jaune, bordure encre 2 px, texte encre | `.btn-jaune` |
 | Bouton secondaire | Fond encre, texte blanc (bouton `.btn` de la charte) | `.btn` |
 | Cartouche, partie, barre de question, données, retour juste/faux | Repris tels quels de la charte (`.cartouche`, `.part`, `.part-num`, `.qbar`, `.data`) | — |
 | Calque Projeter | Plein écran, QR code d'au moins 60 % de la hauteur, adresse, « Copier le lien », Échap | `.projeter` |
 | Bouton « Signaler une erreur » | Lien discret en bas de chaque contenu | `.signaler` |
+| Illustration de fond | Planche technique traitée (§ 9) derrière le titre d'accueil ou d'une page de thème | `.illustration-fond` |
+| Bloc « Bientôt » | Accueil : Labo et Maquettes à venir, chacun avec sa planche, sa promesse en une phrase et un lien | `.bientot` |
 
 ## 6. Comportements
 
@@ -118,8 +121,8 @@ défaut (lu par les moteurs et sans JavaScript), puis le script le remplace. La 
 
 ## 8. Ce qu'on ne fait pas
 
-- Pas de vignettes photo ou de scans dans les cartes : bandeau typographique, puis plus tard une illustration au
-  trait unifiée.
+- Pas d'image de carte sans licence déclarée (TRAME § 10) ; pas de scan de manuel.
+- Pas d'image générée par IA, pas d'image de banque sous licence propriétaire (voir § 9).
 - Pas de police, d'image ou de script chargé depuis un tiers (sauf Umami).
 - Pas de couleur en dur dans une page : uniquement les jetons.
 - Pas de texte jaune sur fond clair.
@@ -127,3 +130,23 @@ défaut (lu par les moteurs et sans JavaScript), puis le script le remplace. La 
 
 Maquettes de référence : canvas « industrie.education — Directions visuelles », page « M1 — Gabarits »
 (accueil et catalogue).
+
+## 9. Illustrations
+
+Une seule famille d'images : **planches techniques anciennes** (gravures de mécanismes, machines, métiers), du
+domaine public ou sous CC0. Elles disent littéralement « comprendre comment ça marche » et s'accordent avec l'encre
+de la charte. Sources et circuit : TRAME § 10.
+
+| Usage | Traitement | Placement |
+|---|---|---|
+| Accueil, derrière le titre | Niveaux de gris, fond blanc, opacité 0,18 à 0,25 ou fusion `multiply` | Moitié droite du bandeau, débordant sous le titre ; jamais sous la recherche |
+| Page de thème | Idem, opacité 0,25 | En tête, à droite du titre sur rail |
+| Index des thèmes (accueil) | Vignette carrée 64 px, encre pleine | Dans la ligne, après le carré numéroté |
+| Labo, Maquettes (à venir) | Encre pleine, cadre noir 2 px | Bloc « Bientôt » de l'accueil et pages de section |
+| Articles | Encre pleine, légende avec crédit | Dans le corps |
+
+Règles :
+- Le titre posé sur une illustration garde un contraste d'au moins 4,5:1 sur toute sa surface (test automatique).
+- Sur téléphone (< 640 px), l'illustration d'accueil passe au-dessus du titre, en bandeau de 120 px de haut.
+- Une illustration n'est jamais colorisée en jaune ; le jaune reste réservé aux rails, boutons et surlignages.
+- Une seule illustration chargée par page en tête ; les autres en chargement différé (`loading="lazy"`).

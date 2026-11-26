@@ -1,18 +1,35 @@
 {#- Composants partagés par les gabarits (DESIGN.md § 5). Aucune couleur, police ou épaisseur ici : tout vient de commun.css. -#}
 
-{#- Carte de contenu : bandeau typographique (thème + collection), badges, titre, collection.
+{#- Variantes WebP d'une image publiée (outils/illustrations.py) : attribut srcset. -#}
+{% macro srcset(image, racine) -%}
+{% for v in image.variantes %}{{ racine }}{{ v.chemin }} {{ v.largeur }}w{{ ', ' if not loop.last }}{% endfor %}
+{%- endmacro %}
+
+{#- Carte de contenu ou d'annale : en tête, l'image de la carte si elle existe (16/9, dimensions fixées, chargement
+    différé), sinon le bandeau typographique (thème + collection) ; puis badges, titre, collection.
     filtrable : ajoute les attributs lus par les filtres du catalogue (commun.js). -#}
 {% macro carte(c, racine, numero=none, avec_theme=true, avec_collection=true, filtrable=false) -%}
+{% set image = c.image_publiee -%}
 <li{% if filtrable %} data-theme="{{ c.theme.id }}" data-type="{{ c.type }}" data-publics="{{ c.publics|map(attribute='id')|join(' ') }}" data-niveau="{{ c.niveau if c.niveau else '' }}" data-texte="{{ c.texte }}"{% endif %}>
 <a class="carte" href="{{ racine }}{{ c.chemin }}">
-<span class="carte-bandeau"{% if avec_theme and avec_collection %} aria-hidden="true"{% endif %}><span class="theme">{{ c.theme.court }}</span><span class="collection">{{ c.collection.titre }}</span></span>
+{% if image -%}
+<span class="carte-image"><img src="{{ racine }}{{ image.variantes[0].chemin }}" srcset="{{ srcset(image, racine) }}" sizes="(max-width: 640px) calc(100vw - 32px), 360px" width="{{ image.largeur }}" height="{{ image.hauteur }}" alt="{{ image.alt }}" loading="lazy" decoding="async"></span>
+{%- else -%}
+<span class="carte-bandeau"{% if avec_theme and avec_collection %} aria-hidden="true"{% endif %}><span class="theme">{{ c.theme.court }}</span><span class="collection">{{ c.bandeau }}</span></span>
+{%- endif %}
 <span class="carte-corps">
 <span class="carte-badges">{% if numero %}<span class="carte-num">{{ numero }}</span>{% endif %}<span class="badge">{{ c.type_nom }}</span>{% if c.niveau %}<span class="badge badge-niveau">Niveau {{ c.niveau }}</span>{% endif %}{% if avec_theme %}<span class="badge badge-theme">{{ c.theme.court }}</span>{% endif %}</span>
 <span class="carte-titre">{{ c.titre }}</span>
-{% if avec_collection %}<span class="carte-collection">{{ c.collection.titre }}</span>
+{% if avec_collection %}<span class="carte-collection">{{ c.sous_titre }}</span>
 {% endif %}</span>
 </a>
 </li>
+{%- endmacro %}
+
+{#- Planche d'illustration (DESIGN § 9), traitée en niveaux de gris sur fond blanc. classe : illustration-fond
+    (derrière un titre) ou illustration-vignette. -#}
+{% macro illustration(image, racine, classe, tailles, chargement="lazy") -%}
+<img class="{{ classe }}" src="{{ racine }}{{ image.variantes[0].chemin }}" srcset="{{ srcset(image, racine) }}" sizes="{{ tailles }}" width="{{ image.largeur }}" height="{{ image.hauteur }}" alt="{{ image.alt }}" loading="{{ chargement }}" decoding="async">
 {%- endmacro %}
 
 {#- Champ de recherche : envoie vers le catalogue (?q=). Fonctionne sans JavaScript. -#}
@@ -36,7 +53,8 @@
 </fieldset>
 {%- endmacro %}
 
-{#- Titre de page sur rail jaune, dans la bande blanche des pages atelier. -#}
+{#- Titre de page sur rail jaune, dans la bande blanche des pages atelier. À droite : la recherche (catalogue) ou la
+    planche d'illustration (page de thème). -#}
 {% macro bande(h1, lignes=[], recherche_html='') -%}
 <div class="bande">
 <div class="conteneur bande-titre">

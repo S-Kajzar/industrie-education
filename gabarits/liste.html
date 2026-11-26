@@ -1,9 +1,9 @@
 {#- Liste d'un public (/si/…) ou d'un thème (/mecanique/…) : titre sur rail, collections groupées, cartes. -#}
 {% extends "base.html" %}
-{% from "_composants.html" import carte, bande %}
+{% from "_composants.html" import carte, bande, illustration %}
 {% block corps %}
 <main id="contenu">
-{{ bande(h1, lignes) }}
+{{ bande(h1, lignes, illustration(planche, racine, 'illustration-fond illustration-theme', '(max-width: 640px) 100vw, 480px', 'eager') if planche else '') }}
 <div class="conteneur atelier-corps">
 {% if groupes -%}
 <div class="groupes">

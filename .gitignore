@@ -1,5 +1,6 @@
 _site/
 _site.en-cours/
+.cache/
 node_modules/
 __pycache__/
 .venv/

@@ -1,8 +1,10 @@
-[
-  "cadre-velo",
-  "moment-force",
-  "treuil",
-  "qcm-octets",
-  "brouette",
-  "compter-binaire"
-]
+{
+  "contenus": [
+    "cadre-velo",
+    "moment-force",
+    "treuil",
+    "qcm-octets",
+    "brouette",
+    "compter-binaire"
+  ]
+}

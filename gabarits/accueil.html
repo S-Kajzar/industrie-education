@@ -1,13 +1,15 @@
 {#- Accueil (vitrine) — maquette « Accueil retenue — M1 × charte atelier » : titre évolutif, recherche,
     index des 5 thèmes, 4 publics, contenus à la une, lien Annales, bloc Enseignants. -#}
 {% extends "base.html" %}
-{% from "_composants.html" import carte, recherche %}
+{% from "_composants.html" import carte, recherche, illustration %}
 {% block corps %}
 <main id="contenu">
 <section class="conteneur grille accueil-tete" aria-labelledby="titre-accueil">
 <p class="accueil-moment" data-moment-texte></p>
 <div class="accueil-titre">
 <div class="accueil-titre-pile">
+{% if planche %}{{ illustration(planche, racine, 'illustration-fond illustration-accueil', '(max-width: 640px) 100vw, 50vw', 'eager') }}
+{% endif -%}
 <h1 id="titre-accueil" data-titre-evolutif data-moment="cours">{{ titres['cours'] }}</h1>
 {% for moment, texte in titres.items() -%}
 <span class="accueil-titre-variante" aria-hidden="true" data-moment="{{ moment }}">{{ texte }}</span>
@@ -24,7 +26,7 @@
 <h2 class="visuellement-cache" id="titre-themes">Thèmes</h2>
 <ul class="index-themes">
 {% for t in themes -%}
-<li><a href="{{ racine }}{{ t.id }}/"><span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{{ t.nom }}</span><span class="index-ex">{{ t.exemples|join(', ') }}</span><span class="index-nb">{{ t.nb }}<span class="visuellement-cache"> {{ 'contenus' if t.nb > 1 else 'contenu' }}</span></span></a></li>
+<li><a href="{{ racine }}{{ t.id }}/"><span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{% if t.vignette %}{{ illustration(t.vignette, racine, 'illustration-vignette', '64px') }}{% endif %}{{ t.nom }}</span><span class="index-ex">{{ t.exemples|join(', ') }}</span><span class="index-nb">{{ t.nb }}<span class="visuellement-cache"> {{ 'contenus' if t.nb > 1 else 'contenu' }}</span></span></a></li>
 {% endfor -%}
 </ul>
 </section>
@@ -50,10 +52,20 @@
 
 <section class="conteneur grille rangee" aria-labelledby="titre-annales">
 <h2 class="rangee-etiquette" id="titre-annales">Annales</h2>
+{% if annales -%}
+<div class="rangee-corps">
+<ul class="cartes cartes-annales">
+{% for a in annales %}{{ carte(a, racine, avec_theme=false) }}
+{% endfor -%}
+</ul>
+<p class="renvoi renvoi-annales"><span>Annales corrigées et interactives, avec leurs documents : {{ nb_annales|pluriel('sujet') }} en ligne.</span> <a class="btn-contour" href="{{ racine }}annales/">Toutes les annales</a></p>
+</div>
+{%- else -%}
 <div class="rangee-corps renvoi">
 <p>Les sujets d’examen par filière, épreuve et session, avec leurs documents. Premières annales en préparation.</p>
 <a class="btn-contour" href="{{ racine }}annales/">Voir les annales</a>
 </div>
+{%- endif %}
 </section>
 
 <section class="conteneur grille rangee" aria-labelledby="titre-enseignants">

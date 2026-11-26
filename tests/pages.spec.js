@@ -15,13 +15,13 @@ test.describe('pages de TRAME § 3', () => {
       expect(reponse.status()).toBe(200);
       await expect(page.locator('html')).toHaveAttribute('lang', 'fr');
       expect((await page.title()).trim()).not.toBe('');
-      const description = await page.locator('meta[name="description"]').getAttribute('content');
+      const description = await page.locator('meta[name="description"]').first().getAttribute('content');
       expect((description || '').trim().length).toBeGreaterThan(20);
 
       // Un seul h1 affiché. Un contenu repris garde son propre second h1, masqué tant qu'aucun mode n'est choisi.
       const h1Affiches = await page.locator('h1').evaluateAll((hs) => hs.filter((h) => h.getClientRects().length).length);
       expect(h1Affiches).toBe(1);
-      if (gabarit !== 'contenu repris') await expect(page.locator('h1')).toHaveCount(1);
+      if (!['contenu repris', 'annale'].includes(gabarit)) await expect(page.locator('h1')).toHaveCount(1);
 
       if (!site.indexable) {
         await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);

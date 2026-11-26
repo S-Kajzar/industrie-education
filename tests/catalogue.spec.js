@@ -3,9 +3,10 @@
 'use strict';
 
 const { test, expect } = require('@playwright/test');
-const { contenus, themes } = require('./outils');
+const { cartesCatalogue, themes, publics } = require('./outils');
 
-const TOUS = contenus();
+// Contenus publiés et annales publiées (TRAME § 6 : les annales ont leurs cartes dans le catalogue).
+const TOUS = cartesCatalogue();
 const cartes = (page) => page.locator('[data-cartes] > li');
 const visibles = (page) => page.locator('[data-cartes] > li:visible');
 const normaliser = (t) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -64,8 +65,13 @@ test('filtres par filière et par niveau', async ({ page }) => {
   const attendus = TOUS.filter((c) => c.publics.includes('si') && c.niveau === 1).map((c) => c.chemin).sort();
   expect((await chemins(page)).sort()).toEqual(attendus);
   await expect(page).toHaveURL(/\?public=si&niveau=1$/);
-  // Une filière inactive est annoncée « bientôt » et ne se choisit pas.
-  await expect(page.locator('[data-filtre="public"][data-valeur="bts-ms"]')).toBeDisabled();
+  // Une filière inactive sans aucune carte est annoncée « bientôt » et ne se choisit pas ; dès qu'elle a une carte
+  // (une annale, par exemple), elle devient choisissable.
+  for (const p of publics.filter((x) => !x.actif)) {
+    const bouton = page.locator(`[data-filtre="public"][data-valeur="${p.id}"]`);
+    if (TOUS.some((c) => c.publics.includes(p.id))) await expect(bouton).toBeEnabled();
+    else await expect(bouton).toBeDisabled();
+  }
 });
 
 test('recherche sans accents', async ({ page }) => {
