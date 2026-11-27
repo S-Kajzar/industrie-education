@@ -3,10 +3,6 @@
   "titre": "Test abc",
   "presentation": "test abcdefgh",
   "fichier": "/medias/depots/test-taille-3mo.html",
-  "image": {
-    "fichier": "/medias/cartes/toyota-rav4-trail-2023-1.jpg",
-    "alt": "test image"
-  },
   "publics": [
     "si"
   ],
