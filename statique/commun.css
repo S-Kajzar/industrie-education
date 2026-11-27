@@ -383,6 +383,13 @@ html.projeter-ouvert{overflow:hidden}
   :where(.vitrine,.atelier) .bientot{grid-template-columns:1fr}
   :where(.vitrine,.atelier) .section-tete{flex-direction:column; align-items:stretch}
   :where(.vitrine,.atelier) .illustration-section{max-width:100%; max-height:120px}
+  /* Fiche d'annale serrée sur téléphone : au plus 300 px de haut, même avec une police de repli large (DejaVu Sans,
+     la police par défaut de nombreux Linux, prend 15 % de place en plus qu'Inter ou Roboto). */
+  .enveloppe-fiche{line-height:1.35}
+  .enveloppe-fiche-interieur{padding:8px 12px}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-surtitre{font-size:.75rem; letter-spacing:.02em; margin-bottom:2px}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos{column-gap:14px}
+  :where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-liens,:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-credit{margin-top:2px}
   :where(.vitrine,.atelier) .bande-titre{padding-top:24px; padding-bottom:20px}
   :where(.vitrine,.atelier) .filtres{flex-basis:100%; max-width:none}
   :where(.vitrine,.atelier) .filtres-ouvrir{display:flex; width:100%; justify-content:space-between}

@@ -95,14 +95,17 @@ test('fiche compacte au-dessus du sujet : informations, « Pour réviser », cr�
   expect(erreurs).toEqual([]);
 });
 
+// La hauteur dépend de la police : system-ui vaut Inter ici, DejaVu Sans sur le serveur de GitHub (15 % plus large).
+// À 360 px, on mesure donc aussi avec DejaVu Sans imposée, pour que le test donne le même résultat partout.
 test('fiche : au plus 300 px de haut à 360 px de large ; titre du sujet visible sans défiler à 1280 × 800', async ({ browser, baseURL }) => {
-  for (const [largeur, hauteur] of [[360, 740], [1280, 800]]) {
+  for (const [largeur, hauteur, police] of [[360, 740, null], [360, 740, 'DejaVu Sans'], [1280, 800, null]]) {
     const contexte = await browser.newContext({ viewport: { width: largeur, height: hauteur } });
     const page = await contexte.newPage();
     await page.goto(new URL(CHEMIN, baseURL).href);
+    if (police) await page.addStyleTag({ content: `.enveloppe-fiche, .enveloppe-fiche * { font-family: "${police}" !important }` });
     const fiche = await page.locator('.enveloppe-fiche').boundingBox();
     const titre = await page.locator('#home h1').boundingBox();
-    if (largeur === 360) expect(fiche.height, 'hauteur de la fiche à 360 px').toBeLessThanOrEqual(300);
+    if (largeur === 360) expect(fiche.height, `hauteur de la fiche à 360 px (${police || 'polices de la charte'})`).toBeLessThanOrEqual(300);
     else expect(titre.y + titre.height, 'bas du titre du sujet à 1280 × 800').toBeLessThanOrEqual(hauteur);
     await contexte.close();
   }
