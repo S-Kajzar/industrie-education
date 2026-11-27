@@ -243,12 +243,30 @@ test.describe('source et licence des annales', () => {
     }
   });
 
-  test('outils/annale.py contrôle aussi la source d’une fiche', () => {
+  test('outils/annale.py contrôle aussi la source d’une fiche : exigée au statut « relu », rappel en brouillon', () => {
     const { spawnSync } = require('node:child_process');
-    const r = spawnSync('python3', [path.join(DEPOT, 'outils', 'annale.py'), ...annales({ toutes: true })
-      .map((a) => path.join(DEPOT, 'annales', `${a.id}.json`)).filter((f) => fs.existsSync(f))], { encoding: 'utf8' });
+    const annalePy = (fichiers) => spawnSync('python3', [path.join(DEPOT, 'outils', 'annale.py'), ...fichiers], { encoding: 'utf8' });
+    // Les fiches du dépôt, brouillons compris (un brouillon peut ne pas avoir encore de source).
+    const reelles = annales({ toutes: true }).map((a) => path.join(DEPOT, 'annales', `${a.id}.json`)).filter((f) => fs.existsSync(f));
+    const r = annalePy(reelles);
     expect(r.status, r.stdout + r.stderr).toBe(0);
     expect(r.stdout).toContain('prêt à publier');
+    // Fiches d'essai, sans source : brouillon accepté avec un rappel, « relu » refusé.
+    const racine = depotFactice((ecrire) => {
+      deposerAnnale(ecrire, 'essai-brouillon', { source: undefined, statut: 'brouillon' });
+      deposerAnnale(ecrire, 'essai-relu', { source: undefined });
+    });
+    try {
+      const brouillon = annalePy([path.join(racine, 'annales', 'essai-brouillon.json')]);
+      expect(brouillon.status, brouillon.stdout).toBe(0);
+      expect(brouillon.stdout).toContain('brouillon : à régler avant de passer en « relu »');
+      expect(brouillon.stdout).toContain('la fiche reste un brouillon');
+      const relu = annalePy([path.join(racine, 'annales', 'essai-relu.json')]);
+      expect(relu.status).toBe(1);
+      expect(relu.stdout).toContain('champ « source » manquant');
+    } finally {
+      fs.rmSync(racine, { recursive: true, force: true });
+    }
   });
 });
 

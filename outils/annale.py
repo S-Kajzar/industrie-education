@@ -13,7 +13,8 @@ ancien dépôt) est publié tel quel, seulement enveloppé. Avant cela, on véri
 Chaque problème est signalé avec le fichier et la ligne.
 
 Pour une fiche d'annale (annales/<id>.json), on contrôle aussi le champ « source » (éditeur, adresse, licence de la
-liste fermée, référence d'une autorisation écrite), obligatoire pour publier, puis le fichier HTML qu'elle cite.
+liste fermée, référence d'une autorisation écrite), puis le fichier HTML qu'elle cite. Comme pour la construction, la
+source est obligatoire au statut « relu » (publication) ; en brouillon, son absence n'est qu'un rappel.
 
 Usage : python3 outils/annale.py FICHIER.html|FICHE.json [… autres fichiers]
 """
@@ -230,8 +231,10 @@ def controler(chemin, nom=None, dossier_ressources=None, taille_max=TAILLE_MAX):
     return problemes
 
 
-def controler_fiche(chemin):
-    """Fiche d'annale (JSON) : source obligatoire, puis le fichier HTML cité par « fichier »."""
+def controler_fiche(chemin, rappels=None):
+    """Fiche d'annale (JSON) : source (obligatoire au statut « relu »), puis le fichier HTML cité par « fichier ».
+
+    rappels : liste où ajouter ce qui manque à un brouillon pour être publié, sans que ce soit une erreur."""
     chemin = Path(chemin)
     try:
         fiche = json.loads(chemin.read_text(encoding="utf-8"))
@@ -240,6 +243,11 @@ def controler_fiche(chemin):
     if not isinstance(fiche, dict):
         return [f"{chemin} : un objet JSON est attendu."]
     problemes = controler_source(fiche.get("source"), str(chemin))
+    if problemes and fiche.get("statut") != "relu":
+        # Brouillon (statut absent ou « brouillon ») : la source n'est exigée qu'à la publication.
+        if rappels is not None:
+            rappels += [f"{p} (brouillon : à régler avant de passer en « relu »)" for p in problemes]
+        problemes = []
     fichier = str(fiche.get("fichier") or "").strip().lstrip("/")
     if fichier:
         racine = next((p for p in chemin.resolve().parents if (p / "medias").is_dir()), chemin.resolve().parent)
@@ -253,10 +261,14 @@ def main(arguments):
         return 2
     code = 0
     for fichier in arguments:
-        problemes = controler_fiche(fichier) if fichier.endswith(".json") else controler(fichier)
+        rappels = []
+        problemes = controler_fiche(fichier, rappels) if fichier.endswith(".json") else controler(fichier)
         if problemes:
             code = 1
             print("\n".join(problemes))
+        elif rappels:
+            print("\n".join(rappels))
+            print(f"{fichier} : fichier prêt ; la fiche reste un brouillon.")
         else:
             print(f"{fichier} : prêt à publier.")
     return code
