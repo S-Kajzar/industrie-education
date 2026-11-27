@@ -3,10 +3,6 @@
   "titre": "Système de levage et de déchargement des sacs de linge",
   "presentation": "Étude d'un système industriel de manutention, dans une blanchisserie. Sujet complet : 5 parties, 5 h de travail conseillées, 39 questions notées (unités comprises) et 4 tracés sur documents réponses, avec les dossiers de présentation et technique intégrés.",
   "fichier": "medias/depots/levage-dechargement-sacs-linge.html",
-  "image": {
-    "fichier": null,
-    "alt": ""
-  },
   "publics": [
     "bts-ms"
   ],
@@ -28,8 +24,7 @@
   "source": {
     "editeur": "éduscol STI",
     "url": "https://sti.eduscol.education.fr/sites/eduscol.education.fr.sti/files/concours-examens/5111/5111-dossier-questionnaire-epreuve-e4-bts-mi-2013-metropole.docx",
-    "licence": "cc-by-nc-sa-2.0-fr",
-    "reference_autorisation": ""
+    "licence": "cc-by-nc-sa-2.0-fr"
   },
   "statut": "relu",
   "mis_a_jour": "2026-11-26"

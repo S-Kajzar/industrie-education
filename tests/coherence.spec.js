@@ -168,7 +168,8 @@ test.describe('mentions légales', () => {
   test('préproduction : « À compléter avant l’ouverture » pour chaque champ vide ; section « Sources et licences »', async ({ page }) => {
     test.skip(site.indexable, 'site ouvert aux moteurs');
     await page.goto('mentions-legales/');
-    const vides = [site.editeur.nom, site.editeur.adresse, site.editeur.directeur_publication, site.contact].filter((v) => !v).length;
+    const editeur = site.editeur || {};
+    const vides = [editeur.nom, editeur.adresse, editeur.directeur_publication, site.contact].filter((v) => !v).length;
     await expect(page.locator('.a-renseigner', { hasText: 'À compléter avant l’ouverture' })).toHaveCount(vides);
     await expect(page.getByRole('heading', { name: 'Sources et licences' })).toBeVisible();
     await expect(page.locator('#sources-et-licences + p').getByRole('link', { name: 'crédits' })).toHaveAttribute('href', '../credits/');

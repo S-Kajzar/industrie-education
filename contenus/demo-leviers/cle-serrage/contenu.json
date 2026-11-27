@@ -4,11 +4,11 @@
   "type": "exercice",
   "niveau": 1,
   "duree_min": 20,
+  "description": "Démonstration : force à exercer sur une clé pour serrer un écrou de roue, avec et sans rallonge.",
   "mots_cles": [
     "Moment",
     "Couple de serrage",
     "Démonstration"
   ],
-  "description": "Démonstration : force à exercer sur une clé pour serrer un écrou de roue, avec et sans rallonge.",
   "mode": "natif"
 }

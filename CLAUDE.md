@@ -20,7 +20,10 @@ Ce qui n'est pas décrit n'est pas à faire. Une contradiction entre ces documen
 
 - **Public mineur** : aucun cookie, aucune donnée personnelle, aucune requête vers un tiers. Seule exception :
   le script Umami, et seulement si `site.json` contient un identifiant. Pas de Google Fonts, pas de CDN : les
-  polices et bibliothèques sont copiées dans le dépôt.
+  polices et bibliothèques sont copiées dans le dépôt. Le back-office `/admin/` (Sveltia CMS) est une exception
+  documentée, hors du site public : un adulte seul s'y connecte, sans aucune donnée de visiteur. Ses seuls hôtes
+  autorisés sont `api.github.com` (lecture et commits), `avatars.githubusercontent.com` (avatar du compte connecté)
+  et `cdn.jsdelivr.net` (polices de l'interface) ; tout le reste est servi par le site ou coupé (`gabarits/admin.html`).
 - **Préproduction non indexée** tant que `site.json` → `indexable` vaut `false`.
 - **Jamais de couleur, police ou épaisseur de trait en dur** dans un gabarit : uniquement les jetons de
   `commun.css`. Jamais de texte jaune sur fond clair.

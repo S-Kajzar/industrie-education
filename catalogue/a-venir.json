@@ -1,12 +1,10 @@
 {
   "labo": {
     "titre": "Labo",
-    "promesse": "Des travaux pratiques guidés sur des systèmes réels : mesurer, régler, diagnostiquer.",
-    "illustration": { "fichier": null, "alt": "" }
+    "promesse": "Des travaux pratiques guidés sur des systèmes réels : mesurer, régler, diagnostiquer."
   },
   "maquettes": {
     "titre": "Maquettes",
-    "promesse": "Des maquettes numériques à manipuler : démonter, animer, mesurer.",
-    "illustration": { "fichier": null, "alt": "" }
+    "promesse": "Des maquettes numériques à manipuler : démonter, animer, mesurer."
   }
 }

@@ -4,11 +4,11 @@
   "type": "cours",
   "niveau": 1,
   "duree_min": 15,
+  "description": "Démonstration : l’effet de rotation d’une force et le calcul de son moment.",
   "mots_cles": [
     "Moment",
     "Bras de levier",
     "Démonstration"
   ],
-  "description": "Démonstration : l’effet de rotation d’une force et le calcul de son moment.",
   "mode": "natif"
 }

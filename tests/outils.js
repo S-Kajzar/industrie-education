@@ -77,13 +77,14 @@ function pagesAttendues() {
   return pages;
 }
 
-// Toutes les pages HTML écrites dans _site/ (adresses relatives à la base).
+// Toutes les pages HTML du site public écrites dans _site/ (adresses relatives à la base). Le back-office /admin/
+// en est exclu : les règles du site public (requêtes, poids, h1…) ne s'y appliquent pas (tests/admin.spec.js).
 function pagesConstruites() {
   const pages = [];
   (function parcourir(dossier, prefixe) {
     for (const e of fs.readdirSync(dossier, { withFileTypes: true })) {
       if (e.isDirectory()) {
-        if (!(prefixe === '' && e.name === '_')) parcourir(path.join(dossier, e.name), `${prefixe}${e.name}/`);
+        if (!(prefixe === '' && ['_', 'admin'].includes(e.name))) parcourir(path.join(dossier, e.name), `${prefixe}${e.name}/`);
       } else if (e.name.endsWith('.html')) {
         pages.push(e.name === 'index.html' ? prefixe : prefixe + e.name);
       }
@@ -158,9 +159,9 @@ async function stylesDuCorps(browser, adresse, apres) {
   return styles;
 }
 
-function construire(racine) {
+function construire(racine, env = {}) {
   return spawnSync('python3', [path.join(DEPOT, 'outils', 'construire.py'), '--racine', racine,
-    '--sortie', path.join(racine, '_site')], { encoding: 'utf8' });
+    '--sortie', path.join(racine, '_site')], { encoding: 'utf8', env: { ...process.env, ...env } });
 }
 
 module.exports = {

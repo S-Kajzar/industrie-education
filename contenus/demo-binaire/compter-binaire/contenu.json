@@ -4,12 +4,12 @@
   "type": "cours",
   "niveau": 1,
   "duree_min": 15,
+  "description": "Démonstration : écrire et lire un nombre en base 2.",
   "mots_cles": [
     "Binaire",
     "Base 2",
     "Bit",
     "Démonstration"
   ],
-  "description": "Démonstration : écrire et lire un nombre en base 2.",
   "mode": "natif"
 }

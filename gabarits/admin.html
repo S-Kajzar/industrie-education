@@ -1,0 +1,57 @@
+<!doctype html>
+{#- Back-office (lot 1d) : Sveltia CMS servi par le site, à l'adresse /admin/. Hors du site public : noindex, absent
+    du sitemap, interdit dans robots.txt, jamais lié. Le script et ses morceaux (chunks/) sont copiés depuis le
+    paquet npm @sveltia/cms par outils/construire.py ; rien n'est chargé depuis unpkg.
+    Aucune couleur ni police ici : l'interface est entièrement celle de Sveltia CMS. -#}
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Administration — {{ site.nom }}</title>
+<link rel="icon" href="data:,">
+<link rel="cms-config-url" type="application/yaml" href="{{ site.base }}admin/config.yml">
+<script>
+/* Mise en route de Sveltia CMS {{ version }}, avant son chargement.
+   1. Interface en français, quelle que soit la langue du navigateur : Sveltia lit d'abord la langue choisie dans ses
+      préférences (localStorage, clé « sveltia-cms.prefs »), puis celle du navigateur. Si aucune langue n'a été
+      choisie, on y inscrit « fr ». Un autre choix fait dans les préférences de Sveltia reste respecté.
+   2. Requêtes vers des tiers sans nécessité : Sveltia télécharge ses traductions sur unpkg.com, y vérifie l'existence
+      d'une nouvelle version (au chargement, puis toutes les heures) et interroge githubstatus.com. La traduction est
+      servie par le site (copie de locales/fr.json du paquet) ; les deux vérifications sont coupées.
+   3. La table d'import (importmap, plus bas) sert depuis le site les modules que Sveltia irait chercher sur unpkg.com
+      (translittération des noms de fichiers, métadonnées des images téléversées). */
+(function () {
+  'use strict';
+  try {
+    var prefs = JSON.parse(window.localStorage.getItem('sveltia-cms.prefs') || '{}') || {};
+    if (!prefs.locale) {
+      prefs.locale = 'fr';
+      window.localStorage.setItem('sveltia-cms.prefs', JSON.stringify(prefs));
+    }
+  } catch (erreur) { /* stockage indisponible : l'interface suit la langue du navigateur */ }
+
+  var TRADUCTIONS = 'https://unpkg.com/@sveltia/cms@{{ version }}/locales/';
+  var VERSION = /^https:\/\/unpkg\.com\/@sveltia\/cms(@[^/]*)?\/package\.json$/;
+  var STATUT = 'https://www.githubstatus.com/';
+  var natif = window.fetch.bind(window);
+  window.fetch = function (ressource, options) {
+    var adresse = typeof ressource === 'string' ? ressource
+      : ressource instanceof URL ? ressource.href : (ressource && ressource.url) || '';
+    if (adresse.indexOf(TRADUCTIONS) === 0) return natif('./locales/' + adresse.slice(TRADUCTIONS.length), options);
+    if (VERSION.test(adresse) || adresse.indexOf(STATUT) === 0) {
+      return Promise.resolve(new Response('{}', { status: 404, headers: { 'Content-Type': 'application/json' } }));
+    }
+    return natif(ressource, options);
+  };
+}());
+</script>
+{% if modules %}<script type="importmap">
+{"imports": { {%- for m in modules %}"{{ m.adresse }}": "./modules/{{ m.nom }}/"{{ ", " if not loop.last }}{% endfor -%} }}
+</script>
+{% endif %}<script src="./sveltia-cms.js"></script>
+</head>
+<body>
+<noscript><p>Le back-office demande JavaScript. En cas de besoin, les fichiers se modifient aussi sur GitHub (voir GUIDE-BACK-OFFICE.md).</p></noscript>
+</body>
+</html>

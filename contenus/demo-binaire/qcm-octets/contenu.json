@@ -4,12 +4,12 @@
   "type": "qcm",
   "niveau": 1,
   "duree_min": 10,
+  "description": "Démonstration : trois questions pour vérifier ses acquis sur les bits et les octets.",
   "mots_cles": [
     "Bit",
     "Octet",
     "Binaire",
     "Démonstration"
   ],
-  "description": "Démonstration : trois questions pour vérifier ses acquis sur les bits et les octets.",
   "mode": "natif"
 }

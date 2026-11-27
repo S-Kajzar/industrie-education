@@ -1,9 +1,30 @@
 [
-  { "id": "statique", "nom": "Statique" },
-  { "id": "dynamique", "nom": "Dynamique" },
-  { "id": "cinematique-graphique", "nom": "Cinématique graphique" },
-  { "id": "roulements", "nom": "Roulements" },
-  { "id": "liaisons", "nom": "Liaisons mécaniques" },
-  { "id": "pfs", "nom": "Principe fondamental de la statique" },
-  { "id": "solide-deux-forces", "nom": "Solide soumis à deux forces" }
+  {
+    "id": "statique",
+    "nom": "Statique"
+  },
+  {
+    "id": "dynamique",
+    "nom": "Dynamique"
+  },
+  {
+    "id": "cinematique-graphique",
+    "nom": "Cinématique graphique"
+  },
+  {
+    "id": "roulements",
+    "nom": "Roulements"
+  },
+  {
+    "id": "liaisons",
+    "nom": "Liaisons mécaniques"
+  },
+  {
+    "id": "pfs",
+    "nom": "Principe fondamental de la statique"
+  },
+  {
+    "id": "solide-deux-forces",
+    "nom": "Solide soumis à deux forces"
+  }
 ]

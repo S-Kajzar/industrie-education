@@ -4,6 +4,7 @@
   "type": "exercice",
   "niveau": 3,
   "duree_min": 70,
+  "description": "Isolements successifs d'un cadre de VTT tout suspendu.",
   "mots_cles": [
     "Statique analytique",
     "PFS",
@@ -14,7 +15,6 @@
     "pfs",
     "solide-deux-forces"
   ],
-  "description": "Isolements successifs d'un cadre de VTT tout suspendu.",
   "mode": "repris",
   "source": "S-Kajzar/STATIQUE : cadre-velo.html"
 }
