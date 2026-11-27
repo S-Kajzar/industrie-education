@@ -1,7 +1,7 @@
 # Note de livraison — lot 1d : back-office Sveltia CMS à l'adresse /admin/
 
 Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` après la fusion du lot 1c et de son correctif (PR n° 4
-et n° 5). Prompt : `prompts/LOT-1D.md`. `npm test` : **321 tests, tous verts** (environ 1 min 20, sans réseau).
+et n° 5) ; pull request n° 6. Prompt : `prompts/LOT-1D.md`. `npm test` : **321 tests, tous verts** (environ 1 min 20, sans réseau).
 
 **Dépendance ajoutée** : `@sveltia/cms` **5.0.2**, figée (`dependencies` de `package.json` et `package-lock.json`),
 licence MIT. Justification :
