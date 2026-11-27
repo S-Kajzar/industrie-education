@@ -38,19 +38,28 @@ function collections() {
   });
 }
 
-const contenus = () => collections().flatMap((c) => c.contenus).filter((c) => c.statut !== 'brouillon');
+// État de la publication écrit par la construction (lot 1e) : pages des fiches publiées, fiches retenues, etc.
+// Une fiche « relu » retenue pour une erreur de contenu n'est pas publiée : les tests ne l'attendent pas.
+const etat = () => JSON.parse(fs.readFileSync(path.join(SITE, 'admin', 'etat.json'), 'utf8'));
+const publiee = (chemin) => etat().publiees.includes(chemin);
 
-// Fiches d'annales (à plat annales/<id>.json ou en dossier annales/<id>/annale.json) ; publiées = statut « relu ».
+const contenus = () => collections().flatMap((c) => c.contenus).filter((c) => c.statut !== 'brouillon' && publiee(c.chemin));
+
+// Fiches d'annales (à plat annales/<id>.json ou en dossier annales/<id>/annale.json) ; publiées = statut « relu » et
+// non retenues par la construction.
 function annales({ toutes = false } = {}) {
   const dossier = path.join(DEPOT, 'annales');
   if (!fs.existsSync(dossier)) return [];
   const fiches = [];
   for (const e of fs.readdirSync(dossier, { withFileTypes: true })) {
     if (e.name.startsWith('.')) continue;
-    if (e.isDirectory()) fiches.push(lireJSON(`annales/${e.name}/annale.json`));
-    else if (e.name.endsWith('.json')) fiches.push(lireJSON(`annales/${e.name}`));
+    try {
+      if (e.isDirectory()) fiches.push(lireJSON(`annales/${e.name}/annale.json`));
+      else if (e.name.endsWith('.json')) fiches.push(lireJSON(`annales/${e.name}`));
+    } catch { /* fiche illisible : la construction la signale et ne la publie pas */ }
   }
-  return fiches.filter((a) => toutes || a.statut === 'relu').map((a) => ({ ...a, chemin: `annales/${a.id}/`, type: 'annale' }));
+  return fiches.map((a) => ({ ...a, chemin: `annales/${a.id}/`, type: 'annale' }))
+    .filter((a) => toutes || (a.statut === 'relu' && publiee(a.chemin)));
 }
 
 // Toutes les cartes du catalogue : contenus publiés puis annales publiées.
@@ -114,7 +123,7 @@ function depotFactice(modifier) {
   });
   for (const id of ['un', 'deux', 'trois']) {
     ecrire(`contenus/essai/${id}/contenu.json`, {
-      id, titre: `Contenu ${id}`, type: 'cours', niveau: 1, description: 'Contenu factice.', mode: 'natif',
+      id, titre: `Contenu ${id}`, type: 'cours', niveau: 1, description: 'Contenu factice pour les tests.', mode: 'natif',
     });
     ecrire(`contenus/essai/${id}/index.html`, '<p>Contenu factice.</p>\n');
   }
@@ -165,6 +174,6 @@ function construire(racine, env = {}) {
 }
 
 module.exports = {
-  DEPOT, SITE, site, themes, publics, collections, contenus, annales, cartesCatalogue, themeActif, themesActifs, pagesAttendues,
+  DEPOT, SITE, site, themes, publics, collections, contenus, annales, etat, cartesCatalogue, themeActif, themesActifs, pagesAttendues,
   pagesConstruites, fichierDePage, estRepris, estAutonome, depotFactice, construire, servirSite, stylesDuCorps, lireJSON,
 };

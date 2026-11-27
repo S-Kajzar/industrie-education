@@ -1,4 +1,5 @@
-{#- Page /credits/ : images (medias/CREDITS.json, TRAME § 10) et annales publiées (champ « source », TRAME § 11). -#}
+{#- Page /credits/ : images publiées avec un crédit complet, saisi dans leur fiche (TRAME § 10, lot 1e ; une image
+    publiée sans crédit, case de risque cochée, n'y figure pas), et annales publiées (champ « source », TRAME § 11). -#}
 {%- from "_enveloppe.html" import credit -%}
 <p>Les images du site sont des planches techniques anciennes du domaine public ou sous CC0, des photos et dessins de
 l’auteur, ou des images publiées avec l’autorisation écrite de leur propriétaire. Aucune n’est générée par une
@@ -10,13 +11,11 @@ Ouverte, ou avec l’autorisation écrite de leur éditeur.</p>
 <ul class="credits">
 {% for c in credits -%}
 <li class="credit">
-<p class="credit-titre">{{ c.titre }}</p>
+<p class="credit-titre">{{ c.usages|join(' · ') }}</p>
 <dl class="fiche">
 <dt>Auteur</dt><dd>{{ c.auteur or 'Inconnu' }}</dd>
-{% if c.date %}<dt>Date</dt><dd>{{ c.date }}</dd>
-{% endif %}<dt>Licence</dt><dd>{{ c.licence_nom }}{% if c.reference_autorisation %} ({{ c.reference_autorisation }}){% endif %}</dd>
+<dt>Licence</dt><dd>{{ c.licence_nom }}{% if c.reference_autorisation %} ({{ c.reference_autorisation }}){% endif %}</dd>
 {% if c.source %}<dt>Source</dt><dd>{% if c.source.startswith('http') %}<a href="{{ c.source }}">{{ c.source }}</a>{% else %}{{ c.source }}{% endif %}</dd>
-{% endif %}{% if c.usage %}<dt>Usage sur le site</dt><dd>{{ c.usage }}</dd>
 {% endif %}</dl>
 </li>
 {% endfor -%}

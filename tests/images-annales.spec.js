@@ -1,5 +1,5 @@
-// Lot 1b sur un dépôt factice illustré : images de cartes et planches (TRAME § 10, DESIGN § 9), crédits, annales
-// (statut, afficher_origine) et contenus autonomes déposés par le back-office (TRAME § 11).
+// Lot 1b sur un dépôt factice illustré : images de cartes et planches (TRAME § 10, DESIGN § 9), crédits saisis dans les
+// fiches (lot 1e), annales (statut, afficher_origine) et contenus autonomes déposés par le back-office (TRAME § 11).
 'use strict';
 
 const fs = require('node:fs');
@@ -26,18 +26,23 @@ const AUTONOME = (titre) => `<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta ch
 // Mots de l'origine de l'annale factice : ils ne doivent apparaître nulle part tant que afficher_origine vaut false.
 const ORIGINE = { diplome: 'Brevet Zéphyr', epreuve: 'Épreuve Quokka', session: 1987 };
 
-const credit = (fichier, titre, autres = {}) => ({
-  fichier, titre, auteur: 'Atelier d’essai', date: '1770', source: 'https://commons.wikimedia.org/', licence: 'domaine-public',
-  reference_autorisation: '', usage: 'Essai', decorative: false, ...autres,
+// Image d'une fiche avec son crédit (lot 1e) : complet par défaut.
+const image = (fichier, alt, credit = {}) => ({
+  fichier, alt, licence: 'domaine-public', source: 'https://commons.wikimedia.org/', auteur: 'Atelier d’essai', ...credit,
 });
 
 const annale = (id, autres = {}) => ({
   id, titre: `Annale ${id}`, presentation: 'Sujet factice pour les tests du site.', fichier: `medias/depots/${id}.html`,
-  image: { fichier: null, alt: '' }, publics: ['si'], theme: 'mecanique', notions: ['statique'], duree_min: 120,
-  origine: { diplome: '', epreuve: '', session: null }, afficher_origine: false,
+  publics: ['si'], theme: 'mecanique', notions: ['statique'], duree_min: 120, origine: { diplome: '', epreuve: '', session: null },
+  afficher_origine: false,
   source: { editeur: 'Éditeur d’essai', url: 'https://exemple.test/sujets/essai.docx', licence: 'etalab-2.0', reference_autorisation: '' },
   statut: 'relu', mis_a_jour: '2026-11-20',
   ...autres,
+});
+
+const contenuUn = (img) => ({
+  id: 'un', titre: 'Contenu un', type: 'cours', niveau: 1, description: 'Contenu factice illustré.', mode: 'natif',
+  notions: ['statique'], image: img,
 });
 
 // Dépôt factice illustré ; « modifier » permet d'y introduire une erreur ou une variante.
@@ -49,20 +54,13 @@ function depotIllustre(modifier) {
     fs.copyFileSync(path.join(images, 'photo.jpg'), path.join(racine, 'medias', 'cartes', 'photo.jpg'));
     fs.copyFileSync(path.join(images, 'transparente.png'), path.join(racine, 'medias', 'cartes', 'transparente.png'));
     fs.copyFileSync(path.join(images, 'planche.png'), path.join(racine, 'medias', 'illustrations', 'planche.png'));
-    ecrire('medias/CREDITS.json', [
-      credit('medias/cartes/photo.jpg', 'Photo d’essai'),
-      credit('medias/cartes/transparente.png', 'Disque d’essai', { licence: 'oeuvre-personnelle' }),
-      credit('medias/illustrations/planche.png', 'Engrenages, planche d’essai', { licence: 'cc0', decorative: true }),
-    ]);
     // Contenu « un » avec image, « deux » sans image (bandeau).
-    ecrire('contenus/essai/un/contenu.json', {
-      id: 'un', titre: 'Contenu un', type: 'cours', niveau: 1, description: 'Contenu factice illustré.', mode: 'natif',
-      notions: ['statique'], image: { fichier: 'medias/cartes/photo.jpg', alt: 'Photo d’essai : disques colorés' },
-    });
-    // Nouveau contenu autonome créé par le back-office : fiche à plat, fichier dans medias/depots/.
+    ecrire('contenus/essai/un/contenu.json', contenuUn(image('medias/cartes/photo.jpg', 'Photo d’essai : disques colorés')));
+    // Nouveau contenu autonome créé à plat (Pages CMS) : fiche à plat, fichier dans medias/depots/.
     ecrire('contenus/essai/quatre.json', {
       id: 'quatre', titre: 'Contenu quatre', type: 'exercice', niveau: '2', description: 'Contenu autonome déposé.',
-      fichier: 'medias/depots/quatre.html', statut: 'relu', image: { fichier: 'medias/cartes/transparente.png', alt: 'Disque orange' },
+      fichier: 'medias/depots/quatre.html', statut: 'relu',
+      image: image('medias/cartes/transparente.png', 'Disque orange', { licence: 'oeuvre-personnelle', source: '', auteur: 'Auteur du site' }),
     });
     ecrire('medias/depots/quatre.html', AUTONOME('Contenu quatre'));
     ecrire('contenus/essai/cinq.json', {
@@ -70,12 +68,13 @@ function depotIllustre(modifier) {
       fichier: 'medias/depots/cinq.html', statut: 'brouillon',
     });
     ecrire('medias/depots/cinq.html', AUTONOME('Contenu Xylophage'));
-    // Planches : un thème et l'accueil (décorative).
+    // Planches : un thème et l'accueil, sans texte alternatif (décoratives).
+    const planche = image('medias/illustrations/planche.png', '', { licence: 'cc0', auteur: 'Musée d’essai' });
     const themes = JSON.parse(fs.readFileSync(path.join(racine, 'catalogue', 'themes.json'), 'utf8'));
-    themes[0].illustration = { fichier: 'medias/illustrations/planche.png', alt: '' };
+    themes[0].illustration = planche;
     ecrire('catalogue/themes.json', themes);
     const site = JSON.parse(fs.readFileSync(path.join(racine, 'site.json'), 'utf8'));
-    ecrire('site.json', { ...site, illustration_accueil: { fichier: 'medias/illustrations/planche.png', alt: '' } });
+    ecrire('site.json', { ...site, illustration_accueil: planche });
     // Annales : une relue (origine renseignée, non affichée), une en brouillon.
     ecrire('annales/essai-relu.json', annale('essai-relu', { origine: ORIGINE }));
     ecrire('medias/depots/essai-relu.html', AUTONOME('Annale essai-relu'));
@@ -101,56 +100,100 @@ function avecConstruction(modifier, verifier) {
   }
 }
 
+const lireEtat = (site) => JSON.parse(fs.readFileSync(path.join(site, 'admin', 'etat.json'), 'utf8'));
+
 test.afterAll(() => { if (IMAGES) fs.rmSync(IMAGES, { recursive: true, force: true }); });
 
 // --------------------------------------------------------------------------------------------------------------
-test.describe('la construction s’arrête sur une image mal déclarée', () => {
-  const lireJson = (racine, f) => JSON.parse(fs.readFileSync(path.join(racine, f), 'utf8'));
-  const CAS = [
-    ['image absente de CREDITS.json', (ecrire, racine) => {
-      ecrire('medias/CREDITS.json', lireJson(racine, 'medias/CREDITS.json').filter((c) => !c.fichier.endsWith('photo.jpg')));
-    }, /Image sans crédit : medias\/cartes\/photo\.jpg \(citée par contenus\/essai\/un\/contenu\.json\)/],
-    ['licence hors liste', (ecrire, racine) => {
-      ecrire('medias/CREDITS.json', lireJson(racine, 'medias/CREDITS.json').map((c) => ({ ...c, licence: c.fichier.endsWith('photo.jpg') ? 'cc-by' : c.licence })));
-    }, /Licence non acceptée « cc-by » pour medias\/cartes\/photo\.jpg/],
-    ['autorisation écrite sans référence', (ecrire, racine) => {
-      ecrire('medias/CREDITS.json', lireJson(racine, 'medias/CREDITS.json').map((c) => ({ ...c, licence: 'autorisation-ecrite' })));
-    }, /Autorisation écrite sans référence pour medias\/cartes\/photo\.jpg/],
-    ['texte alternatif manquant', (ecrire) => {
-      ecrire('contenus/essai/un/contenu.json', {
-        id: 'un', titre: 'Contenu un', type: 'cours', description: 'x', mode: 'natif', image: { fichier: 'medias/cartes/photo.jpg', alt: '' },
-      });
-    }, /Texte alternatif manquant pour medias\/cartes\/photo\.jpg \(citée par contenus\/essai\/un\/contenu\.json\)/],
-    ['fichier image introuvable', (ecrire, racine) => {
-      fs.rmSync(path.join(racine, 'medias', 'cartes', 'photo.jpg'));
-    }, /Image introuvable : medias\/cartes\/photo\.jpg/],
+// Lot 1e : le crédit se saisit avec l'image, dans la fiche ; une image ne retient jamais sa fiche.
+test.describe('images : crédit complet, case de risque, ni l’un ni l’autre', () => {
+  const carte = (site) => fs.readFileSync(path.join(site, 'catalogue', 'index.html'), 'utf8')
+    .match(/<a class="carte[^"]*" href="\.\.\/essai\/un\/"[\s\S]*?<\/a>/)[0];
+  const credits = (site) => fs.readFileSync(path.join(site, 'credits', 'index.html'), 'utf8');
+
+  test('crédit complet : image publiée, citée sur /credits/, aucun signalement ; fiche publiée', () => avecConstruction(null, (resultat, site) => {
+    expect(resultat.status, resultat.stderr).toBe(0);
+    expect(carte(site)).toMatch(/<img src="\.\.\/medias\/cartes\/photo-480\.webp"/);
+    expect(credits(site)).toContain('Carte du contenu « Contenu un »');
+    const etat = lireEtat(site);
+    expect(etat.images_a_regulariser).toEqual([]);
+    expect(etat.a_corriger.images_non_publiees).toEqual([]);
+  }));
+
+  test('crédit absent, case cochée : image publiée, absente de /credits/, « à régulariser » ; fiche publiée', () => avecConstruction((ecrire) => {
+    ecrire('contenus/essai/un/contenu.json', contenuUn({ fichier: '/medias/cartes/photo.jpg', alt: 'Photo', risque_accepte: true }));
+  }, (resultat, site) => {
+    expect(resultat.status, resultat.stderr).toBe(0);
+    expect(carte(site)).toMatch(/<img src="\.\.\/medias\/cartes\/photo-480\.webp"[^>]* alt="Photo"/);
+    expect(credits(site)).not.toContain('Contenu un');
+    const etat = lireEtat(site);
+    expect(etat.images_a_regulariser.map((i) => [i.fichier, i.fiche])).toEqual([['medias/cartes/photo.jpg', 'contenus/essai/un/contenu.json']]);
+    expect(etat.images_a_regulariser[0].correction).toContain('Complétez le crédit');
+    expect(etat.comptes.images_a_regulariser).toBe(1);
+    expect(etat.a_corriger.images_non_publiees).toEqual([]);
+  }));
+
+  test('ni crédit complet ni case cochée : image non publiée (bandeau), « à corriger » ; fiche publiée', () => avecConstruction((ecrire) => {
+    ecrire('contenus/essai/un/contenu.json', contenuUn({ fichier: '/medias/cartes/photo.jpg', alt: 'Photo', auteur: 'Quelqu’un' }));
+  }, (resultat, site) => {
+    expect(resultat.status, resultat.stderr).toBe(0);
+    expect(fs.existsSync(path.join(site, 'essai', 'un', 'index.html'))).toBe(true);
+    expect(carte(site)).toContain('carte-bandeau');
+    expect(carte(site)).not.toContain('<img');
+    expect(fs.existsSync(path.join(site, 'medias', 'cartes', 'photo-480.webp'))).toBe(false);
+    expect(credits(site)).not.toContain('Contenu un');
+    const [signal] = lireEtat(site).a_corriger.images_non_publiees;
+    expect(signal.fichier).toBe('medias/cartes/photo.jpg');
+    expect(signal.champ).toBe('Image de la carte');
+    expect(signal.correction).toContain('Cochez la case « J’accepte le risque : image publiée sans crédit » ou complétez le crédit');
+  }));
+
+  const NON_PUBLIEES = [
+    ['licence hors liste, même case cochée', image('medias/cartes/photo.jpg', 'Photo', { licence: 'cc-by', risque_accepte: true }),
+      /Licence non acceptée « cc-by » pour medias\/cartes\/photo\.jpg/],
+    ['autorisation écrite sans référence', image('medias/cartes/photo.jpg', 'Photo', { licence: 'autorisation-ecrite' }),
+      /référence de l’autorisation écrite manquante/],
+    ['fichier introuvable', image('medias/cartes/absente.jpg', 'Photo'), /Image introuvable : medias\/cartes\/absente\.jpg/],
   ];
-  for (const [nom, modifier, message] of CAS) {
-    test(nom, () => avecConstruction(modifier, (resultat, site) => {
-      expect(resultat.status, resultat.stdout + resultat.stderr).toBe(1);
-      expect(resultat.stderr).toMatch(message);
-      expect(fs.existsSync(site)).toBe(false);
+  for (const [nom, img, message] of NON_PUBLIEES) {
+    test(`image non publiée, fiche publiée : ${nom}`, () => avecConstruction((ecrire) => {
+      ecrire('contenus/essai/un/contenu.json', contenuUn(img));
+    }, (resultat, site) => {
+      expect(resultat.status, resultat.stderr).toBe(0);
+      expect(fs.existsSync(path.join(site, 'essai', 'un', 'index.html'))).toBe(true);
+      expect(carte(site)).toContain('carte-bandeau');
+      expect(lireEtat(site).a_corriger.images_non_publiees.map((i) => i.message).join('\n')).toMatch(message);
     }));
   }
 
-  test('image décorative sans texte alternatif : acceptée, alt vide', () => avecConstruction((ecrire, racine) => {
-    ecrire('medias/CREDITS.json', lireJson(racine, 'medias/CREDITS.json').map((c) => ({ ...c, decorative: true })));
-    ecrire('contenus/essai/un/contenu.json', {
-      id: 'un', titre: 'Contenu un', type: 'cours', description: 'x', mode: 'natif', image: { fichier: 'medias/cartes/photo.jpg', alt: '' },
-    });
+  test('texte alternatif vide : image décorative, alt=""', () => avecConstruction((ecrire) => {
+    ecrire('contenus/essai/un/contenu.json', contenuUn(image('medias/cartes/photo.jpg', '')));
   }, (resultat, site) => {
     expect(resultat.status, resultat.stderr).toBe(0);
-    expect(fs.readFileSync(path.join(site, 'catalogue', 'index.html'), 'utf8')).toMatch(/<img src="..\/medias\/cartes\/photo-480\.webp"[^>]* alt=""/);
+    expect(carte(site)).toMatch(/<img src="\.\.\/medias\/cartes\/photo-480\.webp"[^>]* alt=""/);
+  }));
+
+  test('image orpheline (téléversée, citée par aucune fiche) : signalée, rien n’est bloqué', () => avecConstruction((ecrire, racine) => {
+    fs.copyFileSync(path.join(imagesEssai(), 'photo.jpg'), path.join(racine, 'medias', 'cartes', 'oubliee.jpg'));
+  }, (resultat, site) => {
+    expect(resultat.status, resultat.stderr).toBe(0);
+    expect(lireEtat(site).a_corriger.images_orphelines.map((i) => i.fichier)).toEqual(['medias/cartes/oubliee.jpg']);
+    // Les images des brouillons ne sont pas orphelines ; aucune variante n'est publiée pour l'orpheline.
+    expect(fs.existsSync(path.join(site, 'medias', 'cartes', 'oubliee-480.webp'))).toBe(false);
   }));
 });
 
-test('la construction s’arrête sur un fichier autonome qui charge une ressource extérieure', () => avecConstruction((ecrire) => {
+test('fichier autonome qui charge une ressource extérieure : annale retenue, le reste se construit', () => avecConstruction((ecrire) => {
   ecrire('medias/depots/essai-relu.html', AUTONOME('Annale essai-relu')
     .replace('</head>', '<script src="https://cdn.exemple.com/outil.js"></script>\n</head>'));
 }, (resultat, site) => {
-  expect(resultat.status, resultat.stdout).toBe(1);
-  expect(resultat.stderr).toMatch(/medias\/depots\/essai-relu\.html, ligne 7 : ressource extérieure interdite \(<script src>\) : https:\/\/cdn\.exemple\.com\/outil\.js/);
-  expect(fs.existsSync(site)).toBe(false);
+  expect(resultat.status, resultat.stderr).toBe(0);
+  const [retenue] = lireEtat(site).a_corriger.fiches_retenues;
+  expect(retenue.fiche).toBe('annales/essai-relu.json');
+  expect(retenue.erreurs[0].champ).toBe('Fichier HTML du sujet');
+  expect(retenue.erreurs[0].message).toMatch(/medias\/depots\/essai-relu\.html, ligne 7 : ressource extérieure interdite \(<script src>\) : https:\/\/cdn\.exemple\.com\/outil\.js/);
+  expect(fs.existsSync(path.join(site, 'annales', 'essai-relu'))).toBe(false);
+  expect(fs.existsSync(path.join(site, 'essai', 'un', 'index.html'))).toBe(true);
 }));
 
 // --------------------------------------------------------------------------------------------------------------
@@ -322,14 +365,20 @@ test.describe('site factice illustré, dans le navigateur', () => {
     await expect(annales.locator('.credit-ligne')).toHaveText(
       'D’après un document publié par Éditeur d’essai, Licence Ouverte 2.0. Adaptation : industrie.education.');
     await expect(page.locator('body')).not.toContainText('Xylophage');
-    const credits = JSON.parse(fs.readFileSync(path.join(racine, 'medias', 'CREDITS.json'), 'utf8'));
+    // Section « Images » : une entrée par image publiée avec un crédit complet, produite à partir des fiches.
     const entrees = page.locator('#images + .credits > .credit');
-    await expect(entrees).toHaveCount(credits.length);
-    for (const c of credits) {
-      const entree = entrees.filter({ hasText: c.titre });
+    await expect(entrees).toHaveCount(3);
+    for (const [usage, auteur, licence] of [
+      ['Carte du contenu « Contenu un »', 'Atelier d’essai', 'Domaine public'],
+      ['Carte du contenu « Contenu quatre »', 'Auteur du site', 'Œuvre personnelle'],
+      ['Planche de l’accueil', 'Musée d’essai', 'CC0'],
+    ]) {
+      const entree = entrees.filter({ hasText: usage });
       await expect(entree).toHaveCount(1);
-      await expect(entree).toContainText(c.auteur);
-      await expect(entree).toContainText({ 'domaine-public': 'Domaine public', cc0: 'CC0', 'oeuvre-personnelle': 'Œuvre personnelle' }[c.licence]);
+      await expect(entree).toContainText(auteur);
+      await expect(entree).toContainText(licence);
     }
+    // La planche sert à l'accueil et au thème : une seule entrée, deux usages.
+    await expect(entrees.filter({ hasText: 'Planche du thème « Mécanique et conception »' })).toHaveCount(1);
   });
 });

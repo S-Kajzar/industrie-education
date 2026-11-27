@@ -8,7 +8,10 @@ ancien dépôt) est publié tel quel, seulement enveloppé. Avant cela, on véri
   - aucune ressource extérieure : rien n'est chargé depuis un autre site (src, href hors liens <a>, srcset, url(),
     @import, fetch et autres adresses http(s):// ou // dans les scripts), pas de <base>, pas de redirection ;
   - ressources relatives : interdites pour un fichier déposé seul (medias/depots/) ; présentes sur le disque pour un
-    fichier rangé dans son dossier avec ses ressources.
+    fichier rangé dans son dossier avec ses ressources ;
+  - liens d'un fichier déposé seul (lot 1e) : aucun lien vers une autre page par une adresse relative ou un chemin
+    absolu (il n'existerait pas sur le site), et chaque ancre (#…) vise un identifiant présent dans le fichier.
+    Sans ce contrôle, un lien cassé ferait échouer le test des liens et bloquerait toute la publication.
 
 Chaque problème est signalé avec le fichier et la ligne.
 
@@ -114,6 +117,12 @@ def est_relative(adresse):
     return not urlsplit(adresse).scheme and not adresse.startswith("/")
 
 
+def est_chemin_absolu(adresse):
+    """« /page/ » : chemin depuis la racine du site (et non « //hôte », qui vise un autre site)."""
+    adresse = adresse.strip()
+    return adresse.startswith("/") and not adresse.startswith("//")
+
+
 def adresses_srcset(valeur):
     return [morceau.strip().split()[0] for morceau in valeur.split(",") if morceau.strip()]
 
@@ -127,10 +136,14 @@ class Analyse(HTMLParser):
         self.fermetures = {"head": 0, "body": 0}
         self.dans = None  # « style » ou « script » pendant leur contenu
         self.ligne_bloc = 1
+        self.ancres = []  # (ligne, identifiant visé par un lien #…), fichier déposé seul
 
     def verifier_adresse(self, adresse, quoi, ligne, relative_permise=True):
         if est_exterieure(adresse):
             self.signaler(ligne, f"ressource extérieure interdite ({quoi}) : {adresse[:90]}")
+        elif self.dossier is None and est_chemin_absolu(adresse):
+            self.signaler(ligne, f"ressource à chemin absolu ({quoi}) : {adresse[:90]} — un fichier déposé seul doit "
+                                 "tout contenir (images intégrées)")
         elif relative_permise and est_relative(adresse):
             if self.dossier is None:
                 self.signaler(ligne, f"ressource relative ({quoi}) : {adresse[:90]} — un fichier déposé seul doit "
@@ -139,6 +152,18 @@ class Analyse(HTMLParser):
                 chemin = unquote(urlsplit(adresse).path)
                 if chemin and not (self.dossier / chemin).exists():
                     self.signaler(ligne, f"ressource introuvable ({quoi}) : {adresse[:90]}")
+
+    def verifier_lien(self, adresse, ligne):
+        """Lien de navigation d'un fichier déposé seul : une ancre vers un identifiant du fichier, ou un autre site."""
+        if self.dossier is not None or not adresse:
+            return
+        if adresse.startswith("#"):
+            if len(adresse) > 1:
+                self.ancres.append((ligne, unquote(adresse[1:])))
+        elif est_relative(adresse) or est_chemin_absolu(adresse):
+            if urlsplit(adresse).path:
+                self.signaler(ligne, f"lien vers une page absente du site : {adresse[:90]} — un fichier déposé seul ne "
+                                     "renvoie qu'à ses propres ancres (#…) ou à un autre site")
 
     def verifier_css(self, texte, ligne_depart):
         for m in URL_CSS.finditer(texte):
@@ -166,7 +191,8 @@ class Analyse(HTMLParser):
                         self.signaler(ligne, f"ressource extérieure interdite (ping) : {adresse[:90]}")
             elif nom in ATTRIBUTS_RESSOURCE:
                 if balise in BALISES_NAVIGATION and nom == "href":
-                    continue  # lien de navigation : permis, il ne charge rien
+                    self.verifier_lien(valeur.strip(), ligne)
+                    continue  # lien de navigation : il ne charge rien
                 adresses = adresses_srcset(valeur) if nom in ("srcset", "imagesrcset") else [valeur]
                 for adresse in adresses:
                     self.verifier_adresse(adresse, f"<{balise} {nom}>", ligne)
@@ -221,6 +247,11 @@ def controler(chemin, nom=None, dossier_ressources=None, taille_max=TAILLE_MAX):
     analyse = Analyse(signaler, dossier_ressources)
     analyse.feed(texte)
     analyse.close()
+    # Ancres : identifiants (id ou name) écrits dans le fichier, comme les lit le test des liens.
+    identifiants = set(re.findall(r"""\s(?:id|name)=["']([^"']+)["']""", texte))
+    for ligne, ancre in analyse.ancres:
+        if ancre not in identifiants:
+            signaler(ligne, f"ancre #{ancre[:60]} sans identifiant correspondant dans le fichier")
     for balise in ("html", "head", "body"):
         if analyse.ouvertures[balise] != 1:
             signaler(None, f"document incomplet : une seule balise <{balise}> attendue "
