@@ -1365,6 +1365,15 @@ class Constructeur:
         for p in self.publics:
             p["nb"] = sum(1 for c in self.contenus if p in c["publics"])
             p["nb_annales"] = sum(1 for a in self.annales if p in a["publics"])
+            # Filière encore « Bientôt » alors qu'une carte publiée la vise : signalé, jamais bloquant.
+            if not p["actif"] and (p["nb"] or p["nb_annales"]):
+                visees = [c["titre"] for c in [*self.contenus, *self.annales] if p in c["publics"]]
+                self.alertes.append(alerte(
+                    "catalogue/publics.json", f"La filière « {p['nom']} » est inactive (« Bientôt » sur l’accueil) mais "
+                    f"{pluriel(len(visees), 'page publiée la vise', 'pages publiées la visent')} : "
+                    + ", ".join(f"« {v} »" for v in visees[:5]) + ".",
+                    f"Passez « actif » à true pour « {p['id']} » dans catalogue/publics.json (sur GitHub), ou retirez "
+                    "cette filière des fiches."))
 
         # Liens entre annales et contenus publiés par les notions (« Pour réviser »).
         for annale in self.annales:

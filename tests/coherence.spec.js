@@ -14,7 +14,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { test, expect } = require('@playwright/test');
 const {
-  DEPOT, SITE, site, themes, publics, annales, cartesCatalogue, themeActif, pagesConstruites, fichierDePage,
+  DEPOT, SITE, site, themes, annales, themeActif, pagesConstruites, fichierDePage,
   depotFactice, construire, lireJSON,
 } = require('./outils');
 
@@ -51,14 +51,20 @@ function deposerAnnale(ecrire, id, autres = {}) {
 }
 
 // --------------------------------------------------------------------------------------------------------------
-test('filières : toute filière visée par un contenu ou une annale publiés est active', () => {
-  const inactives = new Set(publics.filter((p) => !p.actif).map((p) => p.id));
-  const fautes = [];
-  for (const c of cartesCatalogue()) {
-    for (const p of c.publics) if (inactives.has(p)) fautes.push(`« ${p} » est inactive mais visée par ${c.chemin} (${c.titre})`);
-  }
-  expect(fautes, 'passer ces filières à actif: true dans catalogue/publics.json').toEqual([]);
-});
+test('filières : une filière inactive visée par une page publiée est signalée « à corriger », sans rien bloquer', () => avecDepot((ecrire) => {
+  ecrire('contenus/essai/un/contenu.json', {
+    id: 'un', titre: 'Contenu un', type: 'cours', niveau: 1, description: 'Contenu factice pour les tests.', mode: 'natif',
+    publics: ['bac-pro-mspc'],
+  });
+  const liste = JSON.parse(fs.readFileSync(path.join(DEPOT, 'catalogue', 'publics.json'), 'utf8'));
+  ecrire('catalogue/publics.json', liste.map((p) => (p.id === 'bac-pro-mspc' ? { ...p, actif: false } : p)));
+}, (resultat, racine) => {
+  expect(resultat.status, resultat.stderr).toBe(0);
+  const autres = lireEtat(racine).a_corriger.autres;
+  expect(autres.map((a) => a.message).join('\n')).toMatch(/La filière « Bac Pro MSPC » est inactive .* « Contenu un »/);
+  expect(autres.map((a) => a.correction).join('\n')).toContain('Passez « actif » à true pour « bac-pro-mspc »');
+  expect(fs.existsSync(path.join(racine, '_site', 'essai', 'un', 'index.html'))).toBe(true);
+}));
 
 // --------------------------------------------------------------------------------------------------------------
 test.describe('notions', () => {
@@ -270,17 +276,17 @@ test.describe('source et licence des annales', () => {
   test('outils/annale.py contrôle aussi la source d’une fiche : exigée au statut « relu », rappel en brouillon', () => {
     const { spawnSync } = require('node:child_process');
     const annalePy = (fichiers) => spawnSync('python3', [path.join(DEPOT, 'outils', 'annale.py'), ...fichiers], { encoding: 'utf8' });
-    // Les fiches du dépôt, brouillons compris (un brouillon peut ne pas avoir encore de source).
-    const reelles = annales({ toutes: true }).map((a) => path.join(DEPOT, 'annales', `${a.id}.json`)).filter((f) => fs.existsSync(f));
-    const r = annalePy(reelles);
-    expect(r.status, r.stdout + r.stderr).toBe(0);
-    expect(r.stdout).toContain('prêt à publier');
-    // Fiches d'essai, sans source : brouillon accepté avec un rappel, « relu » refusé.
+    // Fiches d'essai (jamais les fiches réelles : leur contenu ne doit pas pouvoir faire échouer un test) : complète,
+    // prête ; sans source, brouillon accepté avec un rappel, « relu » refusé.
     const racine = depotFactice((ecrire) => {
+      deposerAnnale(ecrire, 'essai-complete');
       deposerAnnale(ecrire, 'essai-brouillon', { source: undefined, statut: 'brouillon' });
       deposerAnnale(ecrire, 'essai-relu', { source: undefined });
     });
     try {
+      const complete = annalePy([path.join(racine, 'annales', 'essai-complete.json')]);
+      expect(complete.status, complete.stdout).toBe(0);
+      expect(complete.stdout).toContain('prêt à publier');
       const brouillon = annalePy([path.join(racine, 'annales', 'essai-brouillon.json')]);
       expect(brouillon.status, brouillon.stdout).toBe(0);
       expect(brouillon.stdout).toContain('brouillon : à régler avant de passer en « relu »');
