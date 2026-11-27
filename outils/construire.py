@@ -5,6 +5,11 @@ Lit site.json, catalogue/, contenus/, annales/ et medias/ et écrit le site stat
 TRAME § 3, statique/ copié sous _/, les fichiers autonomes (contenus repris, annales) enveloppés sans être modifiés
 (TRAME § 5 et § 11), les variantes WebP des images (TRAME § 10), sitemap.xml et robots.txt.
 
+Le back-office (lot 1d) est Sveltia CMS, servi par le site à l'adresse /admin/ : la construction y copie le script
+du paquet npm @sveltia/cms (dist/sveltia-cms.js et dist/chunks/, sans les fichiers .map), sa traduction française et
+admin/config.yml, et génère admin/index.html. /admin/ est hors du site public : noindex, absent du sitemap, interdit
+dans robots.txt, jamais lié.
+
 Un thème sans contenu ni annale publiés est traité comme une filière inactive : « Bientôt » sur l'accueil, pas de
 page, aucun lien vers lui. Avec --resume FICHIER, un tableau de bord éditorial (comptes seulement) est ajouté à
 FICHIER, au format Markdown : c'est le récapitulatif de l'Action GitHub ($GITHUB_STEP_SUMMARY).
@@ -29,6 +34,7 @@ Usage :
 import argparse
 import difflib
 import json
+import os
 import re
 import shutil
 import sys
@@ -48,12 +54,22 @@ import illustrations  # noqa: E402  (outils/illustrations.py)
 
 DEPOT = Path(__file__).resolve().parent.parent
 UMAMI_SCRIPT = "https://cloud.umami.is/script.js"
+# Paquet npm du back-office (npm install). La variable d'environnement permet aux tests d'en simuler l'absence.
+SVELTIA = Path(os.environ.get("INDUSTRIE_SVELTIA") or DEPOT / "node_modules" / "@sveltia" / "cms")
+# Modules que Sveltia charge à la demande depuis unpkg.com et que le site sert lui-même (table d'import de
+# admin/index.html) : dépendances du paquet, installées avec lui ; seuls les fichiers utiles et la licence sont copiés.
+#   - translittération des noms de fichiers téléversés (accents, œ, ß…) ;
+#   - lecture des métadonnées EXIF d'une image téléversée (date de prise de vue).
+MODULES_ADMIN = {
+    "@sindresorhus/transliterate": ("index.js", "replacements.js", "locale-replacements.js", "license"),
+    "exifr": ("dist/lite.esm.mjs", "LICENSE"),
+}
 
 # TRAME § 3 : adresses prises par les pages du site. Les identifiants des thèmes et des publics s'y ajoutent.
 NOMS_RESERVES = (
     "catalogue", "annales", "labo", "maquettes", "methodes", "si", "sti2d", "bac-pro-mspc", "bts-ms", "mecanique",
     "energie", "numerique", "systemes", "habitat", "enseignants", "partenaires", "a-propos", "mentions-legales",
-    "credits", "medias", "_",
+    "credits", "medias", "_", "admin", "classe", "compte",
 )
 
 # TRAME § 5 : types de contenu, avec leur libellé (maquette du catalogue). Les annales ont leur propre type de carte.
@@ -317,7 +333,9 @@ def charger_site(lecteur):
         )
     site["umami_script"] = script.strip()
     for champ in ("editeur", "hebergeur"):
-        if not isinstance(site.get(champ), dict):
+        # Le back-office n'écrit pas un champ facultatif vide : un éditeur entièrement vide peut être absent.
+        site[champ] = {} if site.get(champ) is None else site[champ]
+        if not isinstance(site[champ], dict):
             raise ErreurConstruction(f"site.json : « {champ} » doit être un objet.")
     for champ in ("nom", "adresse", "directeur_publication"):
         site["editeur"][champ] = site["editeur"].get(champ) or ""
@@ -1018,6 +1036,7 @@ class Constructeur:
             self.lecteur, self.themes, self.publics, {p["id"] for p in self.publics}, self.notions)
         self.brouillons_annales = brouillons_annales
         self.a_la_une = choisir_a_la_une(ids_une, self.contenus_par_id, self.brouillons)
+        self.verifier_back_office()
 
         rang_theme = {t["id"]: i for i, t in enumerate(self.themes)}
         self.collections.sort(key=lambda c: (rang_theme[c["theme"]["id"]], cle_tri(c["titre"])))
@@ -1060,6 +1079,53 @@ class Constructeur:
                 "fichier autonome refusé :\n  " + "\n  ".join(problemes[:12])
                 + ("\n  …" if len(problemes) > 12 else "")
             )
+
+    def verifier_back_office(self):
+        """Le back-office /admin/ demande le paquet npm @sveltia/cms et admin/config.yml."""
+        self.admin_config = self.racine / "admin" / "config.yml"
+        if not self.admin_config.is_file():
+            self.admin_config = DEPOT / "admin" / "config.yml"  # dépôts factices des tests
+        if not self.admin_config.is_file():
+            raise ErreurConstruction("Fichier manquant : admin/config.yml (configuration du back-office).")
+        manifeste = SVELTIA / "package.json"
+        if not (SVELTIA / "dist" / "sveltia-cms.js").is_file() or not manifeste.is_file():
+            raise ErreurConstruction(
+                "le back-office ne peut pas être construit : le paquet npm @sveltia/cms est introuvable "
+                f"({SVELTIA}). Lancez « npm ci » (ou « npm install ») à la racine du dépôt, puis recommencez."
+            )
+        self.sveltia_version = json.loads(manifeste.read_text(encoding="utf-8"))["version"]
+        # Modules servis par le site (MODULES_ADMIN) : l'adresse unpkg attendue porte la version écrite dans le script.
+        script = (SVELTIA / "dist" / "sveltia-cms.js").read_text(encoding="utf-8")
+        racine_modules = SVELTIA.parent.parent if SVELTIA.parent.name.startswith("@") else SVELTIA.parent
+        self.modules_admin = []
+        for paquet, fichiers in MODULES_ADMIN.items():
+            attendu = re.search(f'(?:"{re.escape(paquet)}"|\\b{re.escape(paquet)}):`' + r"\^?([0-9][0-9.]*)`", script)
+            dossier = racine_modules / paquet
+            if attendu and all((dossier / f).is_file() for f in fichiers):
+                self.modules_admin.append({
+                    "dossier": dossier, "fichiers": fichiers, "nom": paquet.split("/")[-1],
+                    "adresse": f"https://unpkg.com/{paquet}@{attendu.group(1)}/",
+                })
+
+    def ecrire_admin(self):
+        """/admin/ : script et morceaux de Sveltia CMS (sans .map), traduction française, configuration, page."""
+        cible = self.sortie / "admin"
+        (cible / "locales").mkdir(parents=True)
+        dist = SVELTIA / "dist"
+        shutil.copy2(dist / "sveltia-cms.js", cible / "sveltia-cms.js")
+        shutil.copytree(dist / "chunks", cible / "chunks", ignore=shutil.ignore_patterns("*.map"))
+        shutil.copy2(SVELTIA / "locales" / "fr.json", cible / "locales" / "fr.json")
+        # Licence MIT de Sveltia CMS, à joindre à toute copie du logiciel.
+        shutil.copy2(SVELTIA / "LICENSE.txt", cible / "LICENSE.txt")
+        shutil.copy2(self.admin_config, cible / "config.yml")
+        for module in self.modules_admin:
+            for fichier in module["fichiers"]:
+                destination = cible / "modules" / module["nom"] / fichier
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(module["dossier"] / fichier, destination)
+        page = self.env.get_template("admin.html").render(site=self.site, version=self.sveltia_version,
+                                                          modules=self.modules_admin)
+        (cible / "index.html").write_text(page, encoding="utf-8")
 
     def preparer_images(self):
         self.images.sortie = self.sortie
@@ -1161,6 +1227,7 @@ class Constructeur:
             for section in self.a_venir:
                 self.page_a_venir(section)
             self.pages_service()
+            self.ecrire_admin()  # hors du sitemap : self.pages n'en garde pas trace
             self.ecrire_sitemap_robots()
         except BaseException:
             shutil.rmtree(self.travail, ignore_errors=True)
@@ -1362,10 +1429,13 @@ class Constructeur:
             lignes.append(f"  <url><loc>{echapper_xml(self.url_absolue(chemin))}</loc></url>")
         lignes.append("</urlset>")
         (self.sortie / "sitemap.xml").write_text("\n".join(lignes) + "\n", encoding="utf-8")
+        admin = f"{self.site['base']}admin/"
         if self.site["indexable"]:
-            robots = f"User-agent: *\nAllow: /\n\nSitemap: {self.url_absolue('sitemap.xml')}\n"
+            robots = (f"User-agent: *\nAllow: /\n# Back-office, hors du site public.\nDisallow: {admin}\n\n"
+                      f"Sitemap: {self.url_absolue('sitemap.xml')}\n")
         else:
-            robots = "# Préproduction : indexation interdite (site.json, « indexable » : false).\nUser-agent: *\nDisallow: /\n"
+            robots = ("# Préproduction : indexation interdite (site.json, « indexable » : false).\nUser-agent: *\n"
+                      f"Disallow: /\n# Back-office, hors du site public.\nDisallow: {admin}\n")
         (self.sortie / "robots.txt").write_text(robots, encoding="utf-8")
 
     def tableau_de_bord(self):

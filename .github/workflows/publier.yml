@@ -46,7 +46,7 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Installer Playwright et les polices
+      - name: Installer Playwright, les polices et le back-office (Sveltia CMS)
         run: npm ci
 
       - name: Installer Chromium pour les tests

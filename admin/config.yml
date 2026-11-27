@@ -1,0 +1,540 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+#
+# Back-office du site (lot 1d, TRAME § 9) : Sveltia CMS, servi par le site à l'adresse /admin/.
+# Mode d'emploi pour Sébastien : GUIDE-BACK-OFFICE.md.
+#
+# Chaque enregistrement est un commit sur main (connexion par jeton d'accès GitHub) ; l'Action « Publier le site »
+# construit, teste et publie (environ 2 minutes). Rien n'est stocké ailleurs que dans le dépôt.
+#
+# Les listes fermées (types, niveaux, thèmes, filières, licences, statuts) recopient catalogue/, outils/construire.py
+# et outils/annale.py : tests/admin.spec.js vérifie qu'elles restent synchronisées, et qu'aucune clé des fichiers de
+# données n'est oubliée ici (une clé absente serait perdue au premier enregistrement). Les clés techniques, non
+# modifiables ici, sont déclarées en champs cachés (widget hidden).
+#
+# Rubriques, par fréquence d'usage : Annales, Contenus, Images et crédits, Accueil, Notions, Thèmes, Réglages du site.
+
+backend:
+  name: github
+  repo: S-Kajzar/industrie-education
+  branch: main
+  # Connexion par jeton d'accès personnel seulement : ni application OAuth, ni authentificateur tiers.
+  auth_methods: [token]
+  commit_messages:
+    create: "{{collection}} : création de {{slug}}"
+    update: "{{collection}} : mise à jour de {{slug}}"
+    delete: "{{collection}} : suppression de {{slug}}"
+    uploadMedia: "Médias : ajout de {{path}}"
+    deleteMedia: "Médias : suppression de {{path}}"
+
+app_title: Administration — industrie.education
+# Préproduction ; à changer avec site.json → origine et base à la bascule du domaine (un test les compare). Sveltia
+# ne garde que le domaine de site_url pour les liens « Afficher sur le site en ligne » : chaque preview_path commence
+# donc par la base (industrie-education/).
+site_url: https://s-kajzar.github.io/industrie-education/
+display_url: https://s-kajzar.github.io/industrie-education/
+
+# Médias : les mêmes dossiers qu'avec Pages CMS. Les originaux restent dans le dépôt, tels quels : Sveltia ne les
+# transforme pas (aucune option « transformations ») ; outils/illustrations.py produit les variantes à la
+# publication. Noms de fichiers nettoyés (minuscules, sans accent, tirets). 5 Mo au plus, comme outils/annale.py.
+media_folder: medias/cartes
+public_folder: /medias/cartes
+media_libraries:
+  default:
+    config:
+      max_file_size: 5242880
+      slugify_filename: true
+  # Banques d'images (Pexels, Pixabay, Unsplash…) : interdites par CLAUDE.md, désactivées.
+  stock_assets: false
+# Les trois dossiers de médias, visibles dans la vue « Ressources » avec les mêmes noms qu'avec Pages CMS.
+asset_collections:
+  - name: cartes
+    label: Images de cartes
+    icon: image
+    media_folder: medias/cartes
+    public_folder: /medias/cartes
+  - name: illustrations
+    label: Planches d'illustration
+    icon: draw
+    media_folder: medias/illustrations
+    public_folder: /medias/illustrations
+  - name: depots
+    label: Fichiers HTML déposés
+    icon: html
+    media_folder: medias/depots
+    public_folder: /medias/depots
+slug:
+  encoding: ascii
+  clean_accents: true
+
+# Écriture des JSON : 2 espaces, listes et objets développés, clés dans l'ordre des champs ci-dessous, retour à la
+# ligne final ; un champ facultatif vide n'est pas écrit (pas de "statut": "" ni de null). Les fichiers du dépôt sont
+# alignés sur ce format (outils/format_donnees.py, vérifié par tests/admin.spec.js).
+output:
+  omit_empty_optional_fields: true
+  json:
+    indent_style: space
+    indent_size: 2
+
+collections:
+  # --------------------------------------------------------------------------------------------------------------
+  - name: annales
+    label: Annales
+    label_singular: Annale
+    description: "Le plus fréquent : déposer une annale du projet Claude (fichier HTML + fiche). Publiée à l'adresse /annales/ suivie de son identifiant, seulement au statut « Relu », avec sa source."
+    icon: school
+    folder: annales
+    extension: json
+    format: json
+    identifier_field: titre
+    slug: "{{fields.id}}"
+    summary: "{{titre}} · {{statut}}"
+    sortable_fields: [titre, mis_a_jour, statut]
+    preview_path: "industrie-education/annales/{{slug}}/"
+    editor:
+      preview: false
+    fields:
+      - &identifiant
+        name: id
+        label: Identifiant (adresse de la page)
+        widget: string
+        hint: "Devient l'adresse de la page : /annales/ suivi de l'identifiant. Nom neutre, sans diplôme ni session. Ne plus le changer une fois publié."
+        pattern: ['^[a-z0-9]+(?:-[a-z0-9]+)*$', "Minuscules sans accent, chiffres et tirets seulement (ex. : levage-dechargement-sacs-linge)."]
+      - name: titre
+        label: Titre
+        widget: string
+      - name: presentation
+        label: Présentation
+        widget: text
+        hint: "Deux ou trois phrases (300 caractères au plus) : le système étudié, les parties, la durée. Elles servent de description pour les moteurs de recherche et sur la carte ; la page montre celles du fichier, juste sous la fiche."
+      - name: fichier
+        label: Fichier HTML du sujet
+        widget: file
+        hint: "Le fichier autonome livré par le projet Claude (un seul fichier .html, images intégrées, 5 Mo au plus). Il est publié tel quel, jamais modifié."
+        accept: ".html,text/html"
+        choose_url: false
+        media_folder: /medias/depots
+        public_folder: /medias/depots
+      - &image-carte
+        name: image
+        label: Image de la carte (facultative)
+        widget: object
+        required: false
+        collapsed: auto
+        hint: "Sans image, la carte garde son bandeau typographique. L'image doit être déclarée dans la rubrique « Images et crédits », avec sa licence, sinon la publication s'arrête."
+        fields:
+          - name: fichier
+            label: Image (JPEG, PNG ou WebP)
+            widget: image
+            required: false
+            accept: ".jpg,.jpeg,.png,.webp"
+            choose_url: false
+            media_folder: /medias/cartes
+            public_folder: /medias/cartes
+          - name: alt
+            label: Texte alternatif
+            widget: string
+            required: false
+            hint: "Une phrase qui décrit l'image pour qui ne la voit pas (ex. : « Cadre de VTT et ses liaisons »). Obligatoire, sauf image déclarée décorative dans les crédits."
+      - &publics
+        name: publics
+        label: Filières
+        widget: select
+        multiple: true
+        min: 1
+        options:
+          - { value: si, label: SI }
+          - { value: sti2d, label: STI2D }
+          - { value: bac-pro-mspc, label: Bac Pro MSPC }
+          - { value: bts-ms, label: BTS MS }
+      - &theme
+        name: theme
+        label: Thème
+        widget: select
+        options:
+          - { value: mecanique, label: Mécanique et conception }
+          - { value: energie, label: Énergie }
+          - { value: numerique, label: Information et numérique }
+          - { value: systemes, label: Analyse des systèmes }
+          - { value: habitat, label: Habitat et construction }
+      - &notions
+        name: notions
+        label: Notions
+        widget: relation
+        collection: notions
+        value_field: id
+        display_fields: [nom]
+        search_fields: [nom, id]
+        multiple: true
+        required: false
+        hint: "Choisies dans la rubrique « Notions » : elles relient une annale aux cours et exercices des mêmes notions. Une notion manque ? Ajoutez-la d'abord dans « Notions »."
+      - &duree
+        name: duree_min
+        label: Durée conseillée (en minutes)
+        widget: number
+        value_type: int
+        min: 1
+        required: false
+      - name: origine
+        label: Origine du sujet (classement interne)
+        widget: object
+        required: false
+        collapsed: auto
+        hint: "Diplôme, épreuve et session d'origine. Rien n'est affiché sur le site tant que « Afficher l'origine » n'est pas coché."
+        fields:
+          - { name: diplome, label: Diplôme, widget: string, required: false }
+          - { name: epreuve, label: Épreuve, widget: string, required: false }
+          - { name: session, label: Session (année), widget: number, value_type: int, min: 1950, max: 2100, required: false }
+      - name: afficher_origine
+        label: Afficher l'origine sur le site
+        widget: boolean
+        default: false
+        required: false
+        hint: "Décoché (par défaut) : le diplôme, l'épreuve et la session n'apparaissent nulle part sur le site. Coché : ils apparaissent dans la fiche, le titre de la page et l'index des annales. Le fichier HTML reste neutre dans les deux cas. La ligne de crédit (source) est affichée dans les deux cas."
+      - name: source
+        label: Source et licence du sujet (obligatoire pour publier)
+        widget: object
+        required: false
+        hint: "Affichée dans la fiche de l'annale par une ligne de crédit, quel que soit « Afficher l'origine », et sur la page Crédits. Sans source valide, une annale « Relu » arrête la publication."
+        fields:
+          - name: editeur
+            label: Éditeur
+            widget: string
+            required: false
+            hint: "Ex. : éduscol STI (sujets d'examen sur sti.eduscol.education.fr), éduscol (annales du bac sur eduscol.education.gouv.fr). Il devient le lien de la ligne de crédit."
+          - name: url
+            label: Adresse du document d'origine
+            widget: string
+            required: false
+            hint: "Adresse complète en https://, celle du fichier téléchargé (sujet ou dossier questionnaire). Obligatoire pour les licences CC BY-NC-SA et Licence Ouverte."
+            pattern: ['^$|^https://[^\s/]+\.[^\s/]+(/\S*)?$', "Une adresse complète qui commence par https://, ou rien."]
+          - name: licence
+            label: Licence
+            widget: select
+            required: false
+            hint: "CC BY-NC-SA 2.0 FR : sujets d'éduscol STI. Licence Ouverte 2.0 : annales du bac sur eduscol.education.gouv.fr. Autorisation écrite : à référencer ci-dessous. Œuvre personnelle : sujet écrit par vous."
+            options:
+              - { value: cc-by-nc-sa-2.0-fr, label: CC BY-NC-SA 2.0 FR (éduscol STI) }
+              - { value: etalab-2.0, label: "Licence Ouverte 2.0 (éduscol, annales du bac)" }
+              - { value: autorisation-ecrite, label: Autorisation écrite }
+              - { value: oeuvre-personnelle, label: Œuvre personnelle }
+          - name: reference_autorisation
+            label: Référence de l'autorisation
+            widget: string
+            required: false
+            hint: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
+      - &statut
+        name: statut
+        label: Statut
+        widget: select
+        default: brouillon
+        hint: "Brouillon : invisible sur le site (mais lisible sur GitHub, le dépôt est public). Relu : publié. Ne passer en « Relu » qu'après avoir vérifié les réponses attendues ; ce choix est le vôtre seul."
+        options:
+          - { value: brouillon, label: Brouillon (non publié) }
+          - { value: relu, label: Relu (publié) }
+      - name: mis_a_jour
+        label: Mis à jour le
+        widget: datetime
+        format: YYYY-MM-DD
+        time_format: false
+        required: false
+        hint: "Les trois annales les plus récentes s'affichent sur l'accueil."
+
+  # --------------------------------------------------------------------------------------------------------------
+  # Contenus : une seule rubrique pour toutes les collections de contenus/, en arborescence (collection, puis un
+  # dossier par contenu avec sa fiche contenu.json : trois niveaux sous contenus/). Les fichiers collection.json n'ont
+  # pas de « type » : le filtre les écarte.
+  - name: contenus
+    label: Contenus
+    label_singular: Contenu
+    description: "Toutes les collections, en arborescence : modifier une fiche (titre, description, notions, image de carte…) ou créer un nouveau contenu autonome (fiche + fichier HTML) dans sa collection."
+    icon: menu_book
+    folder: contenus
+    extension: json
+    format: json
+    path: "{{slug}}/contenu"
+    nested:
+      depth: 3
+      subfolders: true
+    meta:
+      path:
+        index_file: contenu
+    filter:
+      field: type
+      pattern: "."
+    identifier_field: titre
+    slug: "{{fields.id}}"
+    summary: "{{titre}}"
+    preview_path: "industrie-education/{{dirname}}/"
+    editor:
+      preview: false
+    fields:
+      - <<: *identifiant
+        hint: "Devient l'adresse de la page : la collection, puis l'identifiant. Ne plus le changer une fois publié."
+      - name: titre
+        label: Titre
+        widget: string
+      - name: type
+        label: Type
+        widget: select
+        dropdown_threshold: 6
+        options:
+          - { value: cours, label: Cours }
+          - { value: exercice, label: Exercice }
+          - { value: activite, label: Activité }
+          - { value: etude, label: Étude de cas }
+          - { value: qcm, label: QCM }
+          - { value: formulaire, label: Formulaire }
+      - name: niveau
+        label: Niveau
+        widget: select
+        required: false
+        hint: "Laisser vide pour un formulaire."
+        options:
+          - { value: 1, label: Niveau 1 }
+          - { value: 2, label: Niveau 2 }
+          - { value: 3, label: Niveau 3 }
+      - *duree
+      - name: description
+        label: Description
+        widget: text
+        hint: "Une ou deux phrases : ce que l'élève fait, sur quel système. Elle s'affiche sur la carte et sert de description pour les moteurs de recherche."
+      - name: mots_cles
+        label: Mots-clés (recherche du catalogue)
+        widget: list
+        required: false
+      - *notions
+      - *image-carte
+      - name: fichier
+        label: Fichier HTML (nouveau contenu seulement)
+        widget: file
+        required: false
+        hint: "Pour un nouveau contenu : le fichier autonome livré par le projet Claude (un seul fichier .html, 5 Mo au plus). Laisser vide pour un contenu existant."
+        accept: ".html,text/html"
+        choose_url: false
+        media_folder: /medias/depots
+        public_folder: /medias/depots
+      - name: statut
+        label: Statut
+        widget: select
+        required: false
+        hint: "Vide ou « Relu » : publié. Brouillon : invisible sur le site (mais lisible sur GitHub, le dépôt est public)."
+        options:
+          - { value: brouillon, label: Brouillon (non publié) }
+          - { value: relu, label: Relu (publié) }
+      # Champs techniques des contenus repris, conservés tels quels.
+      - { name: mode, widget: hidden }
+      - { name: source, widget: hidden }
+
+  # --------------------------------------------------------------------------------------------------------------
+  - name: credits
+    label: Images et crédits
+    label_singular: Crédit d'image
+    description: "Une entrée par image téléversée (carte ou planche) : chemin, auteur, source, licence. Sans entrée ici, la publication s'arrête. Jamais d'image générée par IA, ni de banque d'images."
+    icon: photo_library
+    file: medias/CREDITS.json
+    identifier_field: titre
+    summary: "{{titre}} — {{licence}}"
+    editor:
+      preview: false
+    fields:
+      - name: fichier
+        label: Chemin de l'image
+        widget: string
+        hint: "Tel qu'il apparaît dans la fiche, ex. : /medias/cartes/levage-linge.jpg ou /medias/illustrations/encyclopedie-forge.png."
+        pattern: ['^/?medias/(cartes|illustrations)/[^/]+\.(jpg|jpeg|png|webp)$', "Un chemin de la forme /medias/cartes/nom.jpg ou /medias/illustrations/nom.png."]
+      - name: titre
+        label: Titre de l'œuvre
+        widget: string
+      - { name: auteur, label: Auteur, widget: string, required: false }
+      - { name: date, label: Date (année ou siècle), widget: string, required: false }
+      - { name: source, label: Source (adresse de la page d'origine), widget: string, required: false }
+      - name: licence
+        label: Licence
+        widget: select
+        hint: "Domaine public : œuvre ancienne libre de droits (Encyclopédie, brevets américains anciens…). CC0 : dédiée au domaine public par son auteur (musées en accès ouvert). Œuvre personnelle : photo ou dessin de Sébastien. Autorisation écrite : accord écrit du propriétaire (constructeur…), à référencer ci-dessous."
+        options:
+          - { value: domaine-public, label: Domaine public }
+          - { value: cc0, label: CC0 }
+          - { value: oeuvre-personnelle, label: Œuvre personnelle }
+          - { value: autorisation-ecrite, label: Autorisation écrite }
+      - name: reference_autorisation
+        label: Référence de l'autorisation
+        widget: string
+        required: false
+        hint: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
+      - name: usage
+        label: Usage sur le site
+        widget: string
+        required: false
+        hint: "Ex. : carte de l'annale « Levage du linge », planche de l'accueil."
+      - name: decorative
+        label: Image décorative (texte alternatif vide)
+        widget: boolean
+        default: false
+        required: false
+        hint: "À cocher seulement si l'image n'apporte aucune information (ex. : planche derrière le titre)."
+
+  # --------------------------------------------------------------------------------------------------------------
+  - name: accueil
+    label: Accueil
+    description: "Contenus à la une, textes des pages Labo et Maquettes. Les titres et la planche de l'accueil sont dans « Réglages du site »."
+    icon: home
+    editor:
+      preview: false
+    files:
+      - name: a-la-une
+        label: Contenus à la une
+        file: catalogue/a-la-une.json
+        fields:
+          - name: contenus
+            label: Identifiants des contenus à la une
+            widget: list
+            min: 3
+            max: 6
+            hint: "De 3 à 6 contenus publiés, dans l'ordre d'affichage : l'identifiant d'un contenu (ex. : cadre-velo), un par ligne."
+            field:
+              name: contenu
+              label: Identifiant
+              widget: string
+              pattern: ['^[a-z0-9]+(?:-[a-z0-9]+)*$', "Minuscules sans accent, chiffres et tirets seulement."]
+      - name: a-venir
+        label: Labo et Maquettes (à venir)
+        file: catalogue/a-venir.json
+        fields:
+          - name: labo
+            label: Labo
+            widget: object
+            hint: "Textes du bloc « Bientôt » de l'accueil et des pages /labo/ et /maquettes/. Une phrase de promesse, sans date."
+            fields: &champs-a-venir
+              - { name: titre, label: Titre, widget: string }
+              - { name: promesse, label: "Promesse (une phrase, sans date)", widget: text }
+              - &planche
+                name: illustration
+                label: Planche d'illustration
+                widget: object
+                required: false
+                collapsed: auto
+                hint: "Planche technique ancienne du domaine public ou sous CC0, déclarée dans « Images et crédits ». Elle est passée en niveaux de gris sur fond blanc à la publication."
+                fields:
+                  - name: fichier
+                    label: Planche (JPEG, PNG ou WebP)
+                    widget: image
+                    required: false
+                    accept: ".jpg,.jpeg,.png,.webp"
+                    choose_url: false
+                    media_folder: /medias/illustrations
+                    public_folder: /medias/illustrations
+                  - name: alt
+                    label: Texte alternatif
+                    widget: string
+                    required: false
+                    hint: "Laisser vide seulement si la planche est déclarée décorative dans les crédits."
+          - name: maquettes
+            label: Maquettes
+            widget: object
+            fields: *champs-a-venir
+
+  # --------------------------------------------------------------------------------------------------------------
+  - name: notions
+    label: Notions
+    label_singular: Notion
+    description: "Ajouter une notion ou renommer son libellé. L'identifiant d'une notion déjà utilisée ne se change pas."
+    icon: label
+    file: catalogue/notions.json
+    identifier_field: nom
+    summary: "{{nom}} ({{id}})"
+    editor:
+      preview: false
+    fields:
+      - <<: *identifiant
+        label: Identifiant
+        hint: "Minuscules sans accent et tirets (ex. : cinematique-graphique). C'est lui qu'enregistrent les fiches."
+      - name: nom
+        label: Libellé affiché
+        widget: string
+        hint: "Avec ses accents (ex. : Cinématique graphique)."
+
+  # --------------------------------------------------------------------------------------------------------------
+  - name: themes
+    label: Thèmes
+    label_singular: Thème
+    description: "Les cinq thèmes : nom, exemples, planche. Leur identifiant et leur adresse ne changent pas ; un thème sans contenu publié s'affiche « Bientôt »."
+    icon: category
+    file: catalogue/themes.json
+    identifier_field: nom
+    create: false
+    delete: false
+    duplicate: false
+    editor:
+      preview: false
+    fields:
+      - { name: id, label: Identifiant, widget: string, readonly: true }
+      - { name: nom, label: Nom, widget: string }
+      - { name: court, label: Nom court (bandeau des cartes), widget: string }
+      - { name: exemples, label: Exemples (index de l'accueil), widget: list, required: false }
+      - <<: *planche
+        name: illustration
+        label: Planche d'illustration
+        hint: "Planche technique ancienne du domaine public ou sous CC0, déclarée dans « Images et crédits ». Elle s'affiche à droite du titre de la page du thème et en vignette sur l'accueil."
+
+  # --------------------------------------------------------------------------------------------------------------
+  - name: reglages
+    label: Réglages du site
+    description: "Mentions légales (éditeur, contact), mesure d'audience Umami, ouverture aux moteurs de recherche, titres et planche de l'accueil."
+    icon: settings
+    editor:
+      preview: false
+    files:
+      - name: reglages
+        label: Réglages du site
+        file: site.json
+        fields:
+          # Données techniques, non modifiables ici, conservées telles quelles.
+          - { name: nom, widget: hidden }
+          - { name: base, widget: hidden }
+          - { name: origine, widget: hidden }
+          - name: editeur
+            label: Éditeur (mentions légales)
+            widget: object
+            fields:
+              - { name: nom, label: Nom de l'éditeur, widget: string, required: false }
+              - { name: adresse, label: Adresse, widget: string, required: false }
+              - { name: directeur_publication, label: Directeur de la publication, widget: string, required: false }
+          - name: contact
+            label: Adresse de contact
+            widget: string
+            required: false
+            hint: "Utilisée par « Signaler une erreur » et « Devenir partenaire »."
+            pattern: ['^$|^[^@\s]+@[^@\s]+\.[^@\s]+$', "Une adresse électronique, ou rien."]
+          - { name: hebergeur, widget: hidden }
+          - name: umami
+            label: Identifiant Umami (mesure d'audience)
+            widget: string
+            required: false
+            hint: "Vide : aucune mesure d'audience. Renseigné : le script Umami (sans cookie) est ajouté à chaque page."
+            pattern: ['^$|^[0-9a-fA-F-]{8,}$', "L'identifiant du site donné par Umami (lettres a-f, chiffres et tirets)."]
+          - name: umami_script
+            label: Adresse du script Umami
+            widget: string
+            hint: "Celle du code de suivi donné par Umami (attribut src), elle dépend de la région choisie à la création du compte. Par défaut : https://cloud.umami.is/script.js."
+            pattern: ['^https://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:[0-9]+)?/\S*$', "Une adresse complète qui commence par https:// (ex. : https://cloud.umami.is/script.js)."]
+          - name: indexable
+            label: Ouvert aux moteurs de recherche
+            widget: boolean
+            required: false
+            hint: "Décoché tant que le site est en préproduction. À cocher seulement à la bascule sur le domaine industrie.education. Refusé tant que le nom de l'éditeur, le directeur de la publication ou l'adresse de contact sont vides."
+          - name: titres_accueil
+            label: Titre d'accueil selon le moment
+            widget: object
+            collapsed: false
+            hint: "Un retour à la ligne dans le champ = un retour à la ligne à l'écran."
+            fields:
+              - { name: cours, label: "En semaine, 8 h – 12 h et 14 h – 17 h (titre par défaut)", widget: text }
+              - { name: matin, label: "En semaine, 6 h – 8 h", widget: text }
+              - { name: midi, label: "En semaine, 12 h – 14 h", widget: text }
+              - { name: soir, label: "En semaine, 17 h – 22 h", widget: text }
+              - { name: nuit, label: "En semaine, 22 h – 6 h", widget: text }
+              - { name: week-end, label: "Samedi et dimanche", widget: text }
+          - <<: *planche
+            name: illustration_accueil
+            label: Planche de l'accueil, derrière le titre

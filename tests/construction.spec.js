@@ -13,8 +13,10 @@ const contenu = (id, autres = {}) => ({ id, titre: `Contenu ${id}`, type: 'cours
 const REPRIS = '<!DOCTYPE html>\n<html lang="fr">\n<head>\n<meta charset="utf-8">\n<title>Repris</title>\n'
   + '<meta name="description" content="Contenu repris factice.">\n</head>\n<body>\n<h1>Repris</h1>\n</body>\n</html>\n';
 
+// Pages du site public (le back-office /admin/ en est exclu : ni Umami, ni règles du site public).
 function pagesHtml(dossier) {
-  return fs.readdirSync(dossier, { recursive: true }).filter((f) => f.endsWith('.html')).map((f) => path.join(dossier, f));
+  return fs.readdirSync(dossier, { recursive: true }).filter((f) => f.endsWith('.html') && !f.startsWith(`admin${path.sep}`))
+    .map((f) => path.join(dossier, f));
 }
 
 function avecDepot(modifier, verifier) {
@@ -113,7 +115,8 @@ test('indexable : robots.txt ouvert avec le sitemap, plus de noindex', () => {
     expect(resultat.status, resultat.stderr).toBe(0);
     const robots = fs.readFileSync(path.join(racine, '_site', 'robots.txt'), 'utf8');
     expect(robots).toMatch(/^Allow: \/$/m);
-    expect(robots).not.toMatch(/^Disallow/m);
+    // Seul le back-office reste interdit aux moteurs.
+    expect(robots.match(/^Disallow:.*$/gm)).toEqual([`Disallow: ${site.base}admin/`]);
     expect(robots).toContain(`Sitemap: ${site.origine}${site.base}sitemap.xml`);
     for (const page of pagesHtml(path.join(racine, '_site'))) expect(fs.readFileSync(page, 'utf8'), page).not.toContain('noindex');
   });

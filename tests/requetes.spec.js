@@ -79,7 +79,7 @@ test.describe('avec Umami configuré', () => {
     const origine = new URL(serveur.adresse).origin;
     page.on('request', (r) => { if (!r.url().startsWith(`${origine}/`) && !/^(data|blob|about):/.test(r.url())) hotes.add(new URL(r.url()).host); });
     const pages = fs.readdirSync(path.join(racine, '_site'), { recursive: true })
-      .filter((f) => f.endsWith('index.html') && !f.startsWith('_'))
+      .filter((f) => f.endsWith('index.html') && !f.startsWith('_') && !f.startsWith('admin'))
       .map((f) => f.replace(/index\.html$/, '').split(path.sep).join('/'));
     expect(pages.length).toBeGreaterThan(20);
     for (const chemin of pages) {

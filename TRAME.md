@@ -8,7 +8,8 @@ Version 2.1 (26 novembre 2026) : ajout du back-office, des illustrations, des se
 chaîne de production des annales, du référencement (moteurs de recherche et moteurs d'IA) et des articles Méthodes.
 Révision du même jour : image facultative sur chaque carte ; annales produites par le projet Claude « Exercices
 interactifs » (fichier HTML autonome) et déposées par le back-office. Lot 1c : source et licence des annales,
-notions avec libellés, mesure d'audience, résumé de publication (§ 7, 9, 11, 13).
+notions avec libellés, mesure d'audience, résumé de publication (§ 7, 9, 11, 13). Lot 1d : back-office Sveltia CMS
+à l'adresse /admin/ (§ 2, 3, 4, 7, 9).
 
 ## 1. Objet et priorités
 
@@ -32,7 +33,8 @@ personnelle, aucun traceur tiers, aucune ressource chargée depuis un tiers, sau
 | Design | `DESIGN.md` et `statique/commun.css`. Vitrine minimaliste (accueil, service) ; registre « atelier » (catalogue, collections, contenus, annales) |
 | Images de cartes | **Facultatives** : chaque contenu ou annale peut recevoir une image, téléversée par le back-office ; sans image, la carte garde le bandeau typographique (thème + collection) |
 | Illustrations et images | Planches techniques anciennes du domaine public ou sous CC0 pour l'accueil, les thèmes, Labo, Maquettes et articles ; images de cartes du domaine public, sous CC0, œuvres personnelles de Sébastien ou autorisées par écrit. **Jamais d'image générée par IA** (§ 10) |
-| Back-office | **Pages CMS** (libre, MIT) branché sur le dépôt : images, dépôt des contenus et annales autonomes, édition des données et des articles sans toucher au code. Chaque enregistrement est un commit (§ 9) |
+| Back-office | **Sveltia CMS** (libre, MIT), servi par le site à l'adresse `/admin/` (lot 1d, remplace Pages CMS) : images, dépôt des contenus et annales autonomes, édition des données et des articles sans toucher au code. Connexion par jeton d'accès GitHub ; chaque enregistrement est un commit sur `main` (§ 9) |
+| Back-office dynamique (décision du 27/11) | **Pas de back-office dynamique avant la V2 avec comptes.** La V2 sera une application séparée ; d'ici là, le site reste entièrement statique |
 | Annales | Produites hors du dépôt par le **projet Claude « Exercices interactifs »** (gabarit `gabarit-exercice-interactif.html`) : un fichier HTML autonome par sujet. Déposées par le back-office avec une fiche (`annale.json`), enveloppées par le site comme les contenus repris, jamais modifiées. Publication seulement au statut `relu` (§ 11) |
 | Référencement | Socle technique dès le lot 1 ; contenus lisibles par les moteurs et les IA ; articles Méthodes relus, publiés à date programmée (§ 12) |
 | Mesure d'audience | Umami Cloud, offre gratuite, sans cookie (adresse du script réglable dans `site.json`). Cinq actions comptées, avec le seul identifiant de la page : annale commencée en entraînement ou en examen, copie corrigée, impression, projection. Google Search Console et Bing Webmaster Tools à la bascule |
@@ -58,11 +60,13 @@ Adresses relatives à la racine du site (préfixe `/industrie-education/` en pr�
 | Maquettes | `/maquettes/`, puis `/maquettes/<maquette>/` | `vitrine-section`, puis `maquette` |
 | Méthodes | `/methodes/`, `/methodes/<article>/` | `methodes`, `article` |
 | Service | `/enseignants/`, `/partenaires/`, `/a-propos/`, `/mentions-legales/`, `/credits/` | `service` |
+| Back-office (hors du site public) | `/admin/` | `admin` (Sveltia CMS) |
 | Erreur | `/404.html` | `service` |
 
 Noms réservés (une collection ne peut pas les prendre, la construction s'arrête sinon) : `catalogue`, `annales`,
 `labo`, `maquettes`, `methodes`, `si`, `sti2d`, `bac-pro-mspc`, `bts-ms`, `mecanique`, `energie`, `numerique`,
-`systemes`, `habitat`, `enseignants`, `partenaires`, `a-propos`, `mentions-legales`, `credits`, `medias`, `_`.
+`systemes`, `habitat`, `enseignants`, `partenaires`, `a-propos`, `mentions-legales`, `credits`, `medias`, `_`,
+`admin` (back-office, lot 1d), `classe` et `compte` (gardés pour la V2).
 
 Un thème sans contenu ni annale publiés est traité comme une filière inactive : « Bientôt » sur l'accueil, pas de
 page, absent du sitemap, aucun lien vers lui. Le traitement disparaît dès qu'un contenu y est publié (lot 1c).
@@ -76,7 +80,7 @@ page, absent du sitemap, aucun lien vers lui. Le traitement disparaît dès qu'u
 CLAUDE.md                consignes pour Claude Code
 TRAME.md                 ce document
 DESIGN.md                design system
-.pages.yml               configuration du back-office Pages CMS (§ 9)
+admin/config.yml         configuration du back-office Sveltia CMS, servi à l'adresse /admin/ (§ 9)
 site.json                nom, base, indexable, Umami, éditeur, contact, titres d'accueil
 catalogue/
   themes.json            les 5 thèmes (id, nom, exemples, illustration)
@@ -102,6 +106,7 @@ outils/
   reprendre.py           lot 1 : import d'un ancien dépôt
   illustrations.py       traitement des illustrations (§ 10)
   annale.py              contrôle d'une annale ou d'un contenu autonome (§ 11)
+  format-donnees.js      format des données écrit par le back-office ; aligne les fichiers du dépôt (§ 9)
 prompts/                 un prompt par lot, plus ANNALE.md et METHODE.md
 tests/
 .github/workflows/       publier.yml (envoi sur main), quotidien.yml (publication programmée)
@@ -167,6 +172,7 @@ Chaque lot : une session Claude Code, des tests verts, une pull request, une `NO
 | **1 Reprise + référencement de base** | `reprendre.py` : import des 37 dépôts ; pages relais (y compris `?ex=`) ; doublons ; socle SEO technique (§ 12.1 et 12.2) ; bascule du domaine | à faire |
 | **1b Back-office, images, dépôts** | Pages CMS (§ 9) ; images de cartes et planches (§ 10) ; dépôt des contenus et annales autonomes (§ 11) ; index des annales et première annale ; page Crédits. Prompt : `prompts/LOT-1B.md` | **livré** (PR n° 3) |
 | **1c Préproduction montrable** | Corrections du lot 1b (fiche d'annale compacte, filières et thèmes cohérents, notions avec libellés, mentions légales) ; source et licence des annales ; vérification automatique « annale parfaite » ; mesure d'audience (adresse du script, 5 événements) ; résumé de publication ; pages Labo et Maquettes « à venir » ; back-office réordonné. Prompt : `prompts/LOT-1C.md` | **livré** (PR n° 4) |
+| **1d Back-office sur le site** | Sveltia CMS à l'adresse `/admin/`, à la place de Pages CMS : connexion par jeton, rubriques reprises, notions choisies dans la liste, une rubrique pour toutes les collections, format des données aligné, guide réécrit. Prompt : `prompts/LOT-1D.md` | **livré** (pull request du lot 1d) |
 | **2 Annales** | Amélioration du gabarit d'exercice (tracés en priorité) **dans le projet Claude**, puis re-dépôt des annales ; côté site : filtres de l'index des annales | plus tard |
 | **3 Qualité + maillage** | Une page par contenu pour les gros dépôts ; notions et blocs de maillage ; mode projection ; Signaler relié à un formulaire ; checklist qualité | à faire |
 | **4 Méthodes** | Gabarits `methodes` / `article` ; publication programmée (`quotidien.yml`) ; `prompts/METHODE.md` ; 4 premiers articles relus (§ 12.4) | à faire |
@@ -176,42 +182,50 @@ Chaque lot : une session Claude Code, des tests verts, une pull request, une `NO
 ## 8. Critères de qualité (tous les lots)
 
 - Accueil < 300 Ko au premier affichage, illustration comprise ; aucune page > 1 Mo hors fichiers autonomes (contenus repris, annales) ; image de carte ≤ 40 Ko.
-- Aucune requête vers un tiers, sauf Umami quand il est configuré (test automatique).
+- Aucune requête vers un tiers, sauf Umami quand il est configuré (test automatique). Le back-office `/admin/`,
+  hors du site public, est une exception documentée (§ 9).
 - Aucun lien interne cassé (test automatique).
 - Contraste AA (y compris le titre posé sur l'illustration), focus visible, clavier, `lang="fr"`, un seul `h1`.
 - Utilisable à 360 px de large, sur tablette, et au vidéoprojecteur.
 - Les pages s'affichent sans JavaScript.
 - Chaque page publiée a un titre et une description uniques (test automatique, § 12.1).
 
-## 9. Back-office (Pages CMS)
+## 9. Back-office (Sveltia CMS, à l'adresse /admin/)
 
-Pages CMS est un CMS libre (licence MIT) qui édite directement les fichiers d'un dépôt GitHub : pas de base de
-données, chaque enregistrement est un commit, la publication suit le circuit habituel (Action, tests, Pages). Il
-sert uniquement à Sébastien : il n'ajoute rien au site public (aucune requête, aucun script).
+Depuis le lot 1d, le back-office est **Sveltia CMS** (paquet npm `@sveltia/cms`, version figée, licence MIT), servi
+par le site lui-même à l'adresse `/admin/`. Il édite directement les fichiers du dépôt par l'API de GitHub : pas de
+serveur, pas de base de données ; chaque enregistrement est un commit sur `main`, et la publication suit le circuit
+habituel (Action, tests, Pages). Il remplace Pages CMS (lots 1b et 1c). Il sert uniquement à Sébastien.
 
-Accès : application hébergée de Pages CMS (connexion GitHub, application installée sur ce seul dépôt), ou version
-auto-hébergée plus tard.
+- **Connexion** : jeton d'accès personnel GitHub à granularité fine, limité à ce dépôt, permission « Contents » en
+  lecture et écriture. Ni application OAuth, ni authentificateur tiers. Pas de flux éditorial : le champ `statut`
+  gère les brouillons.
+- **Script servi par le site** : la construction copie `dist/sveltia-cms.js` et `dist/chunks/` (sans les `.map`),
+  la traduction française et `admin/config.yml` dans `_site/admin/`, et génère `admin/index.html`
+  (`gabarits/admin.html`). Rien n'est versionné, rien n'est chargé depuis unpkg. Sans le paquet (`npm ci`), la
+  construction s'arrête.
+- **Hors du site public** : `noindex, nofollow`, absent du sitemap, `Disallow` dans `robots.txt`, aucun lien depuis
+  une page publique. Exception documentée à la règle « aucune requête vers un tiers » (CLAUDE.md) : `api.github.com`,
+  `avatars.githubusercontent.com` et `cdn.jsdelivr.net` (polices de l'interface) ; un adulte seul s'y connecte.
+- **Interface en français**, quelle que soit la langue du navigateur ; utilisable sur ordinateur et sur téléphone
+  (connexion sur mobile par QR code).
+- **Format des données** : Sveltia écrit les JSON avec 2 espaces, listes et objets développés, clés dans l'ordre de
+  la configuration, sans les champs facultatifs vides. Les fichiers du dépôt sont alignés sur ce format
+  (`outils/format-donnees.js`, vérifié par les tests).
 
-`.pages.yml` déclare :
+`admin/config.yml` déclare, dans l'ordre d'usage, chaque rubrique avec sa ligne d'aide en français :
 
 | Rubrique | Fichiers | Champs |
 |---|---|---|
-Rubriques rangées par fréquence d'usage (lot 1c), chacune avec une ligne d'aide en français :
-
-| Rubrique | Fichiers | Champs |
-|---|---|---|
-| Annales | fiches des annales (`annales/<id>.json`) | Titre, présentation, fichier HTML autonome, image de carte, filières, thème, notions, durée, origine (diplôme, épreuve, session), affichage de l'origine, **source (éditeur, adresse, licence, référence d'autorisation)**, statut |
-| Contenus | fiches des contenus (`contenu.json`), une sous-rubrique par collection | Titre, type, niveau, durée, description, notions, **image de carte**, fichier HTML autonome (nouveaux contenus), statut |
-| Images et crédits | `medias/CREDITS.json` | Fichier, titre, auteur, date, source (URL), licence (liste fermée § 10), référence d'autorisation, usage, image décorative |
-| Accueil | `catalogue/a-la-une.json`, `site.json` → `titres_accueil`, `illustration_accueil`, `catalogue/a-venir.json` | Contenus à la une, titres par moment, planche de l'accueil ; Labo et Maquettes : titre, promesse, planche |
-| Notions | `catalogue/notions.json` | Identifiant, libellé affiché |
+| Annales | fiches des annales (`annales/<id>.json`) | Titre, présentation, fichier HTML autonome (téléversé), image de carte, filières, thème, notions (choisies dans la liste), durée, origine (diplôme, épreuve, session), affichage de l'origine, **source (éditeur, adresse, licence, référence d'autorisation)**, statut |
+| Contenus | toutes les collections en arborescence (`contenus/<collection>/<id>/contenu.json`) | Titre, type, niveau, durée, description, mots-clés, notions (choisies dans la liste), **image de carte**, fichier HTML autonome (nouveaux contenus), statut |
+| Images et crédits | `medias/CREDITS.json` (une entrée par image) | Fichier, titre, auteur, date, source (URL), licence (liste fermée § 10), référence d'autorisation, usage, image décorative |
+| Accueil | `catalogue/a-la-une.json`, `catalogue/a-venir.json` | Contenus à la une ; Labo et Maquettes : titre, promesse, planche |
+| Notions | `catalogue/notions.json` (une entrée par notion) | Identifiant, libellé affiché |
 | Thèmes | `catalogue/themes.json` | Nom, nom court, exemples, illustration |
-| Réglages du site | `site.json` | Éditeur, contact, identifiant Umami, adresse du script Umami, indexable |
-| Médias | `medias/illustrations/`, `medias/cartes/` (images), `medias/depots/` (fichiers HTML) | Téléversement par glisser-déposer |
+| Réglages du site | `site.json` | Éditeur, contact, identifiant Umami, adresse du script Umami, indexable, titres de l'accueil par moment, planche de l'accueil |
+| Ressources | `medias/cartes/`, `medias/illustrations/` (images), `medias/depots/` (fichiers HTML) | Téléversement, 5 Mo au plus par fichier, noms nettoyés ; aucune transformation des images, aucune banque d'images |
 | Articles (lot 4) | `methodes/*.md` | Titre, résumé, date de publication, statut (brouillon, relu), notions, corps |
-
-Pages CMS 2.1 ne lit pas d'options dans un fichier : les notions se saisissent librement dans les fiches, et la
-construction refuse un identifiant absent de `catalogue/notions.json` en proposant les identifiants proches.
 
 Règles : la construction refuse une image absente de `CREDITS.json` ou sous une licence hors liste ; elle ne publie
 pas un article, un contenu ou une annale au statut `brouillon` ; elle refuse un fichier autonome qui charge une
