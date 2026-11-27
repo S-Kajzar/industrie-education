@@ -1,0 +1,21 @@
+{
+  "id": "test-abc",
+  "titre": "Test abc",
+  "presentation": "test abcdefgh",
+  "fichier": "/medias/depots/test-taille-3mo.html",
+  "image": {
+    "fichier": "/medias/cartes/toyota-rav4-trail-2023-1.jpg",
+    "alt": "test"
+  },
+  "publics": [
+    "si"
+  ],
+  "theme": "mecanique",
+  "notions": [
+    "dynamique"
+  ],
+  "duree_min": 401,
+  "afficher_origine": false,
+  "statut": "brouillon",
+  "mis_a_jour": "2026-11-27"
+}
