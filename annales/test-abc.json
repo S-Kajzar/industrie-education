@@ -5,7 +5,7 @@
   "fichier": "/medias/depots/test-taille-3mo.html",
   "image": {
     "fichier": "/medias/cartes/toyota-rav4-trail-2023-1.jpg",
-    "alt": "test"
+    "alt": "test image"
   },
   "publics": [
     "si"
@@ -16,6 +16,11 @@
   ],
   "duree_min": 401,
   "afficher_origine": false,
-  "statut": "brouillon",
+  "source": {
+    "editeur": "educ nat",
+    "licence": "cc-by-nc-sa-2.0-fr",
+    "reference_autorisation": "dd"
+  },
+  "statut": "relu",
   "mis_a_jour": "2026-11-27"
 }
