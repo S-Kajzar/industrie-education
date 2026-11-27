@@ -7,7 +7,8 @@ dans le projet Claude « industrie.education » ; ce fichier en est la traductio
 Version 2.1 (26 novembre 2026) : ajout du back-office, des illustrations, des sections Labo et Maquettes, de la
 chaîne de production des annales, du référencement (moteurs de recherche et moteurs d'IA) et des articles Méthodes.
 Révision du même jour : image facultative sur chaque carte ; annales produites par le projet Claude « Exercices
-interactifs » (fichier HTML autonome) et déposées par le back-office.
+interactifs » (fichier HTML autonome) et déposées par le back-office. Lot 1c : source et licence des annales,
+notions avec libellés, mesure d'audience, résumé de publication (§ 7, 9, 11, 13).
 
 ## 1. Objet et priorités
 
@@ -34,7 +35,7 @@ personnelle, aucun traceur tiers, aucune ressource chargée depuis un tiers, sau
 | Back-office | **Pages CMS** (libre, MIT) branché sur le dépôt : images, dépôt des contenus et annales autonomes, édition des données et des articles sans toucher au code. Chaque enregistrement est un commit (§ 9) |
 | Annales | Produites hors du dépôt par le **projet Claude « Exercices interactifs »** (gabarit `gabarit-exercice-interactif.html`) : un fichier HTML autonome par sujet. Déposées par le back-office avec une fiche (`annale.json`), enveloppées par le site comme les contenus repris, jamais modifiées. Publication seulement au statut `relu` (§ 11) |
 | Référencement | Socle technique dès le lot 1 ; contenus lisibles par les moteurs et les IA ; articles Méthodes relus, publiés à date programmée (§ 12) |
-| Mesure d'audience | Umami Cloud, offre gratuite, sans cookie. Google Search Console et Bing Webmaster Tools à la bascule |
+| Mesure d'audience | Umami Cloud, offre gratuite, sans cookie (adresse du script réglable dans `site.json`). Cinq actions comptées, avec le seul identifiant de la page : annale commencée en entraînement ou en examen, copie corrigée, impression, projection. Google Search Console et Bing Webmaster Tools à la bascule |
 | Comptes élève / prof | Hors périmètre (V2 ultérieure) |
 | Monétisation, encarts partenaires | Hors périmètre. La page Partenaires existe en version « sans partenaire » |
 
@@ -63,6 +64,9 @@ Noms réservés (une collection ne peut pas les prendre, la construction s'arrê
 `labo`, `maquettes`, `methodes`, `si`, `sti2d`, `bac-pro-mspc`, `bts-ms`, `mecanique`, `energie`, `numerique`,
 `systemes`, `habitat`, `enseignants`, `partenaires`, `a-propos`, `mentions-legales`, `credits`, `medias`, `_`.
 
+Un thème sans contenu ni annale publiés est traité comme une filière inactive : « Bientôt » sur l'accueil, pas de
+page, absent du sitemap, aucun lien vers lui. Le traitement disparaît dès qu'un contenu y est publié (lot 1c).
+
 > Le dossier technique `statique/` du dépôt est publié sous `/_/` (`/_/commun.css`, `/_/polices/…`), pour laisser
 > l'adresse `/statique/` à la collection Statique.
 
@@ -78,12 +82,13 @@ catalogue/
   themes.json            les 5 thèmes (id, nom, exemples, illustration)
   publics.json           les 4 publics (id, nom, actif)
   a-la-une.json          les contenus de l'accueil (identifiants)
+  notions.json           les notions (id, nom) : identifiants des fiches, libellés affichés (lot 1c)
   partenaires.json       vide en V1
-  a-venir.json           labos et maquettes annoncés (§ 10)
+  a-venir.json           Labo et Maquettes « à venir » : titre, promesse, planche (lot 1c)
 contenus/<collection>/   collection.json, puis un dossier par contenu (contenu.json, index.html, ressources)
-annales/<annale>/
-  annale.json            fiche de l'annale : titre, origine, statut, image, notions (§ 11)
-  index.html             le fichier autonome produit par le projet Claude, jamais modifié
+annales/<annale>.json    fiche de l'annale déposée par le back-office : titre, source, origine, statut, image, notions
+                         (§ 11) ; le fichier autonome est dans medias/depots/. Variante : annales/<annale>/annale.json
+                         + index.html
 methodes/<article>.md    articles Méthodes (front matter + Markdown, § 12)
 medias/
   illustrations/         originaux des planches (accueil, thèmes, labo, maquettes, articles)
@@ -145,8 +150,8 @@ tests/
 | `collection` | Titre, description, contenus dans l'ordre | — |
 | `contenu` | Enveloppe des contenus repris ; gabarit complet pour les contenus natifs ; bloc de maillage (§ 12) | Charte atelier existante |
 | `annales` | Index par filière, épreuve, session | — |
-| `annale` | Enveloppe du fichier autonome (fil d'Ariane, Signaler, annales voisines) + fiche indexable (titre, présentation, notions, durée, liens vers les cours) | Lot 1b |
-| `vitrine-section` | Labo et Maquettes tant qu'ils sont « à venir » : illustration, promesse, liste de `a-venir.json` | Lot 1b |
+| `annale` | Enveloppe du fichier autonome (fil d'Ariane, Signaler, annales voisines) + fiche compacte au-dessus du fichier (filières, durée, thème, notions, « Pour réviser », ligne de crédit) ; titre et description de la page générés depuis la fiche | Lot 1b, fiche compacte au lot 1c |
+| `vitrine-section` | Labo et Maquettes tant qu'ils sont « à venir » : planche facultative, promesse de `a-venir.json` dans un bloc « Bientôt », sans date ni formulaire | Lot 1c |
 | `labo`, `maquette` | TP virtuel ; maquette numérique 3D | Lot 6 |
 | `methodes`, `article` | Liste des articles ; article (auteur, date, sommaire, contenus liés) | Lot 4 |
 | `service` | Enseignants, Partenaires, À propos (auteur), Mentions légales, Crédits, 404 | — |
@@ -160,7 +165,8 @@ Chaque lot : une session Claude Code, des tests verts, une pull request, une `NO
 |---|---|---|
 | **0 Socle** | Structure, gabarits, construction, démonstrations, 1 contenu repris, publication, tests | **livré** (PR n° 1) |
 | **1 Reprise + référencement de base** | `reprendre.py` : import des 37 dépôts ; pages relais (y compris `?ex=`) ; doublons ; socle SEO technique (§ 12.1 et 12.2) ; bascule du domaine | à faire |
-| **1b Back-office, images, dépôts** | Pages CMS (§ 9) ; images de cartes et planches (§ 10) ; dépôt des contenus et annales autonomes (§ 11) ; index des annales et première annale ; page Crédits ; pages Labo et Maquettes « à venir ». Prompt : `prompts/LOT-1B.md` | à faire |
+| **1b Back-office, images, dépôts** | Pages CMS (§ 9) ; images de cartes et planches (§ 10) ; dépôt des contenus et annales autonomes (§ 11) ; index des annales et première annale ; page Crédits. Prompt : `prompts/LOT-1B.md` | **livré** (PR n° 3) |
+| **1c Préproduction montrable** | Corrections du lot 1b (fiche d'annale compacte, filières et thèmes cohérents, notions avec libellés, mentions légales) ; source et licence des annales ; vérification automatique « annale parfaite » ; mesure d'audience (adresse du script, 5 événements) ; résumé de publication ; pages Labo et Maquettes « à venir » ; back-office réordonné. Prompt : `prompts/LOT-1C.md` | **livré** (pull request du lot 1c) |
 | **2 Annales** | Amélioration du gabarit d'exercice (tracés en priorité) **dans le projet Claude**, puis re-dépôt des annales ; côté site : filtres de l'index des annales | plus tard |
 | **3 Qualité + maillage** | Une page par contenu pour les gros dépôts ; notions et blocs de maillage ; mode projection ; Signaler relié à un formulaire ; checklist qualité | à faire |
 | **4 Méthodes** | Gabarits `methodes` / `article` ; publication programmée (`quotidien.yml`) ; `prompts/METHODE.md` ; 4 premiers articles relus (§ 12.4) | à faire |
@@ -190,19 +196,29 @@ auto-hébergée plus tard.
 
 | Rubrique | Fichiers | Champs |
 |---|---|---|
+Rubriques rangées par fréquence d'usage (lot 1c), chacune avec une ligne d'aide en français :
+
+| Rubrique | Fichiers | Champs |
+|---|---|---|
+| Annales | fiches des annales (`annales/<id>.json`) | Titre, présentation, fichier HTML autonome, image de carte, filières, thème, notions, durée, origine (diplôme, épreuve, session), affichage de l'origine, **source (éditeur, adresse, licence, référence d'autorisation)**, statut |
+| Contenus | fiches des contenus (`contenu.json`), une sous-rubrique par collection | Titre, type, niveau, durée, description, notions, **image de carte**, fichier HTML autonome (nouveaux contenus), statut |
+| Images et crédits | `medias/CREDITS.json` | Fichier, titre, auteur, date, source (URL), licence (liste fermée § 10), référence d'autorisation, usage, image décorative |
+| Accueil | `catalogue/a-la-une.json`, `site.json` → `titres_accueil`, `illustration_accueil`, `catalogue/a-venir.json` | Contenus à la une, titres par moment, planche de l'accueil ; Labo et Maquettes : titre, promesse, planche |
+| Notions | `catalogue/notions.json` | Identifiant, libellé affiché |
+| Thèmes | `catalogue/themes.json` | Nom, nom court, exemples, illustration |
+| Réglages du site | `site.json` | Éditeur, contact, identifiant Umami, adresse du script Umami, indexable |
 | Médias | `medias/illustrations/`, `medias/cartes/` (images), `medias/depots/` (fichiers HTML) | Téléversement par glisser-déposer |
-| Crédits | `medias/CREDITS.json` | Fichier, titre, auteur, date, source (URL), licence (liste fermée § 10), usage |
-| Contenus | fiches des contenus (`contenu.json`) | Titre, collection, type, niveau, durée, description, notions, **image de carte**, fichier HTML autonome (nouveaux contenus) |
-| Accueil | `catalogue/a-la-une.json`, `site.json` → `titres_accueil` | Contenus à la une, titres par moment |
-| Thèmes | `catalogue/themes.json` | Nom, exemples, illustration |
-| À venir | `catalogue/a-venir.json` | Titre, type (labo, maquette), description, échéance indicative |
-| Articles | `methodes/*.md` | Titre, résumé, date de publication, statut (brouillon, relu), notions, corps |
-| Annales | fiches des annales (`annale.json`) | Titre, présentation, fichier HTML autonome, image de carte, filières, thème, notions, durée, origine (diplôme, épreuve, session), affichage de l'origine, statut |
-| Site | `site.json` | Éditeur, contact, Umami, indexable |
+| Articles (lot 4) | `methodes/*.md` | Titre, résumé, date de publication, statut (brouillon, relu), notions, corps |
+
+Pages CMS 2.1 ne lit pas d'options dans un fichier : les notions se saisissent librement dans les fiches, et la
+construction refuse un identifiant absent de `catalogue/notions.json` en proposant les identifiants proches.
 
 Règles : la construction refuse une image absente de `CREDITS.json` ou sous une licence hors liste ; elle ne publie
 pas un article, un contenu ou une annale au statut `brouillon` ; elle refuse un fichier autonome qui charge une
-ressource extérieure. Attention : le dépôt étant public, un fichier au statut `brouillon` est invisible sur le site
+ressource extérieure, une annale `relu` sans source valide, une notion inconnue, et `indexable: true` tant que le
+nom de l'éditeur, le directeur de la publication ou le contact sont vides. Le statut `relu` est posé par Sébastien
+seul, depuis le back-office. Chaque publication écrit un tableau de bord éditorial (comptes seulement) dans le
+récapitulatif de l'Action. Attention : le dépôt étant public, un fichier au statut `brouillon` est invisible sur le site
 mais lisible sur GitHub.
 
 ## 10. Illustrations
@@ -260,12 +276,36 @@ dans tous les cas.
   "publics": ["bts-ms"], "theme": "mecanique",
   "notions": ["statique", "cinematique-graphique", "roulements"],
   "duree_min": 240,
-  "origine": {"diplome": "", "epreuve": "", "session": null},
+  "origine": {"diplome": "BTS Maintenance industrielle", "epreuve": "E4", "session": 2013},
   "afficher_origine": false,
+  "source": {
+    "editeur": "éduscol STI",
+    "url": "https://sti.eduscol.education.fr/…/5111-dossier-questionnaire-epreuve-e4-bts-mi-2013-metropole.docx",
+    "licence": "cc-by-nc-sa-2.0-fr",
+    "reference_autorisation": ""
+  },
   "statut": "relu",
   "mis_a_jour": "2026-11-26"
 }
 ```
+
+**Source et licence (lot 1c).** Le champ `source` est obligatoire pour publier (statut `relu`), facultatif en
+brouillon ; `outils/annale.py` le contrôle aussi (`python3 outils/annale.py annales/<id>.json`). `licence` prend une
+valeur de la liste fermée : `cc-by-nc-sa-2.0-fr` (sujets d'éduscol STI : attribution, usage non commercial, partage
+dans les mêmes conditions), `etalab-2.0` (annales du bac sur eduscol.education.gouv.fr), `autorisation-ecrite`
+(`reference_autorisation` obligatoire), `oeuvre-personnelle`. L'éditeur est obligatoire sauf pour une œuvre
+personnelle ; l'adresse (https) l'est pour les deux licences ouvertes. Une **ligne de crédit est toujours affichée**
+dans la fiche, **indépendamment de `afficher_origine`**, avec un lien sur le nom de l'éditeur :
+
+- CC BY-NC-SA : « D'après un sujet publié par éduscol STI, licence CC BY-NC-SA 2.0 FR. Adaptation interactive :
+  industrie.education, sous la même licence. »
+- Licence Ouverte : « D'après un document publié par éduscol, Licence Ouverte 2.0. Adaptation : industrie.education. »
+- Autorisation écrite : « Reproduit avec l'autorisation de <éditeur>. »
+- Œuvre personnelle : « Sujet original : industrie.education. »
+
+La page `/credits/` a une section « Annales » (titre, éditeur et lien source, licence). Chaque annale déposée, quel
+que soit son statut, passe le test « annale parfaite » : une copie entièrement juste obtient 20/20 dans les deux
+modes, sans erreur JavaScript.
 
 Améliorations du gabarit d'exercice (tracés en premier) : dans le projet Claude, puis re-dépôt des fichiers
 concernés. Plus tard (lot 5), la production pourra être lancée depuis GitHub par l'Action Claude Code.
@@ -330,6 +370,11 @@ titre d'accueil, n° 5 champs ajoutés aux données. Sébastien les tranche avan
 choix du lot 0 s'appliquent.
 
 Autre point à trancher : valeur par défaut de `afficher_origine` pour les annales (§ 11).
+
+En attente : autorisation écrite de la DGESCO pour présenter des annales sous licence NC sur un site qui affichera
+des partenaires. D'ici là, aucun encart partenaire sur une page qui porte un contenu sous licence NC.
+
+Écarts relevés au lot 1b et au lot 1c encore ouverts : voir `NOTE-DE-LIVRAISON.md` (section « Écarts » et annexe).
 
 ## 14. Hors périmètre
 

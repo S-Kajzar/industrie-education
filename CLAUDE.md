@@ -28,10 +28,12 @@ Ce qui n'est pas décrit n'est pas à faire. Une contradiction entre ces documen
 - **URL** : une fois le domaine posé (lot 1), aucune URL publiée ne change. Ajouter une redirection si besoin.
 - Le dossier `_site/` est généré : ne jamais le modifier à la main ni le versionner.
 - Pas de nouvelle dépendance sans la justifier dans la note de livraison.
-- **Images** : uniquement des illustrations du domaine public ou sous CC0, déclarées dans `medias/CREDITS.json`.
-  Jamais d'image générée par IA.
+- **Images** : chaque image est déclarée dans `medias/CREDITS.json`, sous une licence de sa liste fermée : domaine
+  public, CC0, œuvre personnelle de Sébastien, ou autorisation écrite (avec sa référence). Jamais d'image générée
+  par IA, ni de banque d'images, ni de copie Gallica. Claude n'ajoute aucune image lui-même.
 - **Relecture humaine** : une annale ou un article au statut `brouillon` n'est jamais publié. Les réponses
-  attendues d'une annale ne sont jamais publiées sans le statut `relu` posé par Sébastien.
+  attendues d'une annale ne sont jamais publiées sans le statut `relu` posé par Sébastien. Claude ne pose jamais le
+  statut `relu`. Seul Sébastien le pose, depuis le back-office.
 - **Référencement** : aucune page créée seulement pour se classer ; aucune génération d'articles en masse.
 
 ## Langue
@@ -42,7 +44,7 @@ d'identifiants : minuscules, sans accent, avec des tirets.
 ## Commandes
 
 ```sh
-pip install -r requirements.txt     # Jinja2
+pip install -r requirements.txt     # Jinja2, Pillow
 npm install                         # Playwright, @fontsource/barlow-condensed
 python3 outils/construire.py        # écrit _site/
 python3 -m http.server -d _site 8000

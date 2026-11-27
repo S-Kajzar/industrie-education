@@ -1,5 +1,6 @@
 {#- Accueil (vitrine) — maquette « Accueil retenue — M1 × charte atelier » : titre évolutif, recherche,
-    index des 5 thèmes, 4 publics, contenus à la une, lien Annales, bloc Enseignants. -#}
+    index des 5 thèmes (un thème sans contenu publié est « Bientôt », sans lien), 4 publics, contenus à la une,
+    Annales, bloc « Bientôt » (Labo et Maquettes), bloc Enseignants. -#}
 {% extends "base.html" %}
 {% from "_composants.html" import carte, recherche, illustration %}
 {% block corps %}
@@ -26,7 +27,8 @@
 <h2 class="visuellement-cache" id="titre-themes">Thèmes</h2>
 <ul class="index-themes">
 {% for t in themes -%}
-<li><a href="{{ racine }}{{ t.id }}/"><span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{% if t.vignette %}{{ illustration(t.vignette, racine, 'illustration-vignette', '64px') }}{% endif %}{{ t.nom }}</span><span class="index-ex">{{ t.exemples|join(', ') }}</span><span class="index-nb">{{ t.nb }}<span class="visuellement-cache"> {{ 'contenus' if t.nb > 1 else 'contenu' }}</span></span></a></li>
+{% set interieur %}<span class="index-num" aria-hidden="true">{{ loop.index }}</span><span class="index-nom">{% if t.vignette %}{{ illustration(t.vignette, racine, 'illustration-vignette', '64px') }}{% endif %}{{ t.nom }}</span><span class="index-ex">{{ t.exemples|join(', ') }}</span>{% endset -%}
+<li>{% if t.actif %}<a href="{{ racine }}{{ t.id }}/">{{ interieur }}<span class="index-nb"><span aria-hidden="true">{{ t.nb + t.nb_annales }}</span><span class="visuellement-cache">{{ t.nb|compte_cartes(t.nb_annales) }}</span></span></a>{% else %}<span class="index-bientot">{{ interieur }}<span class="index-nb">Bientôt</span></span>{% endif %}</li>
 {% endfor -%}
 </ul>
 </section>
@@ -35,7 +37,7 @@
 <h2 class="rangee-etiquette" id="titre-filieres">Filières</h2>
 <ul class="rangee-corps publics">
 {% for p in publics -%}
-<li>{% if p.actif %}<a class="public" href="{{ racine }}{{ p.id }}/"><span class="public-nom">{{ p.nom }}</span><span class="public-nb">{{ p.nb|pluriel('contenu') }}</span></a>{% else %}<span class="public public-bientot"><span class="public-nom">{{ p.nom }}</span><span class="public-nb">Bientôt</span></span>{% endif %}</li>
+<li>{% if p.actif %}<a class="public" href="{{ racine }}{{ p.id }}/"><span class="public-nom">{{ p.nom }}</span><span class="public-nb">{{ p.nb|compte_cartes(p.nb_annales) }}</span></a>{% else %}<span class="public public-bientot"><span class="public-nom">{{ p.nom }}</span><span class="public-nb">Bientôt</span></span>{% endif %}</li>
 {% endfor -%}
 </ul>
 </section>
@@ -67,6 +69,17 @@
 </div>
 {%- endif %}
 </section>
+
+{% if a_venir -%}
+<section class="conteneur grille rangee" aria-labelledby="titre-bientot">
+<h2 class="rangee-etiquette" id="titre-bientot">Bientôt</h2>
+<ul class="rangee-corps bientot">
+{% for s in a_venir -%}
+<li><a class="bientot-lien" href="{{ racine }}{{ s.chemin }}">{% if s.vignette %}{{ illustration(s.vignette, racine, 'illustration-vignette', '64px') }}{% endif %}<span class="bientot-texte"><span class="bientot-titre">{{ s.titre }}</span><span class="bientot-promesse">{{ s.promesse }}</span></span></a></li>
+{% endfor -%}
+</ul>
+</section>
+{% endif -%}
 
 <section class="conteneur grille rangee" aria-labelledby="titre-enseignants">
 <h2 class="rangee-etiquette" id="titre-enseignants">Enseignants</h2>

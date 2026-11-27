@@ -1,334 +1,260 @@
-# Note de livraison — lot 1b : back-office, images de cartes, dépôts et annales autonomes
+# Note de livraison — lot 1c : préproduction montrable
 
-Branche `claude/gifted-mccarthy-1rs5w8`, partie de `trame-v2-1` (trame V2.1, DESIGN mis à jour, prompt du lot) : la
-pull request contient donc aussi ces deux commits de documentation. `npm test` : **282 tests, tous verts** (environ
-50 s, sans réseau). La note du lot 0 est conservée en annexe (TRAME § 13 renvoie à ses écarts).
+Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` après la fusion du lot 1b (PR n° 3). Prompt :
+`prompts/LOT-1C.md`. `npm test` : **311 tests, tous verts** (environ 1 min 10, sans réseau). Aucune nouvelle
+dépendance.
 
 ## Fait
 
-1. **Modèle de données**
-   - `contenu.json` : champs facultatifs `image` (`{"fichier", "alt"}`), `notions`, `statut` (`brouillon` | `relu`,
-     absent = publié, comme au lot 0) et `fichier` (fichier HTML déposé). `niveau` et `duree_min` acceptent les
-     valeurs que le back-office écrit (`"3"`, `""`, `null`).
-   - `annale.json` (TRAME § 11) : `id`, `titre`, `presentation`, `fichier`, `image`, `publics`, `theme`, `notions`,
-     `duree_min`, `origine` (`diplome`, `epreuve`, `session`), `afficher_origine` (`false` par défaut), `statut`
-     (absent = brouillon), `mis_a_jour`.
-   - `medias/CREDITS.json` : une entrée par image (`fichier`, `titre`, `auteur`, `date`, `source`, `licence`,
-     `reference_autorisation`, `usage`, `decorative`). Licences, liste fermée : `domaine-public`, `cc0`,
-     `oeuvre-personnelle`, `autorisation-ecrite` (référence obligatoire).
-   - Planches : `illustration` dans chaque thème (`catalogue/themes.json`), `illustration_accueil` dans `site.json`.
-   - Dossiers `medias/cartes/`, `medias/illustrations/`, `medias/depots/`.
-2. **Organisation des fichiers choisie pour le back-office** (justification) :
-   - **Annales : une fiche à plat** `annales/<id>.json`, le fichier HTML dans `medias/depots/`. Pages CMS sait
-     écrire une fiche dans un sous-dossier, mais le fichier HTML passe de toute façon par un dossier de médias : un
-     dossier par annale ne contiendrait que la fiche. Une liste à plat est l'écran le plus simple (une ligne par
-     annale, un bouton d'ajout).
-   - **Contenus : une sous-rubrique par collection.** Les fiches existantes (`<id>/contenu.json`, avec
-     `index.html` et ressources) restent en place et se modifient comme des « nœuds » de Pages CMS. Les nouveaux
-     contenus autonomes sont créés à plat (`contenus/<collection>/<id>.json` + `medias/depots/`), directement dans
-     la bonne collection : pas de champ « collection » à remplir, pas de fiche perdue à la racine.
-   - `construire.py` accepte les **deux organisations** pour les contenus et les annales (`annales/<id>/annale.json`
-     + `index.html` reste possible). Les adresses publiques ne changent pas.
-3. **`.pages.yml`** : rubriques Annales, Contenus, Accueil (contenus à la une, titres par moment, planche), Thèmes,
-   Crédits, Réglages du site ; médias cartes, illustrations (jpg, png, webp) et dépôts (html), noms de fichiers
-   nettoyés ; listes fermées (type, niveau, thème, filières, licence, statut) ; aides en français sur chaque champ
-   délicat ; identifiants imposés (minuscules, sans accent, tirets) ; messages de commit en français ;
-   `settings.content.merge: true`, sans quoi un enregistrement effacerait les champs non affichés (`mode`, `source`).
-4. **Images** : `outils/illustrations.py` (Pillow) produit les variantes WebP : cartes 480 et 960 px, 16/9 centré,
-   ≤ 40 Ko à 480 px ; planches en niveaux de gris, contraste renforcé, fond blanc pur (accueil 640/1280 px
-   ≤ 150 Ko, thème 480/960 px ≤ 60 Ko, vignette 128 px). Cache dans `.cache/images/` (jamais versionné, repris
-   par l'Action). Seules les variantes sont publiées (`/medias/…`), pas les originaux.
-   - Cartes : image (`srcset`, `sizes`, `alt`, `width`/`height`, `loading="lazy"`) si elle existe, sinon bandeau ;
-     même hauteur.
-   - Accueil : planche en filigrane dans la moitié droite du titre (opacité 0,2, `multiply`), sans effet sur la
-     hauteur réservée au titre ; bandeau de 120 px au-dessus du titre sur téléphone ; vignette de 64 px dans
-     l'index des thèmes. Page de thème : planche à droite du titre (opacité 0,25). Sans planche, rendu inchangé.
-   - Page `/credits/` générée depuis `CREDITS.json`, liée depuis le pied de page.
-   - La construction s'arrête sur : image absente de `CREDITS.json`, licence hors liste, autorisation écrite sans
-     référence, texte alternatif manquant (sauf image déclarée décorative), image introuvable.
-5. **Fichiers autonomes** : `outils/annale.py` contrôle chaque fichier publié (contenus repris et annales) :
-   - document HTML complet ;
-   - aucune ressource extérieure (`src`, `href` hors `<a>`, `srcset`, `url()`, `@import`, adresses dans les
-     scripts, `<base>`, redirection) ;
-   - taille ≤ 5 Mo, UTF-8 ;
-   - ressources relatives présentes, ou interdites pour un fichier déposé seul.
+1. **Fiche d'annale compacte** (constat 1).
+   - Plus de titre ni de présentation dans la fiche : ce sont ceux du fichier, juste en dessous. Le `<title>` et la
+     meta description du site sont inchangés.
+   - La fiche est un bandeau : surtitre « Annale corrigée et interactive · filières », durée, filières, thème,
+     notions, « Pour réviser », ligne de crédit.
+   - **Bouton « Commencer » supprimé** : la fiche ne fait plus que 131 px de haut à 1280 px, et le titre du sujet
+     arrive au premier écran ; le bouton ne servait plus à rien.
+   - Mesures (test) : 283 px de haut à 360 px (limite 300) ; à 1280 × 800, le bas du titre du sujet est à 336 px.
+   - `DESIGN.md` § 5 : composants « Fiche d'annale » et « Ligne de crédit ».
+2. **Filières cohérentes** (constat 2).
+   - `bts-ms` est actif. L'accueil affiche « BTS MS · 1 annale ».
+   - Les pages de filière et de thème listent aussi leurs annales (groupe « Annales »), sinon `/bts-ms/` aurait
+     affiché « 0 contenu ».
+   - Un test échoue si une filière visée par un contenu ou une annale publiés est inactive, en nommant la filière
+     et le contenu.
+3. **Notions avec libellés** (constat 3).
+   - `catalogue/notions.json` (7 notions de départ) ; les pages affichent les libellés accentués.
+   - Un identifiant inconnu arrête la construction et propose les proches (« cinematique » → « Identifiants
+     proches : cinematique-graphique »).
+   - Back-office : rubrique « Notions ». **Pages CMS ne sait pas lire des options dans un fichier** : les listes
+     `select` sont écrites dans `.pages.yml` et les références ne visent que des rubriques de type collection.
+     Vérifié dans le code de Pages CMS 2.1.8 (pagescms.org n'est pas joignable depuis la session). La saisie reste
+     libre, contrôlée par la construction (écart n° 12).
+4. **Thèmes vides** (constat 4). Traitement automatique : un thème sans contenu ni annale publiés est inactif.
+   - Accueil : « Bientôt » à la place du nombre, ligne non cliquable. Catalogue : filtre « bientôt », désactivé.
+   - Pas de page, absent du sitemap, aucun lien vers lui (le lien de thème des collections et de la fiche
+     d'annale devient du texte).
+   - Le traitement disparaît dès qu'un contenu y est publié (testé sur un dépôt factice).
+5. **Images** (constat 5). Aucune image ajoutée.
+   - Le bandeau typographique, sans image, ressemblait à un emplacement vide (grand aplat sombre). Il reçoit une
+     trame de papier millimétré (jetons `--encre` et `--encre-2`), qui en fait un visuel fini (écart n° 2).
+   - L'accueil sans planche, vérifié par captures à 1280 et 360 px, a l'air fini : rien à changer.
+   - `GUIDE-BACK-OFFICE.md`, partie 2 : « Ta première image en 5 minutes ».
+6. **Statut « relu » et annale parfaite** (constat 6).
+   - Règle ajoutée dans `CLAUDE.md`. Le statut de l'annale existante n'est pas modifié.
+   - Nouveau test `tests/annale-parfaite.spec.js`, pour chaque annale déposée, quel que soit son statut :
+     - il lit `window.__QCFG__` et `window.__SKCFG__` sans modifier le fichier ;
+     - il génère la réponse attendue de chaque question pour les six types de correcteurs trouvés : `num` (valeur et
+       unité), `kw` (premier motif), `code` (référence), `intset` (ensemble), `yesno`, `chasles` (relation de
+       composition construite avec les solides déclarés) ;
+     - chaque réponse est d'abord vérifiée auprès du correcteur du fichier, puis saisie comme par un élève ;
+     - il coche tous les critères de chaque tracé ;
+     - il exige 20,0/20 en entraînement et en examen, sans erreur JavaScript.
+   - Annale existante : **20/20 dans les deux modes**. Un échec bloque la publication (`npm test`).
+   - **Ce que le test ne peut pas vérifier** :
+     - la justesse du tracé lui-même, auto-évalué par l'élève : le test vérifie la grille et la note, pas le dessin ;
+     - la conformité des réponses attendues au corrigé officiel : le test vérifie que chaque réponse attendue est
+       acceptée et compte ses points.
 
-   Messages avec fichier et ligne ; l'outil se lance aussi seul : `python3 outils/annale.py fichier.html`.
-6. **Annales dans la construction** :
-   - page `/annales/<id>/` = le fichier, enveloppé comme un contenu repris. La **fiche indexable** est placée
-     **au-dessus** du fichier, dans l'enveloppe : titre, présentation, durée, filières, thème, notions, contenus
-     liés par les notions, bouton « Commencer » vers le début du sujet. Placée à côté, elle aurait recouvert ou été
-     recouverte par le rail de documents du sujet ;
-   - index `/annales/` (par filière) et `/annales/<filiere>/`, cartes du catalogue (type « Annale »), bloc Annales
-     de l'accueil (les 3 plus récentes selon `mis_a_jour`), sitemap ;
-   - **rien n'est publié au statut brouillon** (ni page, ni carte, ni sitemap), contenus compris ;
-   - `afficher_origine` : à `false`, l'origine n'apparaît nulle part (ni titre, ni description, ni fiche, ni
-     index, ni recherche du catalogue) ; à `true`, dans la fiche, le titre de page et l'index.
-7. **Première annale** : `S-Kajzar/etude-systeme-dechargement-et-levage-de-linge`, commit `53e9a51`
-   (15 septembre 2026). `index.html` est copié octet pour octet dans
-   `medias/depots/levage-dechargement-sacs-linge.html` ; la fiche est `annales/levage-dechargement-sacs-linge.json` :
-   - `titre` et `presentation` tirés du fichier ;
-   - `publics` : `bts-ms`, `theme` : `mecanique`, `statut` : `relu`, origine vide, `afficher_origine` : `false` ;
-   - durée de 300 min, d'après le fichier (« 5 h ») ;
-   - notions d'après sa description : statique, dynamique, cinématique graphique, roulements, liaisons.
-
-   Le contenu `cadre-velo` reçoit les notions `statique`, `pfs` et `solide-deux-forces`, ce qui le relie à l'annale.
-8. **Documentation** : `GUIDE-BACK-OFFICE.md` (installation, dépôt d'une annale, image de carte, planche, échec de
-   publication, dépôt public), `README.md` et `annales/LISEZ-MOI.md` mis à jour.
+     Il dépend aussi des conventions du gabarit du projet Claude (`__QCFG__`, `__SKCFG__`, `.q`, `.fast-q`,
+     `.sketch`, `#exam-submit`, `#recap .final-note`). Si une version du gabarit les change, le test échoue avec
+     un message explicite ; un nouveau type de correcteur échoue en donnant son nom.
+7. **Mentions légales** (constat 7).
+   - La construction refuse `indexable: true` tant que le nom de l'éditeur, le directeur de la publication ou
+     l'adresse de contact sont vides. Le message cite les champs à remplir dans « Réglages du site ».
+   - En préproduction, chaque champ vide affiche « À compléter avant l'ouverture ».
+   - Nouvelle section « Sources et licences », qui renvoie vers `/credits/`.
+8. **Source et licence des annales** (TRAME § 11).
+   - Nouveau champ `source` (éditeur, adresse, licence de la liste fermée, référence d'autorisation), obligatoire au
+     statut `relu` et facultatif en brouillon. Il est contrôlé par la construction et par
+     `python3 outils/annale.py annales/<id>.json`.
+   - Ligne de crédit toujours affichée dans la fiche, avec un lien sur le nom de l'éditeur, quel que soit
+     `afficher_origine`.
+   - Section « Annales » de `/credits/` (titre, éditeur, lien source, licence, ligne de crédit).
+   - Annale existante pré-remplie (à confirmer, voir « À faire ») : origine « BTS Maintenance industrielle », « E4 »,
+     2013 ; source éduscol STI, `cc-by-nc-sa-2.0-fr`, adresse donnée par le prompt. `afficher_origine` reste
+     `false`.
+   - TRAME § 11 et § 13 mis à jour (point DGESCO ajouté).
+9. **Mesure d'audience**.
+   - `umami_script` dans `site.json` et dans « Réglages du site » : une adresse en https complète, par défaut
+     `https://cloud.umami.is/script.js`.
+   - Cinq événements envoyés par `commun.js` via `umami.track()`, seulement si `window.umami` existe :
+     `annale-entrainement`, `annale-examen`, `annale-copie-corrigee`, `annale-impression`, `projeter`. Seule
+     propriété : `page` (identifiant de l'annale ou de la page).
+   - Les annales ne sont pas touchées : les clics sont écoutés depuis l'enveloppe, par délégation, sur les libellés
+     fixés par le gabarit.
+   - **Recherche et filtres** : aucun événement. Le code d'Umami (dépôt `umami-software/umami`) confirme qu'il
+     conserve les paramètres d'adresse (sauf `data-exclude-search`). Il compte aussi une page vue à chaque
+     `history.replaceState`, et le catalogue réécrivait l'adresse à chaque frappe : une recherche de 8 lettres
+     aurait compté 8 pages vues. L'adresse est maintenant écrite après 800 ms de pause dans la frappe, et tout de
+     suite avant de suivre un lien, de projeter ou de quitter la page (écart n° 6).
+   - Mentions légales et À propos décrivent le comptage anonyme. `GUIDE-BACK-OFFICE.md`, partie 7 : compte UE,
+     réglages, les 6 chiffres du mois, limites du plan gratuit.
+10. **Résumé de publication**.
+    - `python3 outils/construire.py --resume "$GITHUB_STEP_SUMMARY"`, nouvelle étape de l'Action avant les tests.
+    - Il donne :
+      - les publiés et brouillons par type ;
+      - les annales sans source et les cartes sans image ;
+      - la présence de la planche d'accueil et le poids de l'accueil ;
+      - l'état des mentions légales et de l'indexation, et la mesure d'audience.
+    - Une construction arrêtée y écrit son message. Où le lire : guide, partie 8.
+11. **Labo et Maquettes « à venir »**.
+    - Pages `/labo/` et `/maquettes/` (gabarit `vitrine-section`) : bloc « Bientôt » avec la promesse, sans date ni
+      formulaire, hors navigation principale, dans le sitemap.
+    - Textes dans `catalogue/a-venir.json`, modifiables dans la rubrique « Accueil » ; planche facultative.
+    - Sur l'accueil, bloc « Bientôt » sobre après « Annales », sur la grille M1. Poids de l'accueil : 120,2 ko
+      mesurés (112,7 ko au lot 1b).
+12. **Back-office plus lisible**.
+    - Rubriques dans l'ordre Annales, Contenus, Images et crédits, Accueil, Notions, Thèmes, Réglages du site,
+      chacune avec une ligne d'aide.
+    - Nouveaux champs : source des annales, Labo et Maquettes, rubrique Notions, adresse du script Umami. Le tout
+      est toujours validé par le schéma de Pages CMS (test).
+    - `GUIDE-BACK-OFFICE.md` commence par l'accès (connexion, application limitée au dépôt, favori, environ
+      2 minutes, où voir le résultat).
+13. **Documentation** : `CLAUDE.md` (images : liste fermée des licences ; statut `relu`), `TRAME.md` (§ 2, 3, 4, 6,
+    7, 9, 11, 13), `DESIGN.md` (fiche compacte, ligne de crédit, bloc « Bientôt », bandeau tramé, thème « Bientôt »),
+    `GUIDE-BACK-OFFICE.md` (réécrit), `README.md`.
+14. **Console de la page d'annale**. Relevé avec Chromium complet, par son protocole de débogage (journal,
+    interventions, signalements « Issues ») ; Chromium sans interface ne remonte rien.
+    - **De l'enveloppe** : « Failed to load resource : 404 (favicon.ico) ». Aucune page du site ne déclarait
+      d'icône, et le navigateur demandait `/favicon.ico`. **Corrigé** : `<link rel="icon" href="data:,">` sur toutes
+      les pages (aucune requête), test à l'appui.
+    - **Du fichier autonome** : 14 signalements « A form field element should have an id or name attribute »
+      (champs de saisie sans `id` ni `name`), identiques sur le fichier d'origine. **Non corrigé** : le fichier
+      n'est pas modifié ; à faire corriger dans le gabarit du projet Claude.
+    - Aucune erreur JavaScript, aucun autre avertissement. Firefox et Safari n'ont pas pu être vérifiés : seul
+      Chromium est disponible dans la session.
 
 ## Testé
 
 | Exigence du lot | Test |
 |---|---|
-| `.pages.yml` valide **selon le schéma de Pages CMS lui-même** (copie de `lib/config-schema.ts`, même analyse YAML) ; rubriques dans l'ordre ; chemins existants ; médias cités définis ; listes fermées égales à `catalogue/` et à `construire.py` ; une sous-rubrique par collection ; aucun champ des données oublié dans les fichiers-listes ; pas de statut par défaut sur les contenus | `tests/back-office.spec.js` |
-| Carte avec image (`alt`, `srcset`, dimensions, `loading="lazy"`) ou bandeau, même hauteur à 1280 et 360 px ; image de carte ≤ 40 Ko ; originaux non publiés | `tests/images-annales.spec.js` |
-| Arrêt sur chaque erreur d'image (crédit, licence, autorisation, texte alternatif, fichier) ; image décorative acceptée ; arrêt sur un fichier autonome qui charge une ressource extérieure (fichier et ligne) | `tests/images-annales.spec.js` |
-| Annale brouillon : ni page, ni carte, ni sitemap (contenu brouillon aussi) ; relue : page, index, filière, catalogue, accueil, sitemap ; contenu autonome déposé à plat publié et enveloppé | `tests/images-annales.spec.js` |
-| `afficher_origine` : à `false`, diplôme, épreuve et session absents de toutes les pages générées ; à `true`, présents dans la fiche, le titre et l'index | `tests/images-annales.spec.js` |
-| Accueil avec planche < 300 Ko (mesuré : **145 ko**) ; contraste du titre sur la planche ≥ 4,5:1 (mesuré sur la capture) ; planche en bandeau de 120 px sur téléphone ; planche de thème et vignette ; `/credits/` complète et liée depuis le pied | `tests/images-annales.spec.js` |
-| Annale de référence : fichier publié = original + ajouts de l'enveloppe à leur place ; aucun style modifié, élément par élément (accueil du sujet et entraînement) ; fiche et « Commencer » ; entraînement, documents, correction, tracé, plein écran, « Imprimer les DR » (4 feuilles) ; examen et remise de copie ; impression identique à l'original ; aucune erreur JavaScript ni requête tierce | `tests/annale.spec.js` |
-| Garde-fou « aucun style écrasé » étendu à tous les fichiers autonomes publiés | `tests/repris.spec.js` |
-| Tous les tests du lot 0 (adaptés : l'annale dans le catalogue, les nouvelles pages, la limite de 1 Mo hors annales) | lot 0 |
-
-Le dépôt d'origine de l'annale ne contient pas de réponses de test : le 20/20 n'est pas vérifié (une réponse fausse
-et sa correction le sont). La correction d'un tracé n'apparaît, par conception du gabarit, qu'après les questions
-dont il dépend : le test vérifie l'enregistrement du tracé.
+| Fiche d'annale : ni titre ni présentation répétés, informations, « Pour réviser », crédit, pas de « Commencer », un seul `h1` ; ≤ 300 px à 360 px ; titre du sujet au premier écran à 1280 × 800 | `tests/annale.spec.js` |
+| Annale parfaite : 20/20 en entraînement et en examen, sans erreur JavaScript, pour chaque annale déposée | `tests/annale-parfaite.spec.js` |
+| Filière visée par un contenu ou une annale publiés : active | `tests/coherence.spec.js` |
+| Notions : libellés accentués affichés ; identifiant inconnu refusé avec les proches ; fichier des notions valide | `tests/coherence.spec.js` |
+| Thèmes vides : pas de page, absents du sitemap, aucun lien, « Bientôt » sans lien sur l'accueil, filtre désactivé ; retour automatique avec un contenu publié | `tests/coherence.spec.js`, `tests/liens.spec.js`, `tests/pages.spec.js` |
+| `indexable: true` refusé si l'un des trois champs manque (message par champ) ; accepté quand ils sont remplis ; « À compléter avant l'ouverture » ; section « Sources et licences » | `tests/coherence.spec.js`, `tests/construction.spec.js` |
+| Source obligatoire au statut `relu` (absente, licence hors liste, autorisation sans référence), facultative en brouillon ; ligne de crédit des quatre licences, avec et sans `afficher_origine` ; ligne présente sur chaque annale publiée ; section « Annales » de `/credits/` ; `annale.py` sur les fiches | `tests/coherence.spec.js`, `tests/images-annales.spec.js` |
+| Requêtes tierces : aucune sans Umami (chaque page) ; avec Umami (site factice, script simulé), seul l'hôte de `umami_script` ; adresse du script contrôlée | `tests/requetes.spec.js`, `tests/construction.spec.js` |
+| Événements : les quatre boutons d'annale et Projeter, une fois chacun, avec `page` seul ; rien sans `window.umami` ; aucun événement pour la recherche et les filtres ; adresse réécrite une seule fois après la frappe ; adresse à jour avant Projeter | `tests/mesure.spec.js` |
+| Labo et Maquettes : un seul `h1`, 360 px, sans JavaScript, sans date ni formulaire, hors navigation ; bloc de l'accueil après « Annales » | `tests/coherence.spec.js`, `tests/pages.spec.js`, `tests/mobile.spec.js` |
+| Icône vide sur chaque page (pas de 404 `favicon.ico`) | `tests/coherence.spec.js` |
+| Résumé de publication : comptes attendus ; message en cas d'arrêt | `tests/coherence.spec.js` |
+| Back-office : ordre des rubriques et aide de chacune ; licences de la source = `annale.py` ; Labo et Maquettes ; notions ; adresse Umami ; schéma Pages CMS | `tests/back-office.spec.js` |
+| Poids de l'accueil, liens internes, un seul `h1`, tous les tests des lots 0 et 1b | suite complète |
 
 ## À faire par Sébastien
 
-1. **Installer Pages CMS** sur ce seul dépôt (`GUIDE-BACK-OFFICE.md`, partie 1) et vérifier que la source de
-   GitHub Pages est « GitHub Actions ».
-2. **Première annale** : renseigner son origine (rubrique Annales → Origine du sujet) et **décider la valeur par
-   défaut de `afficher_origine`** (TRAME § 13 ; `false` en attendant). Relire sa fiche (titre, présentation,
-   notions, durée de 300 min).
-3. **Ajouter les images et leurs licences** : images de cartes, planches de l'accueil et des thèmes, chacune
-   déclarée dans les Crédits (guide, parties 3 et 4).
-4. **BTS MS** : l'annale concerne cette filière, encore `actif: false` dans `catalogue/publics.json` (affichée
-   « Bientôt » sur l'accueil). Le filtre du catalogue la rend déjà choisissable puisqu'elle a une carte. Passer
-   `actif` à `true` quand vous le souhaitez.
-5. **Trancher** les écarts n° 1, 2, 3 et 7 ci-dessous.
+1. **Confirmer l'annale existante** (rubrique Annales) :
+   - les valeurs pré-remplies : origine « BTS Maintenance industrielle », « E4 », 2013 ; source éduscol STI, licence
+     CC BY-NC-SA 2.0 FR, adresse du dossier questionnaire ;
+   - son statut `relu`, posé au lot 1b sans votre relecture : faites le sujet en entraînement, puis confirmez, ou
+     repassez-le en « Brouillon » ;
+   - décider la valeur par défaut de `afficher_origine` (TRAME § 13).
+2. **Mentions légales** (Réglages du site) : nom de l'éditeur, directeur de la publication, adresse de contact
+   (l'adresse postale est facultative pour la construction).
+3. **Umami** : créer le compte en région UE et renseigner l'identifiant et l'adresse du script (guide, partie 7).
+   Vérifier ensuite, dans l'onglet Réseau du navigateur, quels hôtes sont contactés (écart n° 13).
+4. **Premières images et planches**, avec leurs licences (guide, parties 2 et 3).
+5. **Projet Claude « Exercices interactifs »** :
+   - donner un `id` ou un `name` aux champs de saisie du gabarit (14 avertissements de console) ;
+   - régénérer à l'occasion le fichier de la première annale avec la ligne de crédit que demande désormais le
+     prompt (la fiche du site l'affiche déjà).
+6. **Demander à la DGESCO** l'autorisation écrite prévue en TRAME § 13 avant tout encart partenaire.
+7. **Trancher** les écarts n° 1, 2, 9 et 11 ci-dessous, et ceux des annexes.
 
-## Limites constatées de Pages CMS
+## Écarts avec TRAME, DESIGN, CLAUDE.md et le prompt
 
-Le site pagescms.org n'était pas joignable depuis la session (nom de domaine non résolu). Les constats viennent du
-code source de Pages CMS 2.1.8 (dépôt `pages-cms/pages-cms`, commit `6f4e860`, juin 2026). Ils n'ont pas pu être
-vérifiés dans l'application hébergée.
-
-- **Taille de téléversement** : aucune limite dans le code. Le fichier part encodé en base64 (+ 33 %) dans une seule
-  requête vers l'application hébergée. Si l'hébergeur applique la limite courante de 4,5 Mo par requête, un fichier
-  HTML de plus de 3,3 Mo environ ne passerait pas. Non vérifiable ici ; l'annale de référence (1,8 Mo) est en deçà.
-  Repli : déposer le fichier par l'interface web de GitHub dans `medias/depots/` (guide, dernière ligne).
-- **Création de dossiers** : possible par le modèle de nom de fichier et les « nœuds », mais pensé pour des
-  arborescences de pages ; j'ai préféré des fiches à plat (voir « Fait », point 2).
-- **Une sous-rubrique par collection** : une rubrique ne lit qu'un niveau de dossier. Le lot 1 (37 dépôts) devra
-  ajouter les sous-rubriques des nouvelles collections ; le test le rappelle.
-- **Fichiers dont la racine est une liste** (`themes.json`, `CREDITS.json`) : réécrits en entier, sans fusion.
-  Tous leurs champs sont déclarés, et un test vérifie qu'aucun n'est oublié.
-- **Liste de textes à la racine** : impossible à éditer, d'où le nouveau format de `a-la-une.json` (écart n° 2).
-- **Valeurs par défaut** appliquées aux champs absents d'une fiche **existante** : le statut des contenus n'a donc
-  pas de valeur par défaut. Il est obligatoire : en modifiant une fiche existante, il faut choisir « Relu ».
-- **Listes fermées** enregistrées en texte (`"3"` au lieu de `3`) : acceptées par la construction.
-- **Références** : elles ne visent que des rubriques de type collection ; les thèmes et filières sont donc recopiés,
-  avec un test de synchronisation.
-- **Interface** en anglais (les aides de saisie et les rubriques sont en français). Les enregistrements
-  échouent si `main` exige des pull requests.
-
-## Écarts avec TRAME, DESIGN et CLAUDE.md
-
-1. **Licences des images** : CLAUDE.md n'admet que « domaine public ou CC0 », TRAME § 10 et le prompt ajoutent
-   `oeuvre-personnelle` et `autorisation-ecrite`. J'ai appliqué la liste de TRAME. **À trancher** : mettre
-   CLAUDE.md à jour.
-2. **`catalogue/a-la-une.json`** passe de `[…]` à `{"contenus": […]}` (limite de Pages CMS). L'ancien format reste
-   accepté par la construction. **À valider.**
-3. **Bandeau des cartes passé du format 16/7 au 16/9** : DESIGN § 5 veut une image 16/9 de même hauteur que le
-   bandeau ; toutes les cartes sont un peu plus hautes. Alternative : garder 16/7 et rogner l'image à l'affichage.
-   **À trancher.**
-4. **Champs ajoutés** :
-   - `decorative` dans `CREDITS.json` : TRAME § 10 dit « déclaré dans CREDITS.json » sans nommer le champ ;
-   - `illustration_accueil` dans `site.json` : TRAME ne dit pas où ranger la planche de l'accueil ;
-   - `illustration` dans les thèmes, au format `{fichier, alt}` ;
-   - `statut` et `fichier` dans les contenus.
-5. **Annales dans le catalogue** : type « Annale » ajouté au filtre Type (hors des types de contenu de TRAME § 5).
-   Une filière inactive devient choisissable dès qu'elle a une carte.
-6. **Titre et description des pages d'annale** : insérés au début de `<head>` (juste après `<meta charset>`).
-   Le document a ainsi deux `<title>` : le premier, celui du site, est celui qu'utilisent navigateurs et moteurs ;
-   celui du fichier reste en place. Le corps du fichier n'est pas modifié (test).
-7. **Pages Labo et Maquettes « à venir », bloc « Bientôt » de l'accueil, rubriques « À venir » et « Articles »** :
-   TRAME § 6, 7 et 9 les rattachent au lot 1b, le prompt ne les demande pas. **Non faits**, à confirmer pour un
-   prochain lot.
-8. **Notions** affichées à partir de leurs identifiants, donc sans accents (« cinematique graphique »). Un petit
-   dictionnaire `catalogue/notions.json` (identifiant → libellé) serait utile au lot 3 (maillage).
-9. **« Liens vers les cours de mêmes notions »** : la fiche cite tous les contenus qui partagent une notion, cours
-   en tête. Aucun cours n'en partage encore : le seul lien est l'exercice `cadre-velo`.
-10. **Données structurées** (TRAME § 12.2) : pas encore générées (lot 1). L'exigence « aucune mention de l'origine
-    dans les données structurées » est donc tenue d'office.
-11. **Niveaux** : liste fermée 1 à 3 (`NIVEAUX` dans `construire.py`, recopiée dans `.pages.yml`), à étendre au
-    besoin.
-12. **Origine** : au format de TRAME § 12.1, « diplôme session épreuve » ; `session` est un nombre (année).
-13. **Couche CSS** : la fiche d'annale rejoint les pièces de l'enveloppe dans les préfixes `:where(…)` de
-    `commun.css`. L'enveloppe prend la typographie du fichier (police de titre et graisse des boutons de la
-    charte).
-
-Dépendances ajoutées :
-- **Pillow 13.0.0** : lecture des JPEG, PNG et WebP, recadrage et encodage WebP, demandé par le lot.
-- **`yaml` 2.9.1 et `zod` 4.6.7**, pour les tests seulement : ils valident `.pages.yml` avec le schéma de Pages CMS
-  (MIT, copié dans `tests/pages-cms/`). `zod` 3.25.76, la version de Pages CMS, a une faille connue de
-  consommation mémoire ; `zod` 4.6.7 en donne l'API v3 (`zod/v3`) sans faille (`npm audit` : 0).
+1. **Annales sur les pages de filière et de thème** : le prompt ne le demande pas. Sans cela, `/bts-ms/`
+   (filière désormais active) affichait « 0 contenu » alors qu'une annale existe. L'accueil compte de même
+   « 1 annale », ou « 4 contenus, 1 annale ». **À valider.**
+2. **Bandeau des cartes tramé** (quadrillage de 16 px) : nouveau traitement visuel, ajouté à DESIGN § 5. Il utilise
+   `color-mix()` : un navigateur antérieur à 2023 affiche le fond encre uni. **À valider.**
+3. **Bouton « Commencer » supprimé** (voir « Fait », point 1).
+4. **`annale-copie-corrigee`** est compté au clic sur « J'ai fini, je fais corriger ma copie ». Le gabarit demande
+   ensuite une confirmation, qui n'est pas comptée : un élève qui renonce à cette étape est compté quand même.
+5. **Propriété des événements** : nommée `page`.
+6. **Recherche du catalogue** : l'adresse n'est plus réécrite à chaque frappe, mais après 800 ms de pause (voir
+   « Fait », point 9). Les filtres réécrivent toujours l'adresse tout de suite.
+7. **Poids de l'accueil dans le résumé** : estimation statique, plus haute que la mesure du test (141 ko contre
+   120 ko), car elle compte les trois graisses de police et `projeter.js`. La mesure exacte reste le test
+   `tests/poids.spec.js`.
+8. **Règles ajoutées à la source** :
+   - l'éditeur est obligatoire, sauf pour une œuvre personnelle ;
+   - l'adresse est obligatoire pour les deux licences ouvertes, l'attribution l'exigeant.
+9. **`catalogue/a-venir.json`** : TRAME § 9 prévoyait une liste d'annonces (titre, type, description, échéance
+   indicative). Le prompt demande deux textes sans date : le fichier est donc un objet `{labo, maquettes}` (titre,
+   promesse, planche), dans la rubrique « Accueil ». TRAME § 4, 6 et 9 sont mis à jour. La liste d'annonces sur
+   les pages de section n'est pas faite. **À valider.**
+10. **Mentions légales en production** : un champ facultatif resté vide (adresse de l'éditeur) n'est pas affiché ;
+    le prompt n'exige que les trois autres.
+11. **Titre de la page Crédits** : « Crédits des images » devient « Crédits », puisqu'elle couvre aussi les
+    annales. **À valider.**
+12. **Notions en saisie libre** dans les fiches, faute de liste tirée d'un fichier dans Pages CMS (voir « Fait »,
+    point 3).
+13. **Hôte d'envoi d'Umami Cloud** : `cloud.umami.is` n'est pas joignable depuis la session. Le code d'Umami
+    permet au service hébergé d'envoyer les mesures vers un hôte différent de celui du script. Le test simule
+    l'envoi vers l'hôte du script ; si le vrai script en contacte un second, il faudra l'ajouter au test et à la
+    page de confidentialité.
+14. **Limites du plan gratuit d'Umami** (100 000 événements par mois, 6 mois d'historique) : données de mémoire,
+    signalées comme « à vérifier » dans le guide.
+15. **Le tableau de bord construit le site une fois de plus** dans l'Action (environ 2 s, images en cache) : il est
+    calculé avant les tests, pour que le message d'une construction arrêtée y figure.
+16. **CLAUDE.md, règle « Public mineur »** : « seulement si `site.json` contient un identifiant » reste vrai ;
+    l'adresse du script vient maintenant de `site.json` → `umami_script`.
 
 ---
 
-# Annexe : note de livraison du lot 0 (socle)
+# Annexe A : écarts du lot 1b encore ouverts
 
+Résolus par le lot 1c :
 
-Branche `claude/gifted-mccarthy-1rs5w8`. `npm test` : **240 tests, tous verts** (environ 40 s, sans réseau).
+- n° 1, licences d'images (CLAUDE.md aligné sur TRAME) ;
+- n° 7, pages Labo et Maquettes, bloc « Bientôt », rubrique « à venir » (les articles restent au lot 4) ;
+- n° 8, notions sans accents.
 
-### Fait
+Restent :
 
-1. **Structure du dépôt** conforme à TRAME § 4 : `site.json`, `catalogue/`, `contenus/`, `annales/` (vide,
-   lot 2), `gabarits/`, `statique/`, `outils/construire.py`, `tests/`, `.github/workflows/publier.yml`.
-   `requirements.txt` (Jinja2 3.1.6), `package.json` + `package-lock.json` (`@playwright/test` 1.63.0,
-   `@fontsource/barlow-condensed` 5.3.0), `.gitignore` (`_site/`, `node_modules/`…). `outils/reprendre.py` n'est
-   pas créé (lot 1).
-2. **`site.json`** : nom, `base` = `/industrie-education/`, `indexable: false`, `umami` vide, éditeur et contact
-   vides, les 6 titres d'accueil (coupures de ligne de la maquette M1), plus deux champs signalés plus bas
-   (`origine`, `hebergeur`).
-3. **`statique/`**, publié sous `/_/` :
-   - `commun.css` complété : classes de la charte reprises (cartouche, consignes, parties, barre de question,
-     données, tableau), accueil, catalogue, listes, collection, contenu natif, pages de service, enveloppe, calque
-     Projeter, mobile, projection, impression. Aucun jeton modifié (voir l'écart n° 1 sur la portée des règles).
-   - `polices/` : Barlow Condensed 600, 700, 800 (sous-ensemble latin, woff2) et `OFL.txt`.
-   - `commun.js` : titre évolutif, filtres du catalogue avec état dans l'adresse, mode projection (interrupteur et
-     touche P). Sans cookie, sans stockage, sans requête.
-   - `projeter.js` : calque plein écran, QR code (64 % de la hauteur de l'écran), adresse, « Copier le lien »,
-     Échap, focus piégé et rendu au bouton, reste de la page inerte. La bibliothèque QR (`lib/qrcode.js`,
-     qrcode-generator 2.0.4, MIT, licence à côté) n'est chargée qu'à la première ouverture.
-4. **Gabarits Jinja2** : `base`, `accueil`, `catalogue`, `liste`, `collection`, `contenu`, `annales`, `service`
-   (+ `_composants.html`, `_enveloppe.html` et les textes de `service/`). Accueil et catalogue suivent les maquettes
-   « Accueil retenue — M1 × charte atelier » et « Catalogue — M1 × charte atelier » du canvas.
-5. **`outils/construire.py`** : toutes les pages de TRAME § 3 sauf `annale` (34 pages), `statique/` copié sous
-   `_/`, enveloppe des contenus repris (TRAME § 5), `sitemap.xml`, `robots.txt`. La construction se fait dans
-   `_site.en-cours/` et ne remplace `_site/` qu'en cas de succès. Arrêt avec message clair sur : nom de collection
-   réservé, type, thème ou public inconnu, identifiant en double ou différent du nom de dossier, contenu de
-   `a-la-une.json` introuvable, contenu repris sans `<head>`/`<body>` explicites.
-6. **Contenus** :
-   - 3 collections de démonstration (`demo-leviers` en mécanique, `demo-rendement` en énergie, `demo-binaire` en
-     numérique), 8 contenus natifs courts à la charte atelier, marqués « Démonstration » (titre de collection,
-     description, encadré en tête de page).
-   - 1 contenu réel repris : `cadre-velo.html` de `S-Kajzar/STATIQUE` (commit `accf56b`, 8 octobre 2026), copié
-     octet pour octet dans `contenus/statique/cadre-velo/index.html`. Ses images sont intégrées au fichier : il n'a
-     aucune autre ressource. Il fonctionne enveloppé : corrections (20/20), impression, plein écran du tracé.
-7. **Pages de service** : Enseignants (utiliser en classe, Projeter, Pronote), Partenaires (version sans
-   partenaire : principes, « Devenir partenaire » avec le contact de `site.json`), À propos, Mentions légales
-   (champs de `site.json`, mention « À renseigner » quand ils sont vides), 404 (recherche + Accueil, Catalogue,
-   Annales).
-8. **`.github/workflows/publier.yml`** : sur envoi vers `main`, installe, construit, teste (`npm test`) puis publie
-   `_site/` (`actions/upload-pages-artifact` + `actions/deploy-pages`). Si les tests échouent, rien n'est publié.
-9. **Documentation** : `README.md` (rôle du dépôt, commandes, ajouter un contenu en 3 étapes) et cette note.
+- **n° 2 `catalogue/a-la-une.json`** passe de `[…]` à `{"contenus": […]}` (limite de Pages CMS ; l'ancien format
+  reste accepté). **À valider.**
+- **n° 3 Bandeau des cartes en 16/9** au lieu de 16/7 (DESIGN § 5 : image 16/9 de même hauteur que le bandeau ;
+  toutes les cartes sont un peu plus hautes). **À trancher.**
+- **n° 4 Champs ajoutés** : `decorative` (CREDITS.json), `illustration_accueil` (site.json), `illustration` des
+  thèmes, `statut` et `fichier` des contenus ; au lot 1c, `umami_script` (site.json) et `source` (annales, prévu par
+  le prompt). **À valider.**
+- **n° 5 Type « Annale »** dans le filtre Type du catalogue ; une filière inactive devient choisissable dès qu'elle a
+  une carte.
+- **n° 6 Deux `<title>`** sur une page d'annale : celui du site, en tête de `<head>`, fait foi ; celui du fichier
+  reste en place (corps non modifié).
+- **n° 9 « Pour réviser »** : aucun cours ne partage encore une notion avec l'annale ; seul lien, l'exercice
+  `cadre-velo`.
+- **n° 10 Données structurées** : lot 1.
+- **n° 11 Niveaux** : liste fermée 1 à 3.
+- **n° 12 Format de l'origine** : « diplôme session épreuve » (TRAME § 12.1).
+- **n° 13 Couche CSS** : la fiche d'annale est une pièce de l'enveloppe (préfixes `:where(…)` de `commun.css`).
 
-### Testé
+Limites de Pages CMS constatées au lot 1b (code de Pages CMS 2.1.8, commit `6f4e860`) :
 
-| Exigence du lot | Test |
-|---|---|
-| Chaque page de TRAME § 3 existe, un seul `h1`, `lang="fr"`, titre, description, focus visible | `tests/pages.spec.js` |
-| Chaque page s'affiche sans JavaScript ; adresse inconnue → 404 avec recherche et 3 liens | `tests/pages.spec.js` |
-| Aucun lien interne cassé (href, src, action, ancres, polices de `commun.css`) | `tests/liens.spec.js` |
-| Aucune requête vers un autre hôte (chaque page, calque Projeter, catalogue filtré, contenu en entraînement) ; pas d'Umami | `tests/requetes.spec.js` |
-| `noindex` partout et `robots.txt` fermé ; `sitemap.xml` complet | `tests/indexation.spec.js` |
-| Accueil < 300 Ko au premier affichage (mesuré : **106 ko**, sans compression) ; aucune page > 1 Mo | `tests/poids.spec.js` |
-| Titre évolutif : 16 dates simulées couvrant les 6 moments et leurs limites ; titre par défaut sans JavaScript ; aucun saut à 360 et 1280 px | `tests/titre.spec.js` |
-| Catalogue : thème, type, filière, niveau, recherche sans accents, état dans l'adresse, « Effacer les filtres », aucun résultat, recherche de l'accueil, repli « Filtres » sur téléphone ; sans JavaScript, toutes les cartes | `tests/catalogue.spec.js` |
-| 360 px : pas de défilement horizontal (toutes les pages, catalogue filtré, calque Projeter) | `tests/mobile.spec.js` |
-| Contenu repris : fichier publié = original + ajouts de l'enveloppe ; aucun style du contenu modifié (élément par élément) ; 20/20 ; impression identique à l'original (même nombre de pages) ; plein écran ; mode projection | `tests/repris.spec.js` |
-| Calque Projeter : QR ≥ 60 % de la hauteur, QR = adresse de la page, focus piégé, copie, Échap | `tests/projeter.spec.js` |
-| Gabarit contenu natif : fil d'Ariane, précédent/suivant, Signaler, projection, corrections sans JavaScript | `tests/contenu.spec.js` |
-| La construction s'arrête sur un nom réservé (dépôt factice) et sur les autres erreurs ; Umami et indexation suivent `site.json` | `tests/construction.spec.js` |
+- **Taille de téléversement** : le fichier part en une seule requête, encodé en base64 ; au-delà de 3 Mo environ,
+  le dépôt peut échouer (repli : téléverser sur GitHub, guide).
+- **Une sous-rubrique par collection** : chaque nouvelle collection doit recevoir la sienne dans `.pages.yml` ; un
+  test le rappelle.
+- **Fichiers dont la racine est une liste** : réécrits en entier, sans fusion.
+- **Valeurs par défaut** : elles s'appliquent aussi aux fiches existantes, d'où l'absence de statut par défaut sur
+  les contenus.
+- **Listes fermées** : enregistrées en texte.
+- **Références** : vers des collections seulement.
+- **Interface** : en anglais.
+- **Branche `main`** : elle ne doit pas exiger de pull request.
 
-Contrôles à la main : captures à 1440 et 360 px comparées aux maquettes M1 ; vérification que le garde-fou « aucun
-style écrasé » échoue bien quand on introduit une fuite volontaire dans `commun.css`.
+# Annexe B : écarts du lot 0 encore ouverts (TRAME § 13)
 
-### À faire par Sébastien
-
-1. **Activer GitHub Pages en mode « GitHub Actions »** : Settings → Pages → Build and deployment → Source :
-   « GitHub Actions ». Pages paraît déjà activé sur le dépôt : vérifier que la source n'est pas restée sur
-   « Deploy from a branch ». Puis fusionner la pull request : la première publication part de `main`.
-2. **Renseigner `site.json`** : `editeur.nom`, `editeur.adresse`, `editeur.directeur_publication`, `contact`
-   (sert aussi à « Signaler une erreur » et « Devenir partenaire »). Vérifier `hebergeur`, prérempli avec GitHub.
-   Plus tard : `umami` (identifiant du site), puis `indexable: true` à la bascule.
-3. **Relire les textes** des pages Enseignants (en particulier la rubrique Pronote, restée volontairement générale),
-   Partenaires, À propos et Mentions légales.
-4. **Trancher les écarts n° 2, 3 et 5** ci-dessous.
-5. **Retirer les contenus de démonstration** (`contenus/demo-*`) avant la bascule, et les remplacer dans
-   `catalogue/a-la-une.json`.
-
-### Écarts avec TRAME et DESIGN, points à trancher
-
-1. **Lien vers `commun.css` dans un contenu repris** (TRAME § 5 : « après les styles du contenu sans les
-   écraser »).
-   - Un simple `<link>` placé après les styles du contenu écrasait ceux-ci : fond, boutons, couleurs de liens, et
-     même l'impression (9 pages au lieu de 12).
-   - Deux mesures ont été prises :
-     - le lien est inséré sous la forme `<style>@import url("…/_/commun.css") layer(site);</style>` : en cas de
-       conflit, le contenu gagne toujours ;
-     - chaque règle de `commun.css` qui vise un élément HTML ou une classe susceptible d'exister dans un contenu est
-       limitée aux pages du site (`body.vitrine`, `body.atelier`) et aux pièces de l'enveloppe par un préfixe
-       `:where(…)`.
-   - Ce préfixe a une spécificité nulle : le rendu des pages du site est inchangé (comparé au pixel près).
-   - Un test compare désormais, pour chaque contenu repris, les styles calculés de chaque élément avec ceux du
-     fichier d'origine : au lot 1, une fuite sera détectée automatiquement.
-   - Conséquences :
-     - l'enveloppe prend la typographie du contenu (police de titre de la charte, sans Barlow ; graisse des
-       boutons) ;
-     - un navigateur antérieur à 2022 affiche le bandeau sans mise en forme, mais le contenu reste intact.
-   - Autres retouches de règles existantes (jetons inchangés) :
-     - `!important` sur le fond et la taille de texte du mode projection, pour qu'il agisse aussi sur un contenu
-       repris ;
-     - `.visuellement-cache` rendu robuste (`!important`), car une légende masquée débordait de 82 px ;
-     - le sélecteur du titre d'accueil est étendu à ses variantes.
-2. **Liens d'origine du contenu repris** : `cadre-velo.html` contient trois liens `index.html`, qui mènent désormais
-   à la page elle-même au lieu de l'accueil de STATIQUE, et un lien `cours-statique-analytique.html`, cassé tant
-   que le cours 3 n'est pas repris. Le corps ne pouvant pas être modifié (TRAME § 5) alors qu'aucun lien interne ne
-   doit être cassé (TRAME § 8), ce lien figure comme exception connue dans `tests/liens-connus.json`. **À trancher
-   pour le lot 1** : réécrire ces liens à la reprise, ajouter des redirections, ou accepter des exceptions.
-3. **Titre d'accueil évolutif** : la hauteur réservée est celle du plus long des six titres, pour qu'aucun moment
-   ne fasse sauter la page (DESIGN § 7). Les titres de deux lignes, dont celui par défaut, laissent donc un espace
-   vide sous eux (bien visible sur téléphone). La maquette réservait seulement 1,8 em, avec un saut d'une ligne
-   pour les titres plus longs. **À choisir** : pas de saut (actuel) ou espace minimal.
-4. **Deux `h1` dans `cadre-velo.html`** : un sur l'écran de choix du mode, un sur le sujet. Un seul est affiché à la
-   fois. Pour les contenus repris, le test compte les `h1` affichés ; pour les autres pages, les `h1` présents.
-5. **Champs ajoutés** :
-   - dans `site.json` : `origine` (adresse du site, nécessaire aux URL absolues du sitemap) et `hebergeur`
-     (mentions légales) ; `editeur` est un objet (nom, adresse, directeur de la publication) ;
-   - dans `themes.json` : `court`, pour les noms courts des bandeaux de cartes de la maquette (« Mécanique » pour
-     « Mécanique et conception ») ;
-   - `niveau` et `duree_min` sont facultatifs (un formulaire n'a pas de niveau, comme dans la maquette).
-
-   **À valider.**
-6. **Défaut d'origine de `cadre-velo.html`** : à 360 px, en mode entraînement, le cartouche déborde de 4 px (grille
-   `1fr` et champ « Nom et prénom »). Le défaut existe déjà dans STATIQUE et ne peut être corrigé qu'à la source.
-   Le test vérifie que l'enveloppe n'ajoute rien. À l'ouverture, la page ne déborde pas.
-7. **`robots.txt` en préproduction** : publié sous `/industrie-education/robots.txt`, il n'est pas lu par les
-   moteurs, qui ne lisent que la racine du domaine `s-kajzar.github.io`. Ce qui protège la préproduction, c'est la
-   balise `noindex` présente sur chaque page, contenus repris compris. Le fichier prendra effet avec le domaine.
-8. **Catalogue** :
-   - le bloc « Filière » est en lignes comme les autres filtres (DESIGN § 5), au lieu des pastilles de la maquette ;
-   - le filtre « Niveau » (TRAME § 6), absent de la maquette, est ajouté sur le même modèle ;
-   - Bac Pro MSPC et BTS MS sont `actif: false`, donc affichés « bientôt » comme dans la maquette ; leurs pages
-     (`/bac-pro-mspc/`, `/bts-ms/`, `/annales/…/`) existent avec un message « en préparation ».
-9. **Accueil** :
-   - l'accroche de la maquette est conservée (« … corrigés automatiquement ») ; elle sera exacte après la reprise,
-     les contenus de démonstration se corrigeant par dépliage ;
-   - le moment affiché à gauche du titre (« Mercredi · 14 h ») vient aussi de la maquette.
-10. **Mode projection** : il n'est pas mémorisé d'une page à l'autre (aucun stockage dans le navigateur). La touche
-    P n'agit que sur les pages de contenu, où se trouve l'interrupteur. Les traits de 3 px ne s'appliquent qu'aux
-    pages du site : un contenu repris garde ses traits.
-11. **« Signaler une erreur »** : sans contact dans `site.json`, le lien mène à la rubrique « Signaler une erreur »
-    d'À propos. Avec un contact, il ouvre un courriel prérempli (titre et adresse de la page). Le formulaire est
-    prévu au lot 3.
-12. **Identifiants et page 404** :
-    - les identifiants de contenus sont uniques sur tout le site ; `a-la-une.json` accepte `cadre-velo` ou
-      `statique/cadre-velo`, et de 3 à 6 entrées (TRAME § 6) ;
-    - la 404 utilise des liens absolus (base de `site.json`), car GitHub Pages la sert à n'importe quelle adresse.
-
-Dépendances : uniquement celles demandées par le lot (Jinja2, `@playwright/test`, `@fontsource/barlow-condensed`).
-La bibliothèque QR est copiée dans `statique/lib/` (licence MIT jointe), sans dépendance npm. Les réponses du test
-20/20 (`tests/reponses-cadre-velo.js`) sont reprises des tests de STATIQUE.
+- **n° 2 Liens d'origine des contenus repris** : `cadre-velo.html` contient un lien vers
+  `cours-statique-analytique.html`, cassé tant que le cours n'est pas repris (exception de
+  `tests/liens-connus.json`). **À trancher pour le lot 1** : réécrire ces liens à la reprise, ajouter des
+  redirections, ou accepter des exceptions.
+- **n° 3 Hauteur du titre d'accueil** : la hauteur réservée est celle du plus long des six titres, pour éviter
+  tout saut ; les titres de deux lignes laissent un espace vide sous eux. **À choisir** : pas de saut (actuel) ou
+  espace minimal.
+- **n° 5 Champs ajoutés au lot 0** : `origine` et `hebergeur` dans `site.json`, `editeur` en objet, `court` dans les
+  thèmes, `niveau` et `duree_min` facultatifs. **À valider.**

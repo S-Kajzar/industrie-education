@@ -56,11 +56,15 @@ function annales({ toutes = false } = {}) {
 // Toutes les cartes du catalogue : contenus publiés puis annales publiées.
 const cartesCatalogue = () => [...contenus(), ...annales()];
 
+// Un thème est actif s'il a au moins un contenu ou une annale publiés ; sinon il n'a pas de page (« Bientôt »).
+const themeActif = (id) => cartesCatalogue().some((c) => c.theme === id);
+const themesActifs = () => themes.filter((t) => themeActif(t.id));
+
 // Pages de TRAME § 3 (sauf « annale », lot 2) : [adresse relative à la base, gabarit].
 function pagesAttendues() {
   const pages = [['', 'accueil'], ['catalogue/', 'catalogue']];
   for (const p of publics) pages.push([`${p.id}/`, 'liste']);
-  for (const t of themes) pages.push([`${t.id}/`, 'liste']);
+  for (const t of themesActifs()) pages.push([`${t.id}/`, 'liste']);
   for (const c of collections()) {
     pages.push([`${c.id}/`, 'collection']);
     for (const x of c.contenus) pages.push([x.chemin, x.mode === 'repris' ? 'contenu repris' : 'contenu']);
@@ -68,6 +72,7 @@ function pagesAttendues() {
   pages.push(['annales/', 'annales']);
   for (const p of publics) pages.push([`annales/${p.id}/`, 'annales']);
   for (const a of annales()) pages.push([a.chemin, 'annale']);
+  for (const s of ['labo/', 'maquettes/']) pages.push([s, 'vitrine-section']);
   for (const s of ['enseignants/', 'partenaires/', 'a-propos/', 'mentions-legales/', 'credits/', '404.html']) pages.push([s, 'service']);
   return pages;
 }
@@ -159,6 +164,6 @@ function construire(racine) {
 }
 
 module.exports = {
-  DEPOT, SITE, site, themes, publics, collections, contenus, annales, cartesCatalogue, pagesAttendues,
+  DEPOT, SITE, site, themes, publics, collections, contenus, annales, cartesCatalogue, themeActif, themesActifs, pagesAttendues,
   pagesConstruites, fichierDePage, estRepris, estAutonome, depotFactice, construire, servirSite, stylesDuCorps, lireJSON,
 };

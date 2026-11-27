@@ -33,8 +33,10 @@ const credit = (fichier, titre, autres = {}) => ({
 
 const annale = (id, autres = {}) => ({
   id, titre: `Annale ${id}`, presentation: 'Sujet factice pour les tests du site.', fichier: `medias/depots/${id}.html`,
-  image: { fichier: null, alt: '' }, publics: ['si'], theme: 'mecanique', notions: ['moment'], duree_min: 120,
-  origine: { diplome: '', epreuve: '', session: null }, afficher_origine: false, statut: 'relu', mis_a_jour: '2026-11-20',
+  image: { fichier: null, alt: '' }, publics: ['si'], theme: 'mecanique', notions: ['statique'], duree_min: 120,
+  origine: { diplome: '', epreuve: '', session: null }, afficher_origine: false,
+  source: { editeur: 'Éditeur d’essai', url: 'https://exemple.test/sujets/essai.docx', licence: 'etalab-2.0', reference_autorisation: '' },
+  statut: 'relu', mis_a_jour: '2026-11-20',
   ...autres,
 });
 
@@ -55,7 +57,7 @@ function depotIllustre(modifier) {
     // Contenu « un » avec image, « deux » sans image (bandeau).
     ecrire('contenus/essai/un/contenu.json', {
       id: 'un', titre: 'Contenu un', type: 'cours', niveau: 1, description: 'Contenu factice illustré.', mode: 'natif',
-      notions: ['moment'], image: { fichier: 'medias/cartes/photo.jpg', alt: 'Photo d’essai : disques colorés' },
+      notions: ['statique'], image: { fichier: 'medias/cartes/photo.jpg', alt: 'Photo d’essai : disques colorés' },
     });
     // Nouveau contenu autonome créé par le back-office : fiche à plat, fichier dans medias/depots/.
     ecrire('contenus/essai/quatre.json', {
@@ -188,7 +190,7 @@ test('afficher_origine à true : l’origine apparaît dans la fiche, le titre e
   const titre = page.match(/<title>([^<]*)<\/title>/)[1];
   expect(titre).toContain('Brevet Zéphyr 1987 Épreuve Quokka');
   const fiche = page.match(/<section class="enveloppe-fiche"[\s\S]*?<\/section>/)[0];
-  expect(fiche).toContain('Origine du sujet');
+  expect(fiche).toContain('<dt>Origine</dt>');
   expect(fiche).toContain('Brevet Zéphyr 1987 Épreuve Quokka');
   expect(fs.readFileSync(path.join(site, 'annales', 'index.html'), 'utf8')).toContain('Brevet Zéphyr 1987 Épreuve Quokka');
 }));
@@ -306,12 +308,22 @@ test.describe('site factice illustré, dans le navigateur', () => {
     await expect(page.locator('.index-themes .illustration-vignette')).toHaveCount(1);
   });
 
-  test('page /credits/ complète, liée depuis le pied de page', async ({ page }) => {
+  test('page /credits/ complète (images et annales), liée depuis le pied de page', async ({ page }) => {
     await page.goto(serveur.adresse);
     await page.locator('.site-pied').getByRole('link', { name: 'Crédits' }).click();
-    await expect(page.locator('h1')).toHaveText('Crédits des images');
+    await expect(page.locator('h1')).toHaveText('Crédits');
+    // Section « Annales » : les annales publiées seulement, avec titre, éditeur, lien source, licence, ligne de crédit.
+    const annales = page.locator('#annales + .credits > .credit');
+    await expect(annales).toHaveCount(1);
+    await expect(annales.getByRole('link', { name: 'Annale essai-relu' })).toHaveAttribute('href', '../annales/essai-relu/');
+    await expect(annales).toContainText('Éditeur d’essai');
+    await expect(annales).toContainText('Licence Ouverte 2.0 (Etalab)');
+    await expect(annales.locator('a[href="https://exemple.test/sujets/essai.docx"]')).toHaveCount(2);
+    await expect(annales.locator('.credit-ligne')).toHaveText(
+      'D’après un document publié par Éditeur d’essai, Licence Ouverte 2.0. Adaptation : industrie.education.');
+    await expect(page.locator('body')).not.toContainText('Xylophage');
     const credits = JSON.parse(fs.readFileSync(path.join(racine, 'medias', 'CREDITS.json'), 'utf8'));
-    const entrees = page.locator('.credit');
+    const entrees = page.locator('#images + .credits > .credit');
     await expect(entrees).toHaveCount(credits.length);
     for (const c of credits) {
       const entree = entrees.filter({ hasText: c.titre });

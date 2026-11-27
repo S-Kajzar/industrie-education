@@ -5,6 +5,10 @@ Lit site.json, catalogue/, contenus/, annales/ et medias/ et écrit le site stat
 TRAME § 3, statique/ copié sous _/, les fichiers autonomes (contenus repris, annales) enveloppés sans être modifiés
 (TRAME § 5 et § 11), les variantes WebP des images (TRAME § 10), sitemap.xml et robots.txt.
 
+Un thème sans contenu ni annale publiés est traité comme une filière inactive : « Bientôt » sur l'accueil, pas de
+page, aucun lien vers lui. Avec --resume FICHIER, un tableau de bord éditorial (comptes seulement) est ajouté à
+FICHIER, au format Markdown : c'est le récapitulatif de l'Action GitHub ($GITHUB_STEP_SUMMARY).
+
 Organisation des fiches (les deux sont acceptées, les adresses publiques sont les mêmes) :
   - un dossier par entrée : contenus/<collection>/<id>/contenu.json (+ index.html et ressources),
     annales/<id>/annale.json (+ index.html) ;
@@ -12,15 +16,18 @@ Organisation des fiches (les deux sont acceptées, les adresses publiques sont l
     HTML autonome déposé dans medias/depots/ (champ « fichier »).
 
 Rien n'est publié au statut « brouillon ». La construction s'arrête avec un message clair au premier problème :
-nom réservé, type, thème, public ou niveau inconnu, identifiant en double, image sans crédit ou introuvable,
-licence hors liste, texte alternatif manquant, fichier autonome qui charge une ressource extérieure, etc.
+nom réservé, type, thème, public, niveau ou notion inconnus, identifiant en double, image sans crédit ou
+introuvable, licence hors liste, texte alternatif manquant, fichier autonome qui charge une ressource extérieure,
+annale publiée sans source, indexation demandée alors que les mentions légales sont incomplètes, etc.
 
 Usage :
     python3 outils/construire.py                        # lit le dépôt, écrit _site/
     python3 outils/construire.py --racine D --sortie S  # autre dépôt (tests), autre dossier de sortie
+    python3 outils/construire.py --resume "$GITHUB_STEP_SUMMARY"   # dans l'Action : tableau de bord éditorial
 """
 
 import argparse
+import difflib
 import json
 import re
 import shutil
@@ -69,6 +76,15 @@ LICENCES = {
     "oeuvre-personnelle": "Œuvre personnelle",
     "autorisation-ecrite": "Autorisation écrite",
 }
+# Mentions légales exigées avant l'ouverture aux moteurs (indexable: true) : champ de site.json, libellé du
+# back-office (rubrique « Réglages du site »).
+MENTIONS_OBLIGATOIRES = (
+    (("editeur", "nom"), "Nom de l'éditeur"),
+    (("editeur", "directeur_publication"), "Directeur de la publication"),
+    (("contact",), "Adresse de contact"),
+)
+# Pages « à venir » (TRAME § 3 et § 6) : identifiant dans catalogue/a-venir.json = adresse de la page.
+A_VENIR = ("labo", "maquettes")
 # DESIGN.md § 7 : les six moments du titre d'accueil ; « cours » est le titre par défaut.
 MOMENTS = ("cours", "matin", "midi", "soir", "nuit", "week-end")
 A_LA_UNE_MIN, A_LA_UNE_MAX = 3, 6
@@ -91,8 +107,8 @@ SERVICE = (
      "sans cookie."),
     ("mentions-legales/", "mentions-legales", "Mentions légales",
      "Mentions légales d’industrie.education : éditeur, hébergeur, données personnelles et crédits."),
-    ("credits/", "credits", "Crédits des images",
-     "Source, auteur, date et licence de chaque image publiée sur industrie.education."),
+    ("credits/", "credits", "Crédits",
+     "Source et licence de chaque image et de chaque annale publiées sur industrie.education."),
 )
 
 
@@ -130,9 +146,14 @@ def vide(valeur):
     return valeur is None or (isinstance(valeur, str) and not valeur.strip()) or valeur == [] or valeur == {}
 
 
-def libelle_notion(identifiant):
-    """« cinematique-graphique » → « cinematique graphique » (en attendant un dictionnaire des notions)."""
-    return identifiant.replace("-", " ").strip()
+def compte_cartes(contenus, annales):
+    """« 4 contenus », « 1 annale », « 4 contenus, 1 annale »."""
+    morceaux = []
+    if contenus or not annales:
+        morceaux.append(pluriel(contenus, "contenu"))
+    if annales:
+        morceaux.append(pluriel(annales, "annale"))
+    return ", ".join(morceaux)
 
 
 class Lecteur:
@@ -224,13 +245,21 @@ def liste_textes(donnees, champ, ou):
     return [x.strip() for x in valeur if x.strip()]
 
 
-def notions_valides(donnees, ou):
+def notions_valides(donnees, ou, notions_connues):
+    """Identifiants de notions de la fiche, tous déclarés dans catalogue/notions.json."""
     notions = liste_textes(donnees, "notions", ou)
     for notion in notions:
-        if not IDENTIFIANT.match(notion):
-            raise ErreurConstruction(
-                f"Notion invalide « {notion} » dans {ou} : minuscules sans accent, chiffres et tirets (ex. « pfs »)."
-            )
+        if notion in notions_connues:
+            continue
+        # D'abord les identifiants qui contiennent la saisie (ou y sont contenus), sinon les plus ressemblants.
+        proches = [n for n in notions_connues if notion in n or n in notion][:3]
+        proches = proches or difflib.get_close_matches(notion, list(notions_connues), n=3, cutoff=0.75)
+        raise ErreurConstruction(
+            f"Notion inconnue « {notion} » dans {ou}. "
+            + (f"Identifiants proches : {', '.join(proches)}. " if proches else "")
+            + "Corrigez l’identifiant, ou ajoutez la notion dans la rubrique « Notions » du back-office "
+            "(catalogue/notions.json)."
+        )
     return notions
 
 
@@ -279,6 +308,14 @@ def charger_site(lecteur):
     if not isinstance(umami, str) or (umami.strip() and not re.match(r"^[0-9a-fA-F-]{8,}$", umami.strip())):
         raise ErreurConstruction("site.json : « umami » doit être vide ou contenir l’identifiant du site Umami.")
     site["umami"] = umami.strip()
+    # Adresse du script : elle dépend de la région choisie à la création du compte Umami Cloud.
+    script = site.get("umami_script") or UMAMI_SCRIPT
+    if not isinstance(script, str) or not re.match(r"^https://[a-z0-9.-]+\.[a-z]{2,}(:\d+)?/\S*$", script.strip(), re.I):
+        raise ErreurConstruction(
+            "site.json : « umami_script » doit être l’adresse complète du script Umami, en https:// "
+            f"(par défaut : {UMAMI_SCRIPT})."
+        )
+    site["umami_script"] = script.strip()
     for champ in ("editeur", "hebergeur"):
         if not isinstance(site.get(champ), dict):
             raise ErreurConstruction(f"site.json : « {champ} » doit être un objet.")
@@ -289,6 +326,17 @@ def charger_site(lecteur):
     if not isinstance(site.get("contact") or "", str):
         raise ErreurConstruction("site.json : « contact » doit être une adresse électronique ou vide.")
     site["contact"] = (site.get("contact") or "").strip()
+    # Mentions légales : à compléter avant l'ouverture aux moteurs de recherche.
+    site["mentions_manquantes"] = [
+        libelle for chemin, libelle in MENTIONS_OBLIGATOIRES
+        if not str((site[chemin[0]].get(chemin[1]) if len(chemin) > 1 else site[chemin[0]]) or "").strip()
+    ]
+    if site["indexable"] and site["mentions_manquantes"]:
+        raise ErreurConstruction(
+            "site.json : « indexable » ne peut pas valoir true tant que les mentions légales sont incomplètes. "
+            "Remplissez dans la rubrique « Réglages du site » du back-office : "
+            + ", ".join(f"« {m} »" for m in site["mentions_manquantes"]) + "."
+        )
     titres = site.get("titres_accueil")
     if not isinstance(titres, dict):
         raise ErreurConstruction("site.json : « titres_accueil » doit être un objet (un titre par moment).")
@@ -345,6 +393,44 @@ def charger_catalogue(lecteur):
     if not isinstance(a_la_une, list) or not all(isinstance(x, str) for x in a_la_une):
         raise ErreurConstruction("catalogue/a-la-une.json : « contenus » doit être une liste d’identifiants de contenus.")
     return themes, publics, [x.strip() for x in a_la_une if x.strip()]
+
+
+def charger_notions(lecteur):
+    """catalogue/notions.json : [{id, nom}], le nom est celui affiché sur les pages (TRAME § 5)."""
+    notions = lecteur.json(lecteur.racine / "catalogue" / "notions.json", list)
+    resultat = {}
+    for i, n in enumerate(notions, 1):
+        ou = f"catalogue/notions.json (notion n° {i})"
+        if not isinstance(n, dict):
+            raise ErreurConstruction(f"{ou} : un objet {{\"id\", \"nom\"}} est attendu.")
+        ident = texte_requis(n, "id", ou)
+        if not IDENTIFIANT.match(ident):
+            raise ErreurConstruction(
+                f"Identifiant de notion invalide « {ident} » ({ou}) : minuscules sans accent, chiffres et tirets."
+            )
+        if ident in resultat:
+            raise ErreurConstruction(f"Notion déclarée deux fois dans catalogue/notions.json : « {ident} ».")
+        resultat[ident] = texte_requis(n, "nom", ou)
+    return resultat
+
+
+def charger_a_venir(lecteur):
+    """catalogue/a-venir.json : Labo et Maquettes « à venir » (titre, promesse, planche facultative)."""
+    donnees = lecteur.json(lecteur.racine / "catalogue" / "a-venir.json", dict)
+    sections = []
+    for ident in A_VENIR:
+        ou = f"catalogue/a-venir.json ({ident})"
+        section = donnees.get(ident)
+        if not isinstance(section, dict):
+            raise ErreurConstruction(f"{ou} : un objet {{\"titre\", \"promesse\"}} est attendu.")
+        sections.append({
+            "id": ident,
+            "titre": texte_requis(section, "titre", ou),
+            "promesse": texte_requis(section, "promesse", ou),
+            "illustration": image_declaree(section.get("illustration"), ou, "illustration"),
+            "chemin": f"{ident}/",
+        })
+    return sections
 
 
 def charger_credits(lecteur):
@@ -435,7 +521,7 @@ def fichier_depose(lecteur, donnees, ou, obligatoire):
     return chemin
 
 
-def charger_contenus(lecteur, themes, publics, reserves):
+def charger_contenus(lecteur, themes, publics, reserves, notions):
     themes_par_id = {t["id"]: t for t in themes}
     publics_par_id = {p["id"]: p for p in publics}
     dossier_contenus = lecteur.racine / "contenus"
@@ -478,7 +564,8 @@ def charger_contenus(lecteur, themes, publics, reserves):
 
         contenus = []
         for organisation, chemin in fiches:
-            contenu = charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id)
+            contenu = charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id,
+                                      notions)
             deja = contenus_par_id.get(contenu["id"]) or next((b for b in brouillons if b["id"] == contenu["id"]), None)
             if deja:
                 raise ErreurConstruction(
@@ -502,7 +589,7 @@ def charger_contenus(lecteur, themes, publics, reserves):
     return collections, contenus_par_id, brouillons
 
 
-def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id):
+def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id, notions):
     if organisation == "dossier":
         fiche = chemin / "contenu.json"
         ident_attendu = chemin.name
@@ -524,7 +611,9 @@ def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, pu
         raise ErreurConstruction(f"Identifiant invalide « {ident} » ({ou}) : minuscules sans accent, chiffres et tirets.")
     statut = statut_valide(donnees, ou, defaut="relu")
     if statut == "brouillon":
-        return {"id": ident, "statut": statut, "source": ou}
+        # Un brouillon n'est pas contrôlé ; son type sert seulement au résumé de publication.
+        return {"id": ident, "statut": statut, "source": ou,
+                "type": donnees.get("type") if donnees.get("type") in TYPES else None}
 
     type_ = texte_requis(donnees, "type", ou)
     if type_ not in TYPES:
@@ -557,7 +646,7 @@ def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, pu
         "niveau": niveau_valide(donnees, ou),
         "duree_min": entier_positif(donnees, "duree_min", ou),
         "mots_cles": mots_cles,
-        "notions": notions_valides(donnees, ou),
+        "notions": notions_valides(donnees, ou, notions),
         "image": image_declaree(donnees.get("image"), ou),
         "mode": mode,
         "statut": statut,
@@ -582,13 +671,35 @@ def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, pu
     }
     # Texte lu par la recherche du catalogue (normalisé dans le navigateur : minuscules, sans accents).
     contenu["texte"] = " ".join(
-        [contenu["titre"], contenu["description"], *mots_cles, collection["titre"], theme["nom"], theme["court"],
-         contenu["type_nom"], *(p["nom"] for p in publics)]
+        [contenu["titre"], contenu["description"], *mots_cles, *(notions[n] for n in contenu["notions"]),
+         collection["titre"], theme["nom"], theme["court"], contenu["type_nom"], *(p["nom"] for p in publics)]
     )
     return contenu
 
 
-def charger_annales(lecteur, themes, publics, reserves_annales):
+def credit_annale(donnees, ou):
+    """Champ « source » d'une annale publiée : obligatoire (outils/annale.py) ; ligne de crédit de la fiche."""
+    source = donnees.get("source")
+    problemes = controle_autonome.controler_source(source, ou)
+    if problemes:
+        raise ErreurConstruction("annale sans source valide :\n  " + "\n  ".join(problemes))
+    licence = controle_autonome.LICENCES_ANNALE[source["licence"]]
+    editeur = str(source.get("editeur") or "").strip()
+    avant, _, apres = licence["credit"].partition("{editeur}")
+    return {
+        "editeur": editeur,
+        "url": str(source.get("url") or "").strip(),
+        "licence": source["licence"],
+        "licence_nom": licence["nom"],
+        "reference_autorisation": str(source.get("reference_autorisation") or "").strip(),
+        # Ligne de crédit : « avant », puis le nom de l'éditeur (lien vers la source) s'il figure dans le modèle.
+        "avant": avant,
+        "avec_editeur": "{editeur}" in licence["credit"],
+        "apres": apres,
+    }
+
+
+def charger_annales(lecteur, themes, publics, reserves_annales, notions):
     """annales/<id>.json (back-office) ou annales/<id>/annale.json : fiches des annales (TRAME § 11)."""
     themes_par_id = {t["id"]: t for t in themes}
     publics_par_id = {p["id"]: p for p in publics}
@@ -624,7 +735,9 @@ def charger_annales(lecteur, themes, publics, reserves_annales):
         # Sans statut, une annale reste un brouillon : la publication demande « relu » (TRAME § 11).
         statut = statut_valide(donnees, ou, defaut="brouillon")
         if statut != "relu":
-            brouillons.append({"id": ident, "source": ou})
+            # Source facultative en brouillon ; le résumé de publication compte les annales qui n'en ont pas.
+            brouillons.append({"id": ident, "source": ou, "type": TYPE_ANNALE[0],
+                               "sans_source": bool(controle_autonome.controler_source(donnees.get("source"), ou))})
             continue
 
         depose = fichier_depose(lecteur, donnees, ou, obligatoire=(organisation == "plat"))
@@ -652,7 +765,7 @@ def charger_annales(lecteur, themes, publics, reserves_annales):
         mis_a_jour = texte_facultatif(donnees, "mis_a_jour", ou)
         if mis_a_jour and not re.match(r"^\d{4}-\d{2}-\d{2}$", mis_a_jour):
             raise ErreurConstruction(f"Champ « mis_a_jour » invalide dans {ou} : date AAAA-MM-JJ attendue.")
-        notions = notions_valides(donnees, ou)
+        notions_annale = notions_valides(donnees, ou, notions)
         annale = {
             "id": ident,
             "titre": titre,
@@ -661,8 +774,9 @@ def charger_annales(lecteur, themes, publics, reserves_annales):
             "type_nom": TYPE_ANNALE[1],
             "niveau": None,
             "duree_min": entier_positif(donnees, "duree_min", ou),
-            "notions": notions,
+            "notions": notions_annale,
             "image": image_declaree(donnees.get("image"), ou),
+            "credit": credit_annale(donnees, ou),
             "theme": theme,
             "publics": publics_annale,
             "filieres": filieres,
@@ -685,7 +799,7 @@ def charger_annales(lecteur, themes, publics, reserves_annales):
         }
         # Recherche du catalogue : l'origine n'y figure que si elle est affichée.
         annale["texte"] = " ".join(
-            [titre, annale["presentation"], *map(libelle_notion, notions), theme["nom"], theme["court"],
+            [titre, annale["presentation"], *(notions[n] for n in notions_annale), theme["nom"], theme["court"],
              TYPE_ANNALE[1], filieres, annale["origine_texte"]]
         )
         annales.append(annale)
@@ -887,18 +1001,21 @@ class Constructeur:
         )
         self.env.filters["pluriel"] = pluriel
         self.env.filters["duree"] = duree
-        self.env.filters["notion"] = libelle_notion
+        self.env.filters["notion"] = lambda ident: self.notions[ident]
+        self.env.filters["compte_cartes"] = compte_cartes
 
     # --- données ---
 
     def charger(self):
         self.site = charger_site(self.lecteur)
         self.themes, self.publics, ids_une = charger_catalogue(self.lecteur)
+        self.notions = charger_notions(self.lecteur)
+        self.a_venir = charger_a_venir(self.lecteur)
         reserves = set(NOMS_RESERVES) | {t["id"] for t in self.themes} | {p["id"] for p in self.publics}
         self.collections, self.contenus_par_id, self.brouillons = charger_contenus(
-            self.lecteur, self.themes, self.publics, reserves)
+            self.lecteur, self.themes, self.publics, reserves, self.notions)
         self.annales, brouillons_annales = charger_annales(
-            self.lecteur, self.themes, self.publics, {p["id"] for p in self.publics})
+            self.lecteur, self.themes, self.publics, {p["id"] for p in self.publics}, self.notions)
         self.brouillons_annales = brouillons_annales
         self.a_la_une = choisir_a_la_une(ids_une, self.contenus_par_id, self.brouillons)
 
@@ -907,8 +1024,11 @@ class Constructeur:
         # Ordre du catalogue : thème, collection, puis ordre de la collection ; les annales ensuite.
         self.contenus = [c for col in self.collections for c in col["contenus"]]
         self.contenus.sort(key=lambda c: rang_theme[c["theme"]["id"]])  # tri stable
+        # Un thème sans contenu ni annale publiés est traité comme une filière inactive : pas de page, pas de lien.
         for t in self.themes:
             t["nb"] = sum(1 for c in self.contenus if c["theme"] is t)
+            t["nb_annales"] = sum(1 for a in self.annales if a["theme"] is t)
+            t["actif"] = bool(t["nb"] or t["nb_annales"])
         for p in self.publics:
             p["nb"] = sum(1 for c in self.contenus if p in c["publics"])
             p["nb_annales"] = sum(1 for a in self.annales if p in a["publics"])
@@ -926,6 +1046,8 @@ class Constructeur:
             self.images.verifier(objet["image"])
         for theme in self.themes:
             self.images.verifier(theme["illustration"])
+        for section in self.a_venir:
+            self.images.verifier(section["illustration"])
         self.images.verifier(self.site["illustration_accueil"])
 
         # Fichiers autonomes publiés : contrôlés avant tout (TRAME § 11).
@@ -946,6 +1068,9 @@ class Constructeur:
         for theme in self.themes:
             theme["planche"] = self.images.publier(theme["illustration"], "theme")
             theme["vignette"] = self.images.publier(theme["illustration"], "vignette")
+        for section in self.a_venir:
+            section["planche"] = self.images.publier(section["illustration"], "theme")
+            section["vignette"] = self.images.publier(section["illustration"], "vignette")
         self.site["planche_accueil"] = self.images.publier(self.site["illustration_accueil"], "accueil")
 
     # --- écriture ---
@@ -997,7 +1122,7 @@ class Constructeur:
             racine=self.prefixe(chemin),
             chemin=chemin,
             url_absolue=self.url_absolue(chemin),
-            umami_script=UMAMI_SCRIPT,
+            umami_script=self.site["umami_script"],
             titre_document=titre if chemin == "" else f"{titre} — {self.site['nom']}",
             description=description,
             registre=registre,
@@ -1022,7 +1147,8 @@ class Constructeur:
             self.page_accueil()
             self.page_catalogue()
             for theme in self.themes:
-                self.page_theme(theme)
+                if theme["actif"]:
+                    self.page_theme(theme)
             for public in self.publics:
                 self.page_public(public)
             for collection in self.collections:
@@ -1032,6 +1158,8 @@ class Constructeur:
             self.pages_annales()
             for annale in self.annales:
                 self.page_annale(annale)
+            for section in self.a_venir:
+                self.page_a_venir(section)
             self.pages_service()
             self.ecrire_sitemap_robots()
         except BaseException:
@@ -1050,7 +1178,7 @@ class Constructeur:
             titres=self.site["titres_accueil"], nb_contenus=len(self.contenus),
             themes=self.themes, publics=self.publics, a_la_une=self.a_la_une,
             annales=self.annales[:ANNALES_ACCUEIL], nb_annales=len(self.annales),
-            planche=self.site["planche_accueil"],
+            planche=self.site["planche_accueil"], a_venir=self.a_venir,
         )
 
     def page_catalogue(self):
@@ -1062,8 +1190,9 @@ class Constructeur:
         niveaux = sorted({c["niveau"] for c in cartes if c["niveau"]})
         types = [*TYPES.items(), TYPE_ANNALE] if self.annales else list(TYPES.items())
         options = {
+            # Un thème sans carte publiée est affiché « bientôt », comme une filière inactive.
             "themes": [{"valeur": t["id"], "libelle": t["nom"], "nb": compte(lambda c, t=t: c["theme"] is t),
-                        "inactif": False} for t in self.themes],
+                        "inactif": not t["actif"]} for t in self.themes],
             "types": [{"valeur": k, "libelle": v, "nb": compte(lambda c, k=k: c["type"] == k), "inactif": False}
                       for k, v in types],
             # Une filière encore « bientôt » devient choisissable dès qu'elle a une carte (une annale, par exemple).
@@ -1093,14 +1222,15 @@ class Constructeur:
         self.rendre(
             "liste.html", f"{theme['id']}/", theme["nom"],
             f"{theme['nom']} : {exemples}. Cours et exercices de sciences industrielles.",
-            h1=theme["nom"], lignes=[f"{exemples} · {pluriel(theme['nb'], 'contenu')}"],
+            h1=theme["nom"], lignes=[f"{exemples} · {compte_cartes(theme['nb'], theme['nb_annales'])}"],
             groupes=self.groupes(lambda c: c["theme"] is theme),
+            annales=[a for a in self.annales if a["theme"] is theme], lien_annales="annales/",
             message_vide="Contenus en préparation pour ce thème.", planche=theme["planche"],
         )
 
     def page_public(self, public):
         if public["actif"]:
-            ligne = pluriel(public["nb"], "contenu")
+            ligne = compte_cartes(public["nb"], public["nb_annales"])
         else:
             ligne = "Bientôt : les contenus de cette filière sont en préparation."
         self.rendre(
@@ -1108,6 +1238,7 @@ class Constructeur:
             f"Cours, exercices et études de cas de sciences industrielles pour {public['nom']}.",
             h1=public["nom"], lignes=[ligne],
             groupes=self.groupes(lambda c: public in c["publics"]),
+            annales=[a for a in self.annales if public in a["publics"]], lien_annales=f"annales/{public['id']}/",
             message_vide="Contenus en préparation pour cette filière.", planche=None,
         )
 
@@ -1135,7 +1266,7 @@ class Constructeur:
             racine = self.prefixe(chemin)
             page = envelopper(
                 source, self.lecteur.rel(contenu["html"]),
-                str(module.tete(racine, self.site, UMAMI_SCRIPT)),
+                str(module.tete(racine, self.site, self.site["umami_script"])),
                 str(module.haut(contenu, racine, self.site)),
                 str(module.bas(contenu, racine, self.site, self.url_absolue(chemin))),
             )
@@ -1169,7 +1300,7 @@ class Constructeur:
         racine = self.prefixe(chemin)
         page = envelopper(
             source, self.lecteur.rel(annale["html"]),
-            str(module.tete(racine, self.site, UMAMI_SCRIPT)),
+            str(module.tete(racine, self.site, self.site["umami_script"])),
             str(module.haut(annale, racine, self.site, avec_fiche=True)),
             str(module.bas(annale, racine, self.site, self.url_absolue(chemin))),
             debut_tete=str(module.debut_tete(self.titre_annale(annale), annale["presentation"])),
@@ -1202,17 +1333,26 @@ class Constructeur:
                 filiere=public, publics=self.publics, annales=annales,
             )
 
+    def page_a_venir(self, section):
+        """/labo/ et /maquettes/ tant qu'ils sont « à venir » : promesse, sans date ni formulaire (TRAME § 6)."""
+        self.rendre(
+            "vitrine-section.html", section["chemin"], section["titre"], section["promesse"],
+            registre="vitrine", avec_bande=False, section=section,
+        )
+
     def pages_service(self):
         credits = sorted(self.credits.values(), key=lambda c: cle_tri(c["titre"]))
+        annales = sorted(self.annales, key=lambda a: cle_tri(a["titre"]))
         for chemin, page, titre, description in SERVICE:
             self.rendre(
                 "service.html", chemin, titre, description, registre="vitrine", avec_bande=False,
                 rubrique="enseignants" if page == "enseignants" else "",
-                h1=titre, sous_titre="", page=page, credits=credits,
+                h1=titre, sous_titre="", page=page, credits=credits, annales=annales,
             )
         self.rendre(
             "service.html", "404.html", "Page introuvable", "Cette page n’existe pas ou a changé d’adresse.",
             registre="vitrine", avec_bande=False, h1="Page introuvable", sous_titre="", page="404", credits=credits,
+            annales=annales,
         )
 
     def ecrire_sitemap_robots(self):
@@ -1227,6 +1367,65 @@ class Constructeur:
         else:
             robots = "# Préproduction : indexation interdite (site.json, « indexable » : false).\nUser-agent: *\nDisallow: /\n"
         (self.sortie / "robots.txt").write_text(robots, encoding="utf-8")
+
+    def tableau_de_bord(self):
+        """Résumé de publication (Markdown) pour le récapitulatif de l'Action : des comptes, aucun secret."""
+        types = [*TYPES.items(), TYPE_ANNALE]
+        publies = {k: 0 for k, _ in types}
+        brouillons = {k: 0 for k, _ in types}
+        for c in [*self.contenus, *self.annales]:
+            publies[c["type"]] += 1
+        sans_type = 0
+        for b in [*self.brouillons, *self.brouillons_annales]:
+            if b.get("type") in brouillons:
+                brouillons[b["type"]] += 1
+            else:
+                sans_type += 1
+        lignes = ["## Tableau de bord éditorial", "", "| Type | Publiés | Brouillons |", "|---|---:|---:|"]
+        for cle, libelle in types:
+            if publies[cle] or brouillons[cle]:
+                lignes.append(f"| {libelle} | {publies[cle]} | {brouillons[cle]} |")
+        if sans_type:
+            lignes.append(f"| Type non renseigné | 0 | {sans_type} |")
+        lignes.append(f"| **Total** | **{sum(publies.values())}** | **{sum(brouillons.values()) + sans_type}** |")
+        cartes = [*self.contenus, *self.annales]
+        sans_image = sum(1 for c in cartes if not c["image"])
+        sans_source = sum(1 for b in self.brouillons_annales if b.get("sans_source"))
+        poids = self.poids_accueil()
+        manquantes = self.site["mentions_manquantes"]
+        lignes += [
+            "",
+            f"- Annales sans source : **{sans_source}** (en brouillon ; une annale publiée a toujours sa source)",
+            f"- Cartes sans image : **{sans_image}** sur {len(cartes)} (bandeau typographique à la place)",
+            "- Planche de l’accueil : " + ("**présente**" if self.site["illustration_accueil"] else "**absente**"),
+            f"- Poids de l’accueil : **{poids / 1000:.0f} ko** au premier affichage (estimation : page, styles, "
+            "scripts, polices et planches ; limite 300 ko)",
+            "- Mentions légales : " + ("**complètes**" if not manquantes else
+                                       "**incomplètes** (Réglages du site : " + ", ".join(manquantes) + ")"),
+            "- Ouvert aux moteurs de recherche (indexable) : " + ("**oui**" if self.site["indexable"] else
+                                                                  "**non** (préproduction)"),
+            "- Mesure d’audience : " + ("**Umami**" if self.site["umami"] else "**aucune**"),
+            "",
+        ]
+        return "\n".join(lignes)
+
+    def poids_accueil(self):
+        """Octets chargés au premier affichage de l'accueil : la page, ses styles et scripts, les polices de
+        commun.css et la plus grande variante de chaque planche non différée (estimation haute)."""
+        sortie = self.sortie
+        page = (sortie / "index.html").read_text(encoding="utf-8")
+        fichiers = {sortie / "index.html"}
+        for adresse in re.findall(r'(?:href|src)="\./(_/[^"]+\.(?:css|js))"', page):
+            fichiers.add(sortie / adresse)
+        css = (sortie / "_" / "commun.css").read_text(encoding="utf-8")
+        fichiers |= {sortie / "_" / m for m in re.findall(r'url\("?([^")]+\.woff2)"?\)', css)}
+        for balise in re.findall(r"<img\b[^>]*>", page):
+            if 'loading="lazy"' in balise:
+                continue
+            variantes = re.findall(r"\./(medias/[^\s,\"]+) \d+w", balise)
+            if variantes:
+                fichiers.add(sortie / variantes[-1])
+        return sum(f.stat().st_size for f in fichiers if f.is_file())
 
     def bilan(self):
         repris = sum(1 for c in self.contenus if c["mode"] == "repris")
@@ -1246,6 +1445,9 @@ class Constructeur:
             a_renseigner.append("contact")
         if a_renseigner:
             lignes.append("À renseigner dans site.json : " + ", ".join(a_renseigner) + ".")
+        vides = [t["nom"] for t in self.themes if not t["actif"]]
+        if vides:
+            lignes.append(f"Thèmes sans contenu publié (« Bientôt », sans page) : {', '.join(vides)}.")
         return "\n".join(lignes)
 
 
@@ -1255,14 +1457,26 @@ def main(arguments=None):
                            help="dossier du dépôt à lire (par défaut : ce dépôt)")
     analyseur.add_argument("--sortie", type=Path, default=None,
                            help="dossier à écrire (par défaut : <racine>/_site)")
+    analyseur.add_argument("--resume", type=Path, default=None,
+                           help="fichier Markdown où ajouter le tableau de bord éditorial ($GITHUB_STEP_SUMMARY)")
     options = analyseur.parse_args(arguments)
     racine = options.racine.resolve()
     sortie = (options.sortie or racine / "_site").resolve()
+
+    def resumer(texte):
+        if options.resume:
+            with options.resume.open("a", encoding="utf-8") as fichier:
+                fichier.write(texte + "\n")
+
+    constructeur = Constructeur(racine, sortie)
     try:
-        print(Constructeur(racine, sortie).construire())
+        print(constructeur.construire())
     except ErreurConstruction as erreur:
         print(f"Construction arrêtée : {erreur}", file=sys.stderr)
+        resumer("## Tableau de bord éditorial\n\n**Publication arrêtée.** Rien n’a été mis en ligne ; le site "
+                f"précédent reste en place.\n\n```\nConstruction arrêtée : {erreur}\n```\n")
         return 1
+    resumer(constructeur.tableau_de_bord())
     return 0
 
 
