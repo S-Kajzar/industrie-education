@@ -1,6 +1,6 @@
 # Note de livraison — lot 1c : préproduction montrable
 
-Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` après la fusion du lot 1b (PR n° 3). Prompt :
+Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` après la fusion du lot 1b (PR n° 3) ; pull request n° 4. Prompt :
 `prompts/LOT-1C.md`. `npm test` : **311 tests, tous verts** (environ 1 min 10, sans réseau). Aucune nouvelle
 dépendance.
 
