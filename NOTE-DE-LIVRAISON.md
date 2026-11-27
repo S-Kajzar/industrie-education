@@ -4,6 +4,25 @@ Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` après la fusion du 
 `prompts/LOT-1C.md`. `npm test` : **311 tests, tous verts** (environ 1 min 10, sans réseau). Aucune nouvelle
 dépendance.
 
+## Correctif après fusion (PR n° 4)
+
+La première publication du lot 1c a échoué sur GitHub : un seul test sur 311, la hauteur de la fiche d'annale à
+360 px (324 px pour 300 au plus). Rien n'a été mis en ligne ; la préproduction est restée au lot 1b.
+
+- **Cause** : la fiche utilise la police système (`system-ui`). Dans la session, c'est Inter (283 px) ; sur le
+  serveur de GitHub, DejaVu Sans, environ 15 % plus large (324 px, reproduit à l'identique dans la session).
+- **Correction** (`commun.css`, téléphone seulement) :
+  - interligne 1,35 et marges de 8 px ;
+  - surtitre en 0,75 rem ;
+  - espaces entre les informations resserrés.
+
+  Mesures : 206 px avec Inter, 224 px avec DejaVu Sans, 187 px avec Liberation Sans.
+- **Test renforcé** : à 360 px, la hauteur est aussi mesurée avec DejaVu Sans imposée ; le résultat est le même
+  dans la session et sur GitHub.
+- **Avertissement de l'Action, sans effet** : `actions/cache@v4` tourne sous Node.js 20, que GitHub force
+  désormais en Node.js 24. À mettre à jour vers une version de l'action prévue pour Node.js 24 (non vérifiable
+  depuis la session).
+
 ## Fait
 
 1. **Fiche d'annale compacte** (constat 1).
@@ -13,7 +32,8 @@ dépendance.
      notions, « Pour réviser », ligne de crédit.
    - **Bouton « Commencer » supprimé** : la fiche ne fait plus que 131 px de haut à 1280 px, et le titre du sujet
      arrive au premier écran ; le bouton ne servait plus à rien.
-   - Mesures (test) : 283 px de haut à 360 px (limite 300) ; à 1280 × 800, le bas du titre du sujet est à 336 px.
+   - Mesures (test) : à 360 px, 206 px de haut avec Inter et 224 px avec DejaVu Sans (limite 300) ; à 1280 × 800,
+     le bas du titre du sujet est à 336 px.
    - `DESIGN.md` § 5 : composants « Fiche d'annale » et « Ligne de crédit ».
 2. **Filières cohérentes** (constat 2).
    - `bts-ms` est actif. L'accueil affiche « BTS MS · 1 annale ».
