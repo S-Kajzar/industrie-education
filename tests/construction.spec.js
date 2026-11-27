@@ -197,3 +197,23 @@ test('umami_script : adresse https complète exigée ; l’adresse donnée rempl
       .toContain(`<script defer src="https://eu.umami.exemple/script.js" data-website-id="${IDENTIFIANT}"></script>`);
   });
 });
+
+test('fiche en ligne devenue invalide (--precedent) : retirée du site et signalée comme telle', () => {
+  avecDepot((ecrire) => {
+    ecrire('contenus/essai/deux/contenu.json', contenu('deux', { notions: ['notion-inconnue'] }));
+    ecrire('etat-en-ligne.json', { format: 1, publiees: ['essai/deux/', 'essai/un/'] });
+  }, (resultat, racine) => {
+    const { spawnSync } = require('node:child_process');
+    const resume = path.join(racine, 'resume.md');
+    const r = spawnSync('python3', [path.join(DEPOT, 'outils', 'construire.py'), '--racine', racine, '--sortie',
+      path.join(racine, '_site'), '--precedent', path.join(racine, 'etat-en-ligne.json'), '--resume', resume], { encoding: 'utf8' });
+    expect(r.status, r.stderr).toBe(0);
+    const [retenue] = lireEtat(racine).a_corriger.fiches_retenues;
+    expect(retenue).toMatchObject({ fiche: 'contenus/essai/deux/contenu.json', etait_en_ligne: true });
+    expect(fs.existsSync(path.join(racine, '_site', 'essai', 'deux'))).toBe(false);
+    expect(fs.readFileSync(resume, 'utf8')).toMatch(/« Contenu deux »\*\* \(`contenus\/essai\/deux\/contenu\.json`\)\. \*\*Retirée du site\*\* : elle était en ligne\./);
+    // Sans état précédent, la même fiche est seulement retenue.
+    expect(construire(racine).status).toBe(0);
+    expect(lireEtat(racine).a_corriger.fiches_retenues[0].etait_en_ligne).toBe(false);
+  });
+});
