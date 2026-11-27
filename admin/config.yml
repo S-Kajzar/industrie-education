@@ -11,7 +11,13 @@
 # données n'est oubliée ici (une clé absente serait perdue au premier enregistrement). Les clés techniques, non
 # modifiables ici, sont déclarées en champs cachés (widget hidden).
 #
-# Rubriques, par fréquence d'usage : Annales, Contenus, Images et crédits, Accueil, Notions, Thèmes, Réglages du site.
+# Rubriques, par fréquence d'usage : Dépôt rapide, Annales, Contenus, Accueil, Notions, Thèmes, Réglages du site.
+#
+# Lot 1e : le crédit d'une image se saisit avec l'image, dans la fiche qui l'utilise (plus de rubrique « Images et
+# crédits ») ; la source d'une annale est obligatoire dès la création ; le bandeau d'état de la publication et le
+# champ « Tester le fichier » (widget telecharger) sont fournis par admin/admin.js, chargé par la page /admin/.
+# Ce que Sveltia ne sait pas exiger (référence d'une autorisation écrite, notion inconnue…) est contrôlé par la
+# construction, qui retient alors la fiche et le signale (NOTE-DE-LIVRAISON.md, lot 1e).
 
 backend:
   name: github
@@ -45,7 +51,8 @@ media_libraries:
       slugify_filename: true
   # Banques d'images (Pexels, Pixabay, Unsplash…) : interdites par CLAUDE.md, désactivées.
   stock_assets: false
-# Les trois dossiers de médias, visibles dans la vue « Ressources » avec les mêmes noms qu'avec Pages CMS.
+# Les dossiers de médias, visibles dans la vue « Ressources ». « Dépôt rapide » montre les fichiers déposés pas encore
+# importés (un fichier refusé y reste jusqu'à ce qu'on le supprime).
 asset_collections:
   - name: cartes
     label: Images de cartes
@@ -62,6 +69,11 @@ asset_collections:
     icon: html
     media_folder: medias/depots
     public_folder: /medias/depots
+  - name: import
+    label: "Dépôt rapide : fichiers en attente"
+    icon: upload_file
+    media_folder: medias/import
+    public_folder: /medias/import
 slug:
   encoding: ascii
   clean_accents: true
@@ -76,6 +88,39 @@ output:
     indent_size: 2
 
 collections:
+  # --------------------------------------------------------------------------------------------------------------
+  # Dépôt rapide (lot 1e) : un enregistrement = 1 à 10 fichiers HTML, sans rien saisir. Chaque entrée est un petit
+  # fichier medias/import/<horodatage>.json qui ne sert qu'à téléverser les fichiers dans medias/import/ ; à la
+  # publication suivante, outils/importer.py crée une fiche en brouillon par fichier, range le fichier et supprime
+  # l'entrée. Un nouvel enregistrement crée toujours une nouvelle entrée : deux dépôts ne se marchent pas dessus.
+  - name: depot-rapide
+    label: Dépôt rapide
+    label_singular: Dépôt
+    description: "Déposer d'un coup 1 à 10 fichiers HTML livrés par le projet Claude, sans rien saisir : Nouveau, choisir les fichiers, Enregistrer. Environ 3 minutes plus tard, chaque fichier a sa fiche, en brouillon (rubrique Annales, ou Contenus pour un exercice) ; le bandeau en haut de page signale ce qui reste à compléter. Un identifiant déjà pris : le fichier devient la « nouvelle version à relire » de cette fiche."
+    icon: upload_file
+    folder: medias/import
+    extension: json
+    format: json
+    create: true
+    delete: true
+    slug: "depot-{{year}}{{month}}{{day}}-{{hour}}{{minute}}{{second}}"
+    identifier_field: fichiers
+    summary: "Dépôt en attente d'import : {{fichiers}}"
+    editor:
+      preview: false
+    fields:
+      - name: fichiers
+        label: Fichiers HTML (1 à 10)
+        widget: file
+        multiple: true
+        min: 1
+        max: 10
+        hint: "Les fichiers autonomes livrés par le projet Claude « Exercices interactifs » (5 Mo au plus chacun). Rien d'autre à saisir : le bloc de métadonnées de chaque fichier remplit sa fiche ; sans bloc, le titre, la présentation et la durée sont lus dans le fichier et le reste est marqué « à compléter »."
+        accept: ".html,text/html"
+        choose_url: false
+        media_folder: /medias/import
+        public_folder: /medias/import
+
   # --------------------------------------------------------------------------------------------------------------
   - name: annales
     label: Annales
@@ -102,25 +147,40 @@ collections:
       - name: titre
         label: Titre
         widget: string
+        pattern: ['^.{1,70}$', "70 caractères au plus : un titre court et neutre, sans diplôme ni session."]
       - name: presentation
         label: Présentation
         widget: text
-        hint: "Deux ou trois phrases (300 caractères au plus) : le système étudié, les parties, la durée. Elles servent de description pour les moteurs de recherche et sur la carte ; la page montre celles du fichier, juste sous la fiche."
+        hint: "Deux ou trois phrases (20 à 300 caractères) : le système étudié, les parties, la durée. Elles servent de description pour les moteurs de recherche et sur la carte ; la page montre celles du fichier, juste sous la fiche."
+        pattern: ['^[\s\S]{20,300}$', "Écrivez de 20 à 300 caractères : deux ou trois phrases sur le système étudié, les parties, la durée."]
       - name: fichier
         label: Fichier HTML du sujet
         widget: file
-        hint: "Le fichier autonome livré par le projet Claude (un seul fichier .html, images intégrées, 5 Mo au plus). Il est publié tel quel, jamais modifié."
+        hint: "Le fichier autonome livré par le projet Claude (un seul fichier .html, images intégrées, 5 Mo au plus). Il est publié tel quel, jamais modifié. Pour remplacer une annale en ligne, déposez la nouvelle version dans « Dépôt rapide » : elle attend votre validation ci-dessous."
         accept: ".html,text/html"
         choose_url: false
         media_folder: /medias/depots
         public_folder: /medias/depots
+      # Lot 1e : nouvelle version déposée par l'import (medias/a-relire/, champ caché), puis le champ « Tester le
+      # fichier » (widget telecharger, admin/admin.js) : lien « Télécharger pour tester » et, seulement quand une
+      # nouvelle version attend, la case « Valider la nouvelle version ». Décochée, la case n'écrit rien dans la fiche
+      # (une case ordinaire de Sveltia y écrirait « false » à chaque enregistrement).
+      - &nouvelle-version
+        name: nouvelle_version
+        widget: hidden
+      - &valider
+        name: valider_nouvelle_version
+        label: Tester le fichier
+        widget: telecharger
+        required: false
+        hint: "« Télécharger pour tester » enregistre le fichier sur votre ordinateur : ouvrez-le (double-clic) pour le tester en local, comme un élève. Une nouvelle version déposée attend ici votre validation ; d'ici là, la version en ligne reste en ligne."
       - &image-carte
         name: image
         label: Image de la carte (facultative)
         widget: object
         required: false
         collapsed: auto
-        hint: "Sans image, la carte garde son bandeau typographique. L'image doit être déclarée dans la rubrique « Images et crédits », avec sa licence, sinon la publication s'arrête."
+        hint: "Sans image, la carte garde son bandeau typographique. Le crédit se saisit ici, avec l'image. Sans crédit complet ni case de risque cochée, l'image n'est pas publiée (le bandeau la remplace) ; la fiche, elle, est publiée."
         fields:
           - name: fichier
             label: Image (JPEG, PNG ou WebP)
@@ -130,11 +190,46 @@ collections:
             choose_url: false
             media_folder: /medias/cartes
             public_folder: /medias/cartes
-          - name: alt
-            label: Texte alternatif
+          - &image-alt
+            name: alt
+            label: Texte alternatif (facultatif)
             widget: string
             required: false
-            hint: "Une phrase qui décrit l'image pour qui ne la voit pas (ex. : « Cadre de VTT et ses liaisons »). Obligatoire, sauf image déclarée décorative dans les crédits."
+            hint: "Une phrase qui décrit l'image pour qui ne la voit pas (ex. : « Cadre de VTT et ses liaisons »). Laissé vide, l'image est traitée comme décorative, ce qui convient à une image posée à côté de son titre."
+          - &credit-licence
+            name: licence
+            label: Licence de l'image
+            widget: select
+            required: false
+            hint: "Domaine public : œuvre ancienne libre de droits (Encyclopédie, brevets américains anciens…). CC0 : dédiée au domaine public par son auteur (musées en accès ouvert). Œuvre personnelle : votre photo ou dessin. Autorisation écrite : accord écrit du propriétaire, à référencer ci-dessous. Jamais d'image générée par IA, ni de banque d'images."
+            options:
+              - { value: domaine-public, label: Domaine public }
+              - { value: cc0, label: CC0 }
+              - { value: oeuvre-personnelle, label: Œuvre personnelle }
+              - { value: autorisation-ecrite, label: Autorisation écrite }
+          - &credit-source
+            name: source
+            label: Source de l'image (adresse de la page d'origine)
+            widget: string
+            required: false
+            pattern: ['^$|^https?://\S+$', "Une adresse complète qui commence par https://, ou rien."]
+          - &credit-auteur
+            name: auteur
+            label: Auteur de l'image
+            widget: string
+            required: false
+          - &credit-reference
+            name: reference_autorisation
+            label: Référence de l'autorisation
+            widget: string
+            required: false
+            hint: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
+          - &credit-risque
+            name: risque_accepte
+            label: "J'accepte le risque : image publiée sans crédit"
+            widget: boolean
+            required: false
+            hint: "À régulariser dès que possible ; la case ne couvre que l'absence de crédit."
       - &publics
         name: publics
         label: Filières
@@ -167,6 +262,28 @@ collections:
         multiple: true
         required: false
         hint: "Choisies dans la rubrique « Notions » : elles relient une annale aux cours et exercices des mêmes notions. Une notion manque ? Ajoutez-la d'abord dans « Notions »."
+      - &notions-proposees
+        name: notions_proposees
+        label: Notions proposées par le projet Claude
+        widget: list
+        required: false
+        collapsed: true
+        hint: "Notions absentes de la liste, jamais créées automatiquement. Si l'une convient, ajoutez-la dans « Notions », choisissez-la ci-dessus, puis retirez-la d'ici."
+        fields:
+          - { name: id, label: Identifiant, widget: string }
+          - { name: nom, label: Libellé, widget: string }
+      - &requetes
+        name: requetes
+        label: Requêtes d'élèves (référencement)
+        widget: list
+        required: false
+        hint: "3 à 5 recherches qu'un élève taperait pour trouver ce sujet ; elles servent à la recherche du catalogue."
+      - &pistes-image
+        name: pistes_image
+        label: Pistes d'illustration
+        widget: list
+        required: false
+        hint: "Idées d'images proposées par le projet Claude (planche ancienne, brevet…), pour choisir l'image de la carte."
       - &duree
         name: duree_min
         label: Durée conseillée (en minutes)
@@ -191,26 +308,22 @@ collections:
         required: false
         hint: "Décoché (par défaut) : le diplôme, l'épreuve et la session n'apparaissent nulle part sur le site. Coché : ils apparaissent dans la fiche, le titre de la page et l'index des annales. Le fichier HTML reste neutre dans les deux cas. La ligne de crédit (source) est affichée dans les deux cas."
       - name: source
-        label: Source et licence du sujet (obligatoire pour publier)
+        label: Source et licence du sujet (obligatoire)
         widget: object
-        required: false
-        hint: "Affichée dans la fiche de l'annale par une ligne de crédit, quel que soit « Afficher l'origine », et sur la page Crédits. Sans source valide, une annale « Relu » arrête la publication."
+        hint: "Obligatoire dès la création, même en brouillon. Affichée dans la fiche de l'annale par une ligne de crédit, quel que soit « Afficher l'origine », et sur la page Crédits."
         fields:
           - name: editeur
             label: Éditeur
             widget: string
-            required: false
             hint: "Ex. : éduscol STI (sujets d'examen sur sti.eduscol.education.fr), éduscol (annales du bac sur eduscol.education.gouv.fr). Il devient le lien de la ligne de crédit."
           - name: url
             label: Adresse du document d'origine
             widget: string
-            required: false
-            hint: "Adresse complète en https://, celle du fichier téléchargé (sujet ou dossier questionnaire). Obligatoire pour les licences CC BY-NC-SA et Licence Ouverte."
-            pattern: ['^$|^https://[^\s/]+\.[^\s/]+(/\S*)?$', "Une adresse complète qui commence par https://, ou rien."]
+            hint: "Adresse complète en https://, celle du fichier téléchargé (sujet ou dossier questionnaire)."
+            pattern: ['^https://[^\s/]+\.[^\s/]+(/\S*)?$', "Collez l'adresse complète du document d'origine, qui commence par https://."]
           - name: licence
             label: Licence
             widget: select
-            required: false
             hint: "CC BY-NC-SA 2.0 FR : sujets d'éduscol STI. Licence Ouverte 2.0 : annales du bac sur eduscol.education.gouv.fr. Autorisation écrite : à référencer ci-dessous. Œuvre personnelle : sujet écrit par vous."
             options:
               - { value: cc-by-nc-sa-2.0-fr, label: CC BY-NC-SA 2.0 FR (éduscol STI) }
@@ -221,7 +334,7 @@ collections:
             label: Référence de l'autorisation
             widget: string
             required: false
-            hint: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
+            hint: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027). Sans elle, la construction retient l'annale publiée."
       - &statut
         name: statut
         label: Statut
@@ -297,12 +410,16 @@ collections:
       - name: description
         label: Description
         widget: text
-        hint: "Une ou deux phrases : ce que l'élève fait, sur quel système. Elle s'affiche sur la carte et sert de description pour les moteurs de recherche."
+        hint: "Une ou deux phrases (20 caractères au moins) : ce que l'élève fait, sur quel système. Elle s'affiche sur la carte et sert de description pour les moteurs de recherche."
+        pattern: ['^[\s\S]{20,}$', "Écrivez au moins 20 caractères : ce que l'élève fait, sur quel système."]
       - name: mots_cles
         label: Mots-clés (recherche du catalogue)
         widget: list
         required: false
+      - *requetes
       - *notions
+      - *notions-proposees
+      - *pistes-image
       - *image-carte
       - name: fichier
         label: Fichier HTML (nouveau contenu seulement)
@@ -313,6 +430,8 @@ collections:
         choose_url: false
         media_folder: /medias/depots
         public_folder: /medias/depots
+      - *nouvelle-version
+      - *valider
       - name: statut
         label: Statut
         widget: select
@@ -324,55 +443,6 @@ collections:
       # Champs techniques des contenus repris, conservés tels quels.
       - { name: mode, widget: hidden }
       - { name: source, widget: hidden }
-
-  # --------------------------------------------------------------------------------------------------------------
-  - name: credits
-    label: Images et crédits
-    label_singular: Crédit d'image
-    description: "Une entrée par image téléversée (carte ou planche) : chemin, auteur, source, licence. Sans entrée ici, la publication s'arrête. Jamais d'image générée par IA, ni de banque d'images."
-    icon: photo_library
-    file: medias/CREDITS.json
-    identifier_field: titre
-    summary: "{{titre}} — {{licence}}"
-    editor:
-      preview: false
-    fields:
-      - name: fichier
-        label: Chemin de l'image
-        widget: string
-        hint: "Tel qu'il apparaît dans la fiche, ex. : /medias/cartes/levage-linge.jpg ou /medias/illustrations/encyclopedie-forge.png."
-        pattern: ['^/?medias/(cartes|illustrations)/[^/]+\.(jpg|jpeg|png|webp)$', "Un chemin de la forme /medias/cartes/nom.jpg ou /medias/illustrations/nom.png."]
-      - name: titre
-        label: Titre de l'œuvre
-        widget: string
-      - { name: auteur, label: Auteur, widget: string, required: false }
-      - { name: date, label: Date (année ou siècle), widget: string, required: false }
-      - { name: source, label: Source (adresse de la page d'origine), widget: string, required: false }
-      - name: licence
-        label: Licence
-        widget: select
-        hint: "Domaine public : œuvre ancienne libre de droits (Encyclopédie, brevets américains anciens…). CC0 : dédiée au domaine public par son auteur (musées en accès ouvert). Œuvre personnelle : photo ou dessin de Sébastien. Autorisation écrite : accord écrit du propriétaire (constructeur…), à référencer ci-dessous."
-        options:
-          - { value: domaine-public, label: Domaine public }
-          - { value: cc0, label: CC0 }
-          - { value: oeuvre-personnelle, label: Œuvre personnelle }
-          - { value: autorisation-ecrite, label: Autorisation écrite }
-      - name: reference_autorisation
-        label: Référence de l'autorisation
-        widget: string
-        required: false
-        hint: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
-      - name: usage
-        label: Usage sur le site
-        widget: string
-        required: false
-        hint: "Ex. : carte de l'annale « Levage du linge », planche de l'accueil."
-      - name: decorative
-        label: Image décorative (texte alternatif vide)
-        widget: boolean
-        default: false
-        required: false
-        hint: "À cocher seulement si l'image n'apporte aucune information (ex. : planche derrière le titre)."
 
   # --------------------------------------------------------------------------------------------------------------
   - name: accueil
@@ -414,7 +484,7 @@ collections:
                 widget: object
                 required: false
                 collapsed: auto
-                hint: "Planche technique ancienne du domaine public ou sous CC0, déclarée dans « Images et crédits ». Elle est passée en niveaux de gris sur fond blanc à la publication."
+                hint: "Planche technique ancienne du domaine public ou sous CC0, avec son crédit ci-dessous. Elle est passée en niveaux de gris sur fond blanc à la publication. Sans crédit complet ni case de risque cochée, elle n'est pas publiée."
                 fields:
                   - name: fichier
                     label: Planche (JPEG, PNG ou WebP)
@@ -424,11 +494,12 @@ collections:
                     choose_url: false
                     media_folder: /medias/illustrations
                     public_folder: /medias/illustrations
-                  - name: alt
-                    label: Texte alternatif
-                    widget: string
-                    required: false
-                    hint: "Laisser vide seulement si la planche est déclarée décorative dans les crédits."
+                  - *image-alt
+                  - *credit-licence
+                  - *credit-source
+                  - *credit-auteur
+                  - *credit-reference
+                  - *credit-risque
           - name: maquettes
             label: Maquettes
             widget: object
@@ -475,7 +546,7 @@ collections:
       - <<: *planche
         name: illustration
         label: Planche d'illustration
-        hint: "Planche technique ancienne du domaine public ou sous CC0, déclarée dans « Images et crédits ». Elle s'affiche à droite du titre de la page du thème et en vignette sur l'accueil."
+        hint: "Planche technique ancienne du domaine public ou sous CC0, avec son crédit. Elle s'affiche à droite du titre de la page du thème et en vignette sur l'accueil."
 
   # --------------------------------------------------------------------------------------------------------------
   - name: reglages

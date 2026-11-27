@@ -75,10 +75,12 @@ SVELTIA = Path(os.environ.get("INDUSTRIE_SVELTIA") or DEPOT / "node_modules" / "
 # Modules que Sveltia charge à la demande depuis unpkg.com et que le site sert lui-même (table d'import de
 # admin/index.html) : dépendances du paquet, installées avec lui ; seuls les fichiers utiles et la licence sont copiés.
 #   - translittération des noms de fichiers téléversés (accents, œ, ß…) ;
-#   - lecture des métadonnées EXIF d'une image téléversée (date de prise de vue).
+#   - lecture des métadonnées EXIF d'une image téléversée (date de prise de vue) ;
+#   - Immutable.js, qui enveloppe les données d'une fiche transmises au champ « Tester le fichier » (lot 1e).
 MODULES_ADMIN = {
     "@sindresorhus/transliterate": ("index.js", "replacements.js", "locale-replacements.js", "license"),
     "exifr": ("dist/lite.esm.mjs", "LICENSE"),
+    "immutable": ("dist/immutable.es.js", "LICENSE"),
 }
 
 # TRAME § 3 : adresses prises par les pages du site. Les identifiants des thèmes et des publics s'y ajoutent.

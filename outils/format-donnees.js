@@ -63,7 +63,7 @@ function fichiersGeres(config, depot = DEPOT) {
       if (fs.existsSync(path.join(depot, f))) liste.push([f, collection('contenus').fields, false]);
     }
   }
-  for (const nom of ['credits', 'notions', 'themes']) liste.push([collection(nom).file, collection(nom).fields, true]);
+  for (const nom of ['notions', 'themes']) liste.push([collection(nom).file, collection(nom).fields, true]);
   for (const [nom, fichier] of [['accueil', 'a-la-une'], ['accueil', 'a-venir'], ['reglages', 'reglages']]) {
     const f = fichierDe(nom, fichier);
     liste.push([f.file, f.fields, false]);
