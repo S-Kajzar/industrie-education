@@ -15,6 +15,32 @@ servent qu'à son entrée npm. Deux d'entre elles sont servies par le site, voir
 
 `zod` est retiré (il ne servait qu'au test de Pages CMS). Aucune autre dépendance.
 
+## Correctif après la recette (27/11)
+
+La recette de Sébastien a commencé sur la préproduction, après la fusion de la PR n° 6. Elle a confirmé :
+- **Commits en français** : « Annale : création de test-abc +2 ». Le `+2` indique les autres fichiers enregistrés
+  avec la fiche.
+- **Fichier de 2,9 Mo** : il est passé par le back-office. Sveltia l'a envoyé dans un premier commit à lui seul
+  (`567e34c`), avant la fiche et l'image (`a657fbd`), sous le même message.
+- **Image** : elle est rangée dans `medias/cartes/`, avec son nom nettoyé.
+
+Le second commit a fait échouer la publication, sur un seul test sur 323 : « outils/annale.py contrôle aussi la
+source d'une fiche ».
+
+- **Cause** : la fiche d'essai est un brouillon sans source, ce que la construction accepte, comme le prévoit TRAME
+  § 11. Mais `outils/annale.py`, lancé sur une fiche, exigeait la source quel que soit le statut, et le test le
+  lançait sur toutes les fiches, brouillons compris. Défaut du lot 1d.
+- **Correction** : `outils/annale.py` n'exige la source qu'au statut « relu », comme la construction. En brouillon,
+  l'absence de source devient un rappel (« brouillon : à régler avant de passer en « relu » »), sans erreur. Le test
+  vérifie les fiches du dépôt et, sur des fiches d'essai, qu'un brouillon sans source passe avec ce rappel et qu'une
+  fiche « relu » sans source est refusée.
+- **Résultat** : `npm test` donne 323 tests, tous verts, avec les fiches d'essai de la recette présentes.
+
+**Suite de la recette** : supprimer la fiche `test-abc` et ses deux fichiers (point 3). L'image d'essai
+(`medias/cartes/toyota-rav4-trail-2023-1.jpg`) est une photo de voiture dont la licence n'est pas déclarée : le
+dépôt étant public, elle doit être supprimée elle aussi, et une image de la recette n'est gardée qu'avec une licence
+de la liste fermée.
+
 ## Fait
 
 1. **Back-office servi par le site, à `/admin/`** :
@@ -54,7 +80,7 @@ servent qu'à son entrée npm. Deux d'entre elles sont servies par le site, voir
    | Limite | Avec Sveltia |
    |---|---|
    | Notions en saisie libre | **Levée** : choisies dans la liste de `catalogue/notions.json` (libellés accentués) |
-   | Taille de téléversement (environ 3 Mo) | **Levée a priori** : 5 Mo, comme `outils/annale.py` ; le passage par GitHub est à confirmer par la recette (fichier de 2,9 Mo) |
+   | Taille de téléversement (environ 3 Mo) | **Levée** : 5 Mo, comme `outils/annale.py` ; le fichier de 2,9 Mo de la recette est passé par GitHub (commit `567e34c`) |
    | Fichiers dont la racine est une liste | **Levée** : notions, thèmes et crédits se modifient entrée par entrée |
    | Une sous-rubrique par collection | **Levée** : une seule rubrique « Contenus », en arborescence ; une nouvelle collection apparaît d'elle-même (le test qui exigeait une sous-rubrique est retiré) |
    | Valeurs par défaut appliquées aux fiches existantes | **Non levée** : même comportement (vérification n° 7) ; pas de statut par défaut sur les contenus |
@@ -195,7 +221,8 @@ compresse), plus les polices de jsDelivr. Les règles de poids du site public ne
 
 **Non testé ici**, faute d'accès à l'API GraphQL de GitHub : un vrai enregistrement (commit), les messages de
 commit, la connexion par jeton et par QR code, le téléversement d'une image. Dans le navigateur de test, le dépôt
-d'une image ne déclenche rien, alors que celui d'un fichier HTML fonctionne. C'est la recette ci-dessous.
+d'une image ne déclenche rien, alors que celui d'un fichier HTML fonctionne. C'est la recette ci-dessous ;
+les commits en français, le fichier de 2,9 Mo et le téléversement d'une image y sont déjà confirmés (voir plus haut).
 
 ## Recette à faire par Sébastien
 
