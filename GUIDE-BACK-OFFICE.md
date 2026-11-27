@@ -1,14 +1,15 @@
 # Guide du back-office
 
 Ce guide explique, pas à pas, comment gérer le site depuis un navigateur, sur ordinateur ou sur téléphone, sans
-toucher au code : déposer une annale ou un nouvel exercice, ajouter une image de carte ou une planche, gérer les
-notions et les réglages, suivre l'audience.
+toucher au code : déposer d'un coup des annales ou des exercices du projet Claude, les tester et les publier, ajouter
+une image avec son crédit, gérer les notions et les réglages, suivre la publication et l'audience.
 
 Le back-office est servi par le site lui-même, à l'adresse
 **<https://s-kajzar.github.io/industrie-education/admin/>** (logiciel libre Sveltia CMS, en français). Il modifie
 directement les fichiers du dépôt GitHub `S-Kajzar/industrie-education` : chaque enregistrement crée un *commit* sur
-la branche `main`, puis GitHub reconstruit le site, lance les tests et, s'ils passent, publie la nouvelle version.
-Il n'y a ni serveur ni base de données à entretenir.
+la branche `main`, puis GitHub importe les fichiers déposés, contrôle les annales, reconstruit le site, lance les
+tests et publie la nouvelle version. Une erreur dans une fiche ne retient que cette fiche : tout le reste est publié,
+et le bandeau en haut du back-office dit quoi corriger. Il n'y a ni serveur ni base de données à entretenir.
 
 ---
 
@@ -52,12 +53,15 @@ ouvrez l'adresse sur le téléphone et collez le jeton depuis votre gestionnaire
 
 ### Après chaque enregistrement
 
-Comptez **environ 2 minutes** avant que la préproduction soit à jour.
+Comptez **environ 3 minutes** avant que la préproduction soit à jour. Le **bandeau d'état**, en haut du
+back-office, le dit sans aller sur GitHub (partie 8) :
 
-- Le résultat se voit sur <https://s-kajzar.github.io/industrie-education/> ; depuis une fiche publiée, le bouton
-  **Afficher sur le site en ligne** ouvre directement sa page.
-- L'avancement se suit sur GitHub, onglet **Actions** : la dernière exécution de **Publier le site** tourne (rond
-  jaune), a réussi (coche verte) ou a échoué (croix rouge, voir la partie 9).
+- **Publication en cours** : GitHub importe, contrôle, construit et teste ;
+- **En ligne depuis 14:41** : la dernière publication a réussi ;
+- **Échec : voir le détail** : une erreur de code a arrêté la publication (partie 9).
+
+Il indique aussi le nombre de **fiches retenues** et d'**images à régulariser** : un clic ouvre la liste, avec la
+correction de chaque point. Depuis une fiche publiée, le bouton **Afficher sur le site en ligne** ouvre sa page.
 
 ---
 
@@ -67,57 +71,85 @@ Dans le menu de gauche (sur téléphone, le menu ☰), de la plus utilisée à l
 
 | Rubrique | Pour… |
 |---|---|
-| Annales | déposer une annale du projet Claude, la décrire, déclarer sa source, la publier |
+| Dépôt rapide | déposer d'un coup 1 à 10 fichiers HTML du projet Claude : les fiches se créent seules, en brouillon |
+| Annales | compléter, relire et publier une annale ; valider une nouvelle version |
 | Contenus | toutes les collections en arborescence : ouvrez une collection, puis un contenu ; ou créez un exercice autonome dans une collection |
-| Images et crédits | déclarer chaque image (auteur, source, licence) |
 | Accueil | contenus à la une ; textes de Labo et Maquettes |
 | Notions | ajouter une notion ou changer son libellé |
 | Thèmes | nom, exemples et planche des cinq thèmes |
 | Réglages du site | mentions légales, mesure d'audience, ouverture aux moteurs, titres et planche de l'accueil |
 
-Chaque rubrique rappelle en tête ce qu'elle contient, et chaque champ délicat a une aide en dessous. L'icône
-**Ressources** (en haut) montre les dossiers de médias : images de cartes, planches, fichiers HTML déposés.
+Il n'y a plus de rubrique « Images et crédits » : le crédit d'une image se saisit avec l'image, dans la fiche qui
+l'utilise (partie 2). Chaque rubrique rappelle en tête ce qu'elle contient, et chaque champ délicat a une aide en
+dessous. L'icône **Ressources** (en haut) montre les dossiers de médias : images de cartes, planches, fichiers HTML
+déposés, fichiers du dépôt rapide en attente.
 
 ---
 
-## 1. Déposer une annale produite par le projet Claude
+## 1. Déposer des fichiers du projet Claude (Dépôt rapide)
 
-Vous avez le fichier HTML autonome livré par le projet Claude « Exercices interactifs » (un seul fichier `.html`,
-images intégrées, **5 Mo au plus**), sa fiche JSON et son crédit.
+Vous avez un ou plusieurs fichiers HTML autonomes livrés par le projet Claude « Exercices interactifs » (un seul
+fichier `.html` chacun, images intégrées, **5 Mo au plus**). Chaque fichier contient un bloc de métadonnées
+invisible (`production/FICHE-INTEGREE.md`) qui remplit sa fiche.
 
-1. **Annales** → **Nouveau** (ou le bouton **+**).
-2. Remplissez la fiche à partir de la fiche JSON livrée ; tout tient dans un seul formulaire, sur téléphone aussi :
-   - **Identifiant** : il devient l'adresse de la page, `/annales/` suivi de l'identifiant. Minuscules sans accent,
-     chiffres et tirets, nom **neutre**. Ne le changez plus une fois l'annale publiée.
-   - **Titre** et **Présentation** : titre de la page, carte et description lue par les moteurs de recherche.
-   - **Fichier HTML du sujet** : **Parcourir**, puis choisissez le fichier. Il est rangé dans `medias/depots/`, son
-     nom est nettoyé (minuscules, sans accent) et il est publié tel quel. Au-delà de 5 Mo, le back-office le refuse
-     (« Fichier volumineux »).
-   - **Image de la carte** (facultative) : voir la partie 2.
-   - **Filières**, **Thème**, **Notions** (choisies dans la liste ; une notion manque ? ajoutez-la d'abord dans
-     **Notions**), **Durée conseillée**.
-   - **Origine du sujet** : pour votre classement ; rien n'est affiché tant que **Afficher l'origine sur le site**
-     n'est pas coché.
-   - **Source et licence du sujet** (obligatoire pour publier) : éditeur (`éduscol STI`, ou `éduscol` pour une
-     annale du bac), adresse exacte du document d'origine en `https://`, licence (*CC BY-NC-SA 2.0 FR* ou *Licence
-     Ouverte 2.0* ; *Autorisation écrite* avec sa référence ; *Œuvre personnelle*). La fiche affiche toujours la
-     ligne de crédit qui en découle.
-   - **Statut** : **Brouillon** par défaut. Le passage à **Relu** est votre décision, et la vôtre seulement : Claude
-     ne pose jamais ce statut.
-   - **Mis à jour le** : la date du jour (les trois annales les plus récentes sont sur l'accueil).
-3. **Enregistrer**. Même en brouillon, chaque publication vérifie que l'annale donne **20/20 quand toutes les
-   réponses sont justes**, en entraînement et en examen ; sinon, la publication s'arrête (partie 9).
-4. **Relisez** le sujet en mode entraînement, la fiche de relecture du projet Claude à côté.
-5. Quand toutes les réponses sont vérifiées, passez le statut à **Relu** et enregistrez : environ 2 minutes plus
-   tard, l'annale est sur sa page, dans l'index des annales, le catalogue, l'accueil et la page Crédits.
+1. **Dépôt rapide** → **Nouveau**.
+2. **Parcourir** : choisissez de **1 à 10 fichiers** d'un coup. Rien d'autre à saisir.
+3. **Enregistrer**.
 
-**Remplacer le fichier d'une annale** : ouvrez la fiche, **Remplacer** sous le fichier, choisissez la nouvelle
-version, enregistrez.
+Environ 3 minutes plus tard, chaque fichier a sa fiche, **en brouillon**, dans **Annales** (ou dans **Contenus**,
+dans sa collection, pour un exercice). Le fichier est rangé dans `medias/depots/`, sans être modifié. Le bandeau
+signale ce qui reste à compléter :
 
-**Nouvel exercice (hors annale)** : **Contenus** → ouvrez la collection voulue (par exemple *statique*) →
-**Créer une entrée**. Remplissez la fiche (type, niveau, description…), téléversez le fichier dans **Fichier HTML
-(nouveau contenu seulement)**, choisissez le statut, enregistrez. Le contenu est rangé dans la collection et publié
-à l'adresse de la collection suivie de son identifiant. Sans fichier HTML, la publication s'arrête.
+- fichier **avec bloc** : la fiche est complète ; restent l'image de la carte et votre relecture ;
+- fichier **sans bloc** : le titre, la présentation et la durée sont lus dans le fichier ; filières, thème, notions
+  et source sont **à compléter** ;
+- **notions proposées** : une notion absente de la liste n'est jamais créée seule ; si elle convient, ajoutez-la dans
+  **Notions**, choisissez-la dans la fiche, puis retirez-la de « Notions proposées » ;
+- fichier **refusé** (ressource extérieure, document incomplet…) : il reste dans **Ressources → Dépôt rapide :
+  fichiers en attente**, avec la raison dans « À corriger ». Faites corriger le fichier dans le projet Claude,
+  supprimez l'ancien, déposez le nouveau. Les autres fichiers du même dépôt sont importés normalement.
+
+L'import ne passe **jamais** une fiche en « Relu » : c'est votre décision, et la vôtre seulement.
+
+**Sans le back-office** : sur GitHub, ouvrez le dossier `medias/import/` → **Add file** → **Upload files** →
+déposez les fichiers → **Commit changes**. L'import est le même.
+
+### Tester un brouillon : « Télécharger pour tester »
+
+Un brouillon n'est jamais publié : on le teste en local.
+
+1. Ouvrez la fiche (**Annales** → la fiche).
+2. Champ **Tester le fichier** → **Télécharger pour tester** : le fichier est enregistré sur votre ordinateur
+   (dossier Téléchargements), sous le nom `<identifiant>.html`.
+3. Ouvrez-le (double-clic) : il s'affiche dans le navigateur, comme pour un élève, et fonctionne sans connexion.
+   Faites-le en mode entraînement, avec la fiche de relecture du projet Claude à côté.
+
+Le fichier n'est jamais ouvert dans l'onglet du back-office : un fichier ouvert là aurait accès à votre jeton.
+Sur téléphone, le téléchargement fonctionne aussi, mais l'ouverture d'un fichier HTML téléchargé dépend du téléphone :
+préférez l'ordinateur pour tester.
+
+### Compléter et publier
+
+1. Complétez la fiche : **Filières**, **Thème**, **Notions**, **Source et licence du sujet** (obligatoire dès la
+   création : éditeur, adresse `https://` du document d'origine, licence ; pour une autorisation écrite, sa
+   référence), et, si vous le souhaitez, l'**image de la carte** avec son crédit (partie 2).
+2. Quand toutes les réponses sont vérifiées, passez le **Statut** à **Relu** et enregistrez.
+3. Avant chaque publication, GitHub vérifie que chaque annale donne **20/20 quand toutes les réponses sont justes**,
+   en entraînement et en examen. Une annale relue qui échoue est **retenue** (non publiée) et signalée, avec les
+   questions en cause ; le reste du site est publié. Pour un brouillon, c'est un simple avertissement.
+
+**Saisie à la main** (sans le dépôt rapide) : **Annales** → **Nouveau**, remplissez la fiche et téléversez le fichier
+dans **Fichier HTML du sujet**. Pour un exercice : **Contenus** → la collection → **Créer une entrée**.
+
+### Remplacer le fichier d'une annale : valider une nouvelle version
+
+1. Déposez la nouvelle version dans **Dépôt rapide**, avec **le même identifiant** (le même `id` dans son bloc, ou
+   le même nom de fichier sans bloc).
+2. Elle ne remplace rien tout de suite : la fiche affiche **Nouvelle version à relire** (champ « Tester le
+   fichier »), et la version en ligne **reste en ligne**. Le bandeau la compte aussi.
+3. **Télécharger la nouvelle version pour tester**, testez-la.
+4. Cochez **Valider la nouvelle version**, puis **Enregistrer**. À la publication suivante, la nouvelle version
+   remplace l'ancienne, à la même adresse, et l'ancienne est supprimée.
 
 ---
 
@@ -128,9 +160,9 @@ Images acceptées : **domaine public**, **CC0**, **œuvre personnelle** (vos pho
 back-office ne propose d'ailleurs aucune banque d'images.
 
 **Minute 1 — trouver.** Sur <https://commons.wikimedia.org>, cherchez par exemple « Encyclopédie Diderot planche
-forge », « patent drawing gear » ou le nom d'une machine. Autres sources sûres : les dessins de brevets américains
-anciens et <https://www.si.edu/openaccess> (Smithsonian, filtre **CC0**). Sur la page du fichier, lisez la section
-**Licence** :
+forge », « patent drawing gear » ou le nom d'une machine (les « pistes d'illustration » de la fiche donnent des
+idées). Autres sources sûres : les dessins de brevets américains anciens et <https://www.si.edu/openaccess>
+(Smithsonian, filtre **CC0**). Sur la page du fichier, lisez la section **Licence** :
 
 | Ce que dit la page | Licence à choisir |
 |---|---|
@@ -141,21 +173,31 @@ anciens et <https://www.si.edu/openaccess> (Smithsonian, filtre **CC0**). Sur la
 | *CC BY*, *CC BY-SA*, « tous droits réservés », rien d'indiqué | **Refusée** : cherchez une autre image |
 
 **Minute 2 — télécharger.** Une taille moyenne (1 200 à 2 000 px de large), en JPEG ou PNG. Notez l'adresse de la
-page d'origine, l'auteur et la date.
+page d'origine et l'auteur.
 
-**Minute 3 — téléverser.** Ouvrez la fiche du contenu ou de l'annale ; dans **Image de la carte**, téléversez
-l'image (rangée dans `medias/cartes/`, nom nettoyé) et écrivez le **texte alternatif** : une phrase qui la décrit
-pour qui ne la voit pas. **Enregistrer**, et notez le chemin affiché (ex. : `/medias/cartes/cadre-velo.jpg`).
+**Minute 3 — téléverser.** Ouvrez la fiche du contenu ou de l'annale ; **Image de la carte** → **Ajouter** :
+téléversez l'image (rangée dans `medias/cartes/`, nom nettoyé). Le **texte alternatif** est facultatif : une phrase
+qui décrit l'image pour qui ne la voit pas ; laissé vide, l'image est traitée comme décorative, ce qui convient à une
+image posée à côté de son titre.
 
-**Minute 4 — déclarer.** **Images et crédits** → **Nouveau** : le **chemin**, le **titre**, l'**auteur**, la
-**date**, la **source** (adresse de la page d'origine) et la **licence**. **Enregistrer**.
+**Minute 4 — créditer, au même endroit.** **Licence de l'image**, **Source** (adresse de la page d'origine),
+**Auteur**, et pour une autorisation écrite sa **Référence**. **Enregistrer**.
 
-**Minute 5 — vérifier.** Attendez la coche verte dans l'onglet **Actions** (environ 2 minutes), puis ouvrez le
-catalogue de la préproduction : la carte affiche l'image, recadrée au format 16/9 et allégée ; la page **Crédits** la
-liste. Une croix rouge ? Voir la partie 9 : le plus souvent, l'image n'est pas encore déclarée.
+**Minute 5 — vérifier.** Le bandeau passe à « En ligne depuis… » (environ 3 minutes) ; la carte affiche l'image,
+recadrée au format 16/9 et allégée, et la page **Crédits** la cite.
+
+**Pas encore de crédit ?** Cochez **J'accepte le risque : image publiée sans crédit**. L'image est publiée, absente
+de la page Crédits, et listée **Images à régulariser** dans le bandeau jusqu'à ce que vous complétiez le crédit (puis
+décochez la case). La case ne couvre que l'absence de crédit : elle ne rend jamais acceptable une image générée par IA
+ou sous une licence refusée.
+
+**Ni crédit, ni case cochée** : l'image n'est **pas publiée** (la carte garde son bandeau typographique), la fiche
+l'est, et l'image figure dans **À corriger** : « cocher la case ou compléter le crédit ». Une image ne bloque jamais
+la publication de sa fiche.
 
 L'image d'origine reste dans le dépôt telle quelle : les versions allégées sont fabriquées à la publication. Pour
-revenir au bandeau, retirez l'image de la fiche.
+revenir au bandeau, retirez l'image de la fiche. Une image téléversée que plus aucune fiche ne cite est signalée
+« image orpheline » : supprimez-la dans **Ressources**, ou réutilisez-la.
 
 ---
 
@@ -167,9 +209,9 @@ Planches techniques anciennes du domaine public ou sous CC0 (Encyclopédie, brev
 - **Thème** : **Thèmes** → le thème → **Planche d'illustration**.
 - **Labo, Maquettes** : **Accueil** → **Labo et Maquettes (à venir)** → **Planche d'illustration**.
 
-Téléversez la planche (rangée dans `medias/illustrations/`), écrivez un texte alternatif, enregistrez, puis
-déclarez-la dans **Images et crédits**. Une planche purement décorative peut garder un texte alternatif vide :
-cochez alors **Image décorative** dans son crédit. À la publication, elle passe en niveaux de gris sur fond blanc.
+Téléversez la planche (rangée dans `medias/illustrations/`) et remplissez son crédit au même endroit, comme pour une
+image de carte (partie 2) ; un texte alternatif vide convient à une planche décorative. À la publication, elle passe
+en niveaux de gris sur fond blanc.
 
 ---
 
@@ -182,13 +224,14 @@ Les notions relient les annales aux cours et exercices (« Pour réviser »). Ru
 - **renommer** : changez seulement le **libellé** ; l'identifiant d'une notion déjà utilisée ne se change pas.
 
 Dans les fiches, les notions se **choisissent dans la liste** : la nouvelle notion y apparaît dès qu'elle est
-enregistrée.
+enregistrée. Les **notions proposées** par le projet Claude attendent votre décision dans chaque fiche importée.
 
 ---
 
 ## 5. Accueil, Labo et Maquettes, thèmes
 
 - **Contenus à la une** (rubrique **Accueil**) : de 3 à 6 identifiants de contenus publiés, dans l'ordre d'affichage.
+  Un contenu qui n'est pas publié (brouillon, retenu) est sauté et signalé.
 - **Labo et Maquettes (à venir)** : le titre et la promesse (une phrase, sans date) des pages `/labo/` et
   `/maquettes/` et du bloc « Bientôt » de l'accueil.
 - **Thèmes** : nom, nom court, exemples, planche. Un thème sans contenu publié s'affiche « Bientôt » ; il retrouve
@@ -242,45 +285,70 @@ actions, avec le seul identifiant de la page : annale commencée en entraînemen
 
 ---
 
-## 8. Tableau de bord éditorial
+## 8. Bandeau d'état, « À corriger » et alerte e-mail
 
-À chaque publication, GitHub écrit un tableau de bord : onglet **Actions** → dernière exécution de **Publier le
-site** → page **Summary**, section **Tableau de bord éditorial**. Il donne les contenus et annales publiés et en
-brouillon, les annales sans source, les cartes sans image, la planche d'accueil, le poids de l'accueil, l'état des
-mentions légales et de l'indexation. Il ne contient que des comptes. Si la publication s'est arrêtée, le message
-d'erreur y figure aussi.
+**Le bandeau**, en haut du back-office, s'actualise à l'ouverture, quand vous revenez sur l'onglet, une vingtaine de
+secondes après un enregistrement, et sur le bouton **Actualiser** (jamais en continu : GitHub limite ces
+interrogations à 60 par heure). Il interroge GitHub sans votre jeton.
+
+| Le bandeau dit | Ce que cela veut dire |
+|---|---|
+| **Publication en cours** | GitHub travaille ; lien « voir l'avancement » |
+| **En ligne depuis hh:mm** | La dernière publication a réussi ; c'est l'heure de la version en ligne |
+| **Échec : voir le détail** | Une erreur de code a arrêté la publication ; le site en ligne n'a pas changé (partie 9) |
+| (état de GitHub indisponible) | GitHub ne répond pas pour le moment ; l'heure affichée reste juste |
+| **N fiches retenues** | Fiches « Relu » non publiées à cause d'une erreur de contenu ; le reste du site est en ligne |
+| **N images à régulariser** | Images publiées sans crédit, case de risque cochée |
+| **N nouvelles versions à relire** | Fichiers déposés pour remplacer une fiche, en attente de validation |
+
+Un clic sur un nombre ouvre la liste **À corriger** : pour chaque point, la fiche, le **nom du champ** à corriger
+dans le back-office et la correction en une phrase ; « ouvrir la fiche » mène à une annale. Elle regroupe :
+
+- les **fiches retenues** (marquées « Retirée du site » si elles étaient en ligne avant) ;
+- les **avertissements des brouillons** (champs à compléter, 20/20 non atteint…) : rien n'est publié, rien n'est
+  bloqué ;
+- les **images non publiées** faute de crédit, les **images orphelines** ;
+- les **fichiers déposés non importés**, les **notions proposées**, et le reste (« à la une »…).
+
+Le même résumé est écrit par GitHub à chaque publication : onglet **Actions** → dernière exécution de **Publier le
+site** → **Summary**. Il commence par **À corriger**, puis **Images à régulariser**, le rapport d'import et le
+tableau de bord éditorial (publiés, brouillons, poids de l'accueil, mentions légales, indexation).
+
+**Être prévenu par e-mail d'un échec** (une fois) : sur GitHub, photo de profil → **Settings** → **Notifications** →
+rubrique **Actions** → cochez **Email** et **Only notify for failed workflows**. Vous recevez alors un courriel à
+chaque publication arrêtée, et seulement dans ce cas.
 
 ---
 
 ## 9. En cas de problème
 
-### La publication échoue
+### Une fiche est retenue
 
-Le site en ligne ne change pas tant que la publication n'a pas réussi. Sur GitHub, onglet **Actions**, ouvrez
-l'exécution marquée d'une croix rouge : le **Summary** affiche « Publication arrêtée » et un message qui commence par
-**« Construction arrêtée : »**.
+C'est une **erreur de contenu** : la fiche n'est pas publiée (ou elle est retirée si elle était en ligne), et tout le
+reste du site l'est. Ouvrez le bandeau → **À corriger** : corrigez le champ cité, enregistrez ; la fiche revient en
+ligne à la publication suivante.
 
 | Message | Ce qu'il faut faire |
 |---|---|
-| « Image sans crédit : … » | Déclarer l'image dans **Images et crédits** |
-| « Licence non acceptée … » | Choisir une licence de la liste, ou retirer l'image |
-| « Autorisation écrite sans référence … » | Renseigner la référence de l'autorisation |
-| « Texte alternatif manquant … » | Écrire le texte alternatif, ou déclarer l'image décorative |
-| « Image introuvable : … » | Téléverser l'image, ou corriger le chemin |
-| « annale sans source valide … » | Remplir **Source et licence du sujet** |
+| « champ « source » manquant », « licence de la source non acceptée », « autorisation écrite sans référence » | Remplir **Source et licence du sujet** |
 | « Notion inconnue … » | Ajouter la notion dans **Notions** (le message propose les identifiants proches) |
-| « « indexable » ne peut pas valoir true … » | Remplir les mentions légales citées, dans **Réglages du site** |
-| « … ligne N : ressource extérieure interdite … » | Le fichier HTML charge quelque chose depuis Internet : le faire corriger dans le projet Claude |
-| « Fichier manquant : … index.html » | Un nouveau contenu sans fichier HTML : téléversez-le dans la fiche |
-| « Identifiant en double … » | Choisir un autre identifiant |
+| « Champ « presentation » trop court » (ou « description ») | Écrire 20 caractères au moins |
+| « … ligne N : ressource extérieure interdite … », « lien vers une page absente du site », « ancre … sans identifiant » | Le fichier HTML est à corriger dans le projet Claude, puis à déposer comme nouvelle version |
+| « une copie entièrement juste n'obtient pas 20/20 » | Faire corriger les questions citées dans le projet Claude |
+| « Identifiant en double … », « L'identifiant … doit être le nom de son fichier » | Remettre l'identifiant d'origine, ou créer la fiche sous un autre identifiant |
+| « JSON invalide dans … » | Fiche abîmée par une modification sur GitHub : rétablir la version précédente (« Annuler une modification ») |
 
-Si l'échec vient des tests et cite **annale parfaite**, une réponse attendue de l'annale n'obtient pas ses points :
-faites corriger le fichier dans le projet Claude en lui donnant la question citée. Pour tout autre test en échec,
-transmettez le message tel quel dans une session Claude Code.
+### La publication échoue (« Échec : voir le détail »)
+
+C'est une **erreur de code** (gabarit, réglages du site, test de page) : rien n'est publié, le site en ligne ne
+change pas. Le **Summary** de l'exécution affiche « Publication arrêtée » ; sinon, l'étape en rouge (tests) donne le
+détail. Une seule erreur de contenu ne peut pas en être la cause. Exception : **« « indexable » ne peut pas valoir
+true … »** : remplissez les mentions légales citées, dans **Réglages du site**. Pour tout le reste, transmettez le
+message tel quel dans une session Claude Code.
 
 ### Annuler une modification
 
-Chaque enregistrement est un commit, au message en français (« Annales : mise à jour de … »).
+Chaque enregistrement est un commit, au message en français (« Annale : mise à jour de … »).
 
 1. Pour retrouver l'ancienne valeur : dans la fiche, panneau **Historique** (icône d'horloge, à droite), ou sur
    GitHub, onglet **Code** → **Commits** ; ouvrez le commit : les lignes en rouge sont les anciennes valeurs.
@@ -292,13 +360,15 @@ Chaque enregistrement est un commit, au message en français (« Annales : mise 
 
 Tout ce que fait le back-office se fait aussi sur le site de GitHub, dépôt `S-Kajzar/industrie-education` :
 
-- **déposer un fichier** (fichier HTML d'annale, image) : ouvrez le dossier (`medias/depots/`, `medias/cartes/`,
-  `medias/illustrations/`) → **Add file** → **Upload files** (25 Mo au plus par fichier par cette voie ; le site
-  refuse de toute façon un fichier HTML de plus de 5 Mo) → **Commit changes** ;
+- **déposer des fichiers HTML** du projet Claude : dossier `medias/import/` → **Add file** → **Upload files** →
+  **Commit changes** ; l'import crée les fiches en brouillon, comme le dépôt rapide (le site refuse un fichier HTML
+  de plus de 5 Mo) ;
+- **déposer une image** : dossier `medias/cartes/` ou `medias/illustrations/` → **Add file** → **Upload files**, puis
+  citez-la dans la fiche, avec son crédit ;
 - **créer ou modifier une fiche** : dossier `annales/` (une fiche `identifiant.json` par annale, sur le modèle de
-  l'existante), `contenus/`, `catalogue/` (notions, thèmes, à la une, à venir), `site.json` (réglages),
-  `medias/CREDITS.json` (crédits) → crayon (**Edit**) ou **Add file** → **Create new file** → **Commit changes** ;
-- la publication suit le même circuit (Actions, environ 2 minutes).
+  l'existante), `contenus/`, `catalogue/` (notions, thèmes, à la une, à venir), `site.json` (réglages) → crayon
+  (**Edit**) ou **Add file** → **Create new file** → **Commit changes** ;
+- la publication suit le même circuit (Actions, environ 3 minutes).
 
 ### Jeton expiré ou refusé
 

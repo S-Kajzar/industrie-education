@@ -31,12 +31,16 @@ Ce qui n'est pas décrit n'est pas à faire. Une contradiction entre ces documen
 - **URL** : une fois le domaine posé (lot 1), aucune URL publiée ne change. Ajouter une redirection si besoin.
 - Le dossier `_site/` est généré : ne jamais le modifier à la main ni le versionner.
 - Pas de nouvelle dépendance sans la justifier dans la note de livraison.
-- **Images** : chaque image est déclarée dans `medias/CREDITS.json`, sous une licence de sa liste fermée : domaine
-  public, CC0, œuvre personnelle de Sébastien, ou autorisation écrite (avec sa référence). Jamais d'image générée
-  par IA, ni de banque d'images, ni de copie Gallica. Claude n'ajoute aucune image lui-même.
+- **Images** (lot 1e) : chaque image porte son crédit dans la fiche qui l'utilise, sous la liste fermée de
+  licences : domaine public, CC0, œuvre personnelle de Sébastien, ou autorisation écrite (avec sa référence). À
+  défaut, Sébastien peut cocher la case « J'accepte le risque : image publiée sans crédit » : l'image est publiée et
+  listée « à régulariser ». La case ne couvre que l'absence de crédit : jamais d'image générée par IA, ni de banque
+  d'images, ni de copie Gallica. Claude n'ajoute aucune image lui-même et ne coche jamais cette case. Une image ne
+  retient jamais sa fiche : sans crédit ni case cochée, elle n'est pas publiée (bandeau typographique).
 - **Relecture humaine** : une annale ou un article au statut `brouillon` n'est jamais publié. Les réponses
   attendues d'une annale ne sont jamais publiées sans le statut `relu` posé par Sébastien. Claude ne pose jamais le
-  statut `relu`. Seul Sébastien le pose, depuis le back-office.
+  statut `relu`. Seul Sébastien le pose, depuis le back-office. L'import des fichiers déposés (`outils/importer.py`)
+  crée toujours des brouillons et ne pose jamais `relu`.
 - **Référencement** : aucune page créée seulement pour se classer ; aucune génération d'articles en masse.
 
 ## Langue
@@ -49,14 +53,18 @@ d'identifiants : minuscules, sans accent, avec des tirets.
 ```sh
 pip install -r requirements.txt     # Jinja2, Pillow
 npm install                         # Playwright, @fontsource/barlow-condensed
-python3 outils/construire.py        # écrit _site/
+python3 outils/construire.py        # écrit _site/ (sans le contrôle 20/20)
+node outils/chaine.js               # contrôle 20/20 des annales, puis construction (comme l'Action)
+python3 outils/importer.py          # importe les fichiers de medias/import/ (l'Action le fait, avec --commit)
 python3 -m http.server -d _site 8000
-npm test                            # tous les tests
+npm test                            # chaîne (20/20 + construction), puis tous les tests
 ```
 
 ## Checklist avant de livrer
 
 - [ ] Tests verts (`npm test`), y compris : aucun lien cassé, aucune requête tierce, poids de l'accueil.
+- [ ] Aucun test ne dépend d'un choix éditorial modifiable dans `/admin/` (lot 1e) : une erreur de contenu retient sa
+      fiche (construction), elle ne fait jamais échouer un test.
 - [ ] Chaque page : un seul `h1`, `lang="fr"`, focus visible, lisible à 360 px.
 - [ ] Les pages s'affichent sans JavaScript.
 - [ ] `NOTE-DE-LIVRAISON.md` à jour.
