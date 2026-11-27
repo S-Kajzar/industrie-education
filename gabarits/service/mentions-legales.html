@@ -1,31 +1,34 @@
-{%- macro valeur(texte) -%}
-{% if texte %}{{ texte }}{% else %}<span class="a-renseigner">À renseigner</span>{% endif %}
+{#- Un champ vide de site.json s'affiche « À compléter avant l'ouverture » en préproduction ; une fois le site ouvert
+    aux moteurs (indexable), la construction exige l'éditeur, le directeur de la publication et le contact, et un
+    champ facultatif resté vide n'est pas affiché. -#}
+{%- macro ligne(terme, texte, lien='') -%}
+{% if texte %}<dt>{{ terme }}</dt><dd>{% if lien %}<a href="{{ lien }}">{{ texte }}</a>{% else %}{{ texte }}{% endif %}</dd>
+{% elif not site.indexable %}<dt>{{ terme }}</dt><dd><span class="a-renseigner">À compléter avant l’ouverture</span></dd>
+{% endif %}
 {%- endmacro -%}
 
 <h2 id="editeur">Éditeur</h2>
 <dl class="fiche">
-<dt>Éditeur</dt><dd>{{ valeur(site.editeur.nom) }}</dd>
-<dt>Adresse</dt><dd>{{ valeur(site.editeur.adresse) }}</dd>
-<dt>Directeur de la publication</dt><dd>{{ valeur(site.editeur.directeur_publication) }}</dd>
-<dt>Contact</dt><dd>{% if site.contact %}<a href="mailto:{{ site.contact }}">{{ site.contact }}</a>{% else %}{{ valeur('') }}{% endif %}</dd>
-</dl>
+{{ ligne('Éditeur', site.editeur.nom) }}{{ ligne('Adresse', site.editeur.adresse) }}{{ ligne('Directeur de la publication', site.editeur.directeur_publication) }}{{ ligne('Contact', site.contact, 'mailto:' ~ site.contact) }}</dl>
 
 <h2 id="hebergeur">Hébergeur</h2>
 <dl class="fiche">
-<dt>Hébergeur</dt><dd>{{ valeur(site.hebergeur.nom) }}</dd>
-<dt>Adresse</dt><dd>{{ valeur(site.hebergeur.adresse) }}</dd>
-</dl>
+{{ ligne('Hébergeur', site.hebergeur.nom) }}{{ ligne('Adresse', site.hebergeur.adresse) }}</dl>
 
 <h2 id="donnees">Données personnelles et cookies</h2>
 <p>Le site ne dépose aucun cookie et ne collecte aucune donnée personnelle : pas de compte, pas de formulaire, pas de traceur. Aucune police, image ou programme n’est chargé depuis un autre site{% if site.umami %}, à l’exception du script de mesure d’audience{% endif %}.</p>
 {% if site.umami -%}
-<p>La fréquentation est mesurée avec Umami, sans cookie : seules des statistiques globales et anonymes sont conservées (pages vues, type d’appareil, pays).</p>
+<p>La fréquentation est mesurée avec Umami, sans cookie : seules des statistiques globales et anonymes sont conservées (pages vues, type d’appareil, pays, site d’où l’on arrive).</p>
+<p>Quelques actions sont aussi comptées, de façon anonyme : commencer une annale en entraînement ou en examen, faire corriger sa copie, l’imprimer, projeter une page. Seul l’identifiant de la page est transmis, jamais une réponse saisie ni une information sur la personne.</p>
 {%- else -%}
 <p>Aucune mesure d’audience n’est active.</p>
 {%- endif %}
 <p>L’hébergeur peut conserver des journaux techniques, dont l’adresse IP des visiteurs, pour la sécurité et le bon fonctionnement du service, selon sa propre politique de confidentialité.</p>
 
-<h2 id="credits">Crédits</h2>
+<h2 id="sources-et-licences">Sources et licences</h2>
+<p>Les annales sont adaptées de sujets publiés sous licence Creative Commons ou Licence Ouverte (éduscol, avec attribution), ou avec l’autorisation écrite de leur éditeur ; les images sont du domaine public, sous CC0, des œuvres de l’auteur ou publiées avec une autorisation écrite. La source et la licence de chacune figurent dans les <a href="{{ racine }}credits/">crédits</a>.</p>
+
+<h2 id="credits">Polices et programmes</h2>
 <ul>
 <li>Police Barlow Condensed, The Barlow Project Authors, sous licence SIL Open Font License 1.1 (<a href="{{ racine }}_/polices/OFL.txt">texte de la licence</a>).</li>
 <li>Génération des QR codes : qrcode-generator, Kazuhiko Arase, sous licence MIT (<a href="{{ racine }}_/lib/LICENCE-qrcode.txt">texte de la licence</a>). « QR Code » est une marque déposée de DENSO WAVE INCORPORATED.</li>

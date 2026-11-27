@@ -79,7 +79,11 @@ body.atelier{background:var(--beton)}
 
 /* ---------- index des thèmes (accueil) ---------- */
 :where(.vitrine,.atelier) .index-themes{border-top:var(--trait-fort) solid var(--encre); list-style:none; margin:0; padding:0}
-:where(.vitrine,.atelier) .index-themes a{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere); align-items:center; border-bottom:var(--trait-fort) solid var(--encre); text-decoration:none}
+:where(.vitrine,.atelier) .index-themes a,:where(.vitrine,.atelier) .index-bientot{display:grid; grid-template-columns:repeat(12,minmax(0,1fr)); column-gap:var(--gouttiere); align-items:center; border-bottom:var(--trait-fort) solid var(--encre); text-decoration:none}
+/* Thème sans contenu publié : « Bientôt », comme une filière inactive (traits et texte secondaires, pas de lien). */
+:where(.vitrine,.atelier) .index-bientot{color:var(--encre-2)}
+:where(.vitrine,.atelier) .index-bientot .index-num{background:var(--trait-fin); color:var(--encre-2)}
+:where(.vitrine,.atelier) .index-bientot .index-nb{font-weight:600}
 :where(.vitrine,.atelier) .index-themes a:hover{background:var(--jaune-pale)}
 :where(.vitrine,.atelier) .index-num{grid-column:span 1; align-self:stretch; min-height:76px; display:flex; align-items:center; justify-content:center; background:var(--encre); color:var(--jaune); font:800 2.25rem/1 var(--f-titre)}
 :where(.vitrine,.atelier) .index-nom{grid-column:span 6; font:700 2.5rem/1 var(--f-titre)}
@@ -97,6 +101,9 @@ body.atelier{background:var(--beton)}
 :where(.vitrine,.atelier) .carte{background:var(--papier); border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); display:flex; flex-direction:column; text-decoration:none; transition:transform .15s ease, box-shadow .15s ease}
 :where(.vitrine,.atelier) .carte:hover{transform:translateY(-2px); box-shadow:4px 4px 0 var(--encre)}
 :where(.vitrine,.atelier) .carte-bandeau{aspect-ratio:16/9; display:flex; flex-direction:column; justify-content:space-between; padding:12px 14px; background:var(--encre); color:var(--jaune); border-bottom:var(--trait-fort) solid var(--encre); font-family:var(--f-titre)}
+/* Bandeau sans image (lot 1c) : trame de papier millimétré, comme une feuille de dessin technique, pour qu'il se lise
+   comme un visuel fini et non comme un emplacement d'image vide. Sans color-mix(), le fond reste encre uni. */
+:where(.vitrine,.atelier) .carte-bandeau{--quadrillage:color-mix(in srgb, var(--encre-2) 45%, transparent); background-image:linear-gradient(var(--quadrillage) 1px, transparent 1px), linear-gradient(90deg, var(--quadrillage) 1px, transparent 1px); background-size:16px 16px; background-position:-1px -1px}
 /* Image de carte (DESIGN § 5) : même format 16/9 que le bandeau, dimensions fixées, fond blanc. */
 :where(.vitrine,.atelier) .carte-image{display:block; aspect-ratio:16/9; overflow:hidden; background:var(--papier); border-bottom:var(--trait-fort) solid var(--encre)}
 :where(.vitrine,.atelier) .carte-image img{display:block; width:100%; height:100%; object-fit:cover}
@@ -205,7 +212,7 @@ body.atelier{background:var(--beton)}
 :where(.vitrine,.atelier) .groupe-tete h2 a{text-decoration:none}
 :where(.vitrine,.atelier) .groupe-tete h2 a:hover{text-decoration:underline}
 :where(.vitrine,.atelier) .groupe-nb{font-size:.875rem; color:var(--encre-2)}
-.atelier .index-themes a{background:var(--papier)}
+.atelier .index-themes a,.atelier .index-bientot{background:var(--papier)}
 .atelier .index-themes a:hover{background:var(--jaune-pale)}
 
 /* ---------- pages de service (vitrine) ---------- */
@@ -323,29 +330,47 @@ html.projeter-ouvert{overflow:hidden}
 :where(.vitrine,.atelier) .annales-retour{margin:24px 0 0}
 
 /* ---------- fiche d'annale, au-dessus du fichier autonome (enveloppe) ---------- */
-.enveloppe-fiche{background:var(--papier); color:var(--encre); border-bottom:var(--trait-fort) solid var(--encre); font:16px/1.55 var(--f-texte)}
-.enveloppe-fiche-interieur{max-width:900px; margin:0 auto; padding:20px calc(var(--rail, 0px) + 22px) 22px 22px; border-left:var(--rail-titre) solid var(--jaune)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-surtitre{margin:0; font-size:.875rem; font-weight:600; color:var(--encre-2)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-titre{margin:4px 0 8px; font:800 clamp(1.6rem,3.6vw,2.35rem)/1.05 var(--f-titre)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-presentation{margin:0 0 12px; max-width:72ch}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos{margin:0 0 12px; display:flex; flex-wrap:wrap; gap:8px 28px}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos dt{font-size:.8125rem; font-weight:600; color:var(--encre-2)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos dd{margin:0; font-weight:600}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos a,:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-liens a{color:var(--bleu)}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-liens{margin:0 0 12px; max-width:72ch}
-:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-action{margin:0}
-.enveloppe-ancre{display:block; height:0}
+/* Bandeau d'informations compact (lot 1c) : le titre et la présentation sont ceux du fichier, juste en dessous. */
+.enveloppe-fiche{background:var(--papier); color:var(--encre); border-bottom:var(--trait-fort) solid var(--encre); font:.875rem/1.45 var(--f-texte)}
+.enveloppe-fiche-interieur{max-width:900px; margin:0 auto; padding:10px calc(var(--rail, 0px) + 22px) 10px 16px; border-left:var(--rail-titre) solid var(--jaune)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-surtitre{margin:0 0 4px; font:700 .8125rem/1.3 var(--f-texte); letter-spacing:.04em; text-transform:uppercase; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos{margin:0; display:flex; flex-wrap:wrap; gap:2px 22px}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos>div{min-width:0}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos dt{display:inline; color:var(--encre-2)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos dt::after{content:"\00a0: "}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos dd{display:inline; margin:0; font-weight:600}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-infos a,:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-liens a,:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-credit a{color:var(--bleu)}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-liens{margin:4px 0 0}
+:where(.vitrine,.atelier,.enveloppe-tete,.enveloppe-pied,.enveloppe-fiche,.projeter) .enveloppe-fiche-credit{margin:4px 0 0; font-size:.75rem; color:var(--encre-2)}
 
 /* ---------- page Crédits ---------- */
 :where(.vitrine,.atelier) .credits{list-style:none; margin:0; padding:0; display:grid; gap:16px}
 :where(.vitrine,.atelier) .credit{border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); padding:12px 16px}
 :where(.vitrine,.atelier) .credit-titre{margin:0 0 8px; font:700 1.25rem/1.15 var(--f-titre)}
+:where(.vitrine,.atelier) .credit-ligne{margin:8px 0 0; font-size:.875rem; color:var(--encre-2)}
+/* Une adresse de source peut être très longue : elle se coupe plutôt que de faire défiler la page. */
+:where(.vitrine,.atelier) .credit dd{overflow-wrap:anywhere; min-width:0}
+
+/* ---------- bloc « Bientôt » : Labo et Maquettes à venir (accueil, pages de section) ---------- */
+:where(.vitrine,.atelier) .bientot{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px}
+:where(.vitrine,.atelier) .bientot>li{display:flex; min-width:0}
+:where(.vitrine,.atelier) .bientot-lien{flex:1; display:flex; align-items:flex-start; gap:4px 16px; min-height:96px; border:var(--trait-fort) solid var(--encre); background:var(--papier); color:var(--encre); padding:12px 14px; text-decoration:none}
+:where(.vitrine,.atelier) .bientot-lien:hover{background:var(--jaune-pale)}
+:where(.vitrine,.atelier) .bientot-lien .illustration-vignette{margin:0; flex:none}
+:where(.vitrine,.atelier) .bientot-texte{display:flex; flex-direction:column; gap:6px; min-width:0}
+:where(.vitrine,.atelier) .bientot-titre{margin:0; font:700 2rem/1 var(--f-titre)}
+:where(.vitrine,.atelier) .bientot-promesse{margin:0; color:var(--encre-2)}
+:where(.vitrine,.atelier) .bientot-page{display:block; border:var(--trait-fort) solid var(--encre); border-left:var(--rail-carte) solid var(--jaune); padding:16px 20px; margin:0 0 24px}
+:where(.vitrine,.atelier) .bientot-page .bientot-titre{font-size:.875rem; font-family:var(--f-texte); font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--encre-2); margin-bottom:6px}
+:where(.vitrine,.atelier) .bientot-page .bientot-promesse{font:700 clamp(1.5rem,3vw,2.25rem)/1.1 var(--f-titre); color:var(--encre)}
+:where(.vitrine,.atelier) .section-tete{display:flex; justify-content:space-between; align-items:flex-end; gap:20px}
+:where(.vitrine,.atelier) .illustration-section{display:block; flex:0 1 360px; min-width:0; max-width:40%; height:auto; max-height:200px; object-fit:contain; border:var(--trait-fort) solid var(--encre); background:var(--papier)}
 
 /* ---------- mobile ---------- */
 @media (max-width:640px){
   :root{--marge:16px}
-  :where(.vitrine,.atelier) .grille,:where(.vitrine,.atelier) .index-themes a{grid-template-columns:1fr}
-  :where(.vitrine,.atelier) .grille>*,:where(.vitrine,.atelier) .index-themes a>*{grid-column:1/-1!important}
+  :where(.vitrine,.atelier) .grille,:where(.vitrine,.atelier) .index-themes a,:where(.vitrine,.atelier) .index-bientot{grid-template-columns:1fr}
+  :where(.vitrine,.atelier) .grille>*,:where(.vitrine,.atelier) .index-themes a>*,:where(.vitrine,.atelier) .index-bientot>*{grid-column:1/-1!important}
   :where(.vitrine,.atelier) .index-num{min-height:48px; justify-content:flex-start; padding-left:12px}
   :where(.vitrine,.atelier) .index-nom{font-size:1.75rem; padding:8px 12px 0}
   :where(.vitrine,.atelier) .index-ex,:where(.vitrine,.atelier) .index-nb{padding:0 12px 12px; text-align:left}
@@ -355,6 +380,9 @@ html.projeter-ouvert{overflow:hidden}
   :where(.vitrine,.atelier) .rangee{padding-top:40px}
   :where(.vitrine,.atelier) .rangee-etiquette{margin-bottom:12px}
   :where(.vitrine,.atelier) .publics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  :where(.vitrine,.atelier) .bientot{grid-template-columns:1fr}
+  :where(.vitrine,.atelier) .section-tete{flex-direction:column; align-items:stretch}
+  :where(.vitrine,.atelier) .illustration-section{max-width:100%; max-height:120px}
   :where(.vitrine,.atelier) .bande-titre{padding-top:24px; padding-bottom:20px}
   :where(.vitrine,.atelier) .filtres{flex-basis:100%; max-width:none}
   :where(.vitrine,.atelier) .filtres-ouvrir{display:flex; width:100%; justify-content:space-between}

@@ -2,7 +2,8 @@
     - contenus natifs : fil d'Ariane, outils, suite et signalement sont placés par contenu.html ;
     - contenus repris et annales : outils/construire.py insère « tete » avant </head>, « haut » après <body…> et
       « bas » avant </body> (pour une annale, aussi « debut_tete » juste après <meta charset>), sans rien changer
-      d'autre au fichier. Chaque insertion est bornée par deux commentaires repères. -#}
+      d'autre au fichier. Chaque insertion est bornée par deux commentaires repères.
+    L'icône vide (data:) évite au navigateur de demander /favicon.ico, absent du site (erreur 404 en console). -#}
 
 {#- c.fil : liste d'étapes {libelle, chemin} ; la dernière (chemin vide) est la page elle-même. -#}
 {% macro fil_ariane(c, racine) -%}
@@ -40,24 +41,28 @@
 {%- endif %}
 {%- endmacro %}
 
-{#- Fiche indexable d'une annale, au-dessus du fichier autonome : titre, présentation, durée, filières, notions,
-    contenus liés, bouton « Commencer » (ancre placée juste avant le début du fichier). L'origine du sujet n'y
-    figure que si afficher_origine vaut true. -#}
+{#- Ligne de crédit d'une annale (champ « source », TRAME § 11) : toujours affichée, quel que soit
+    afficher_origine ; le nom de l'éditeur est un lien vers le document d'origine. -#}
+{% macro credit(c) -%}
+{% set s = c.credit -%}
+{{ s.avant }}{% if s.avec_editeur %}{% if s.url %}<a href="{{ s.url }}">{{ s.editeur }}</a>{% else %}{{ s.editeur }}{% endif %}{% endif %}{{ s.apres }}
+{%- endmacro %}
+
+{#- Fiche d'une annale, au-dessus du fichier autonome : un bandeau d'informations (le titre et la présentation sont
+    déjà dans le fichier, juste en dessous). L'origine du sujet n'y figure que si afficher_origine vaut true. -#}
 {% macro fiche(c, racine) -%}
 <section class="enveloppe-fiche" aria-label="Fiche de l’annale">
 <div class="enveloppe-fiche-interieur">
 <p class="enveloppe-fiche-surtitre">Annale corrigée et interactive · {{ c.filieres }}{% if c.origine_texte %} · {{ c.origine_texte }}{% endif %}</p>
-<p class="enveloppe-fiche-titre">{{ c.titre }}</p>
-<p class="enveloppe-fiche-presentation">{{ c.presentation }}</p>
 <dl class="enveloppe-fiche-infos">
-{% if c.duree_min %}<div><dt>Durée conseillée</dt><dd>{{ c.duree_min|duree }}</dd></div>
+{% if c.duree_min %}<div><dt>Durée</dt><dd>{{ c.duree_min|duree }}</dd></div>
 {% endif %}<div><dt>{{ 'Filières' if c.publics|length > 1 else 'Filière' }}</dt><dd>{% for p in c.publics %}<a href="{{ racine }}annales/{{ p.id }}/">{{ p.nom }}</a>{{ ', ' if not loop.last }}{% endfor %}</dd></div>
-<div><dt>Thème</dt><dd><a href="{{ racine }}{{ c.theme.id }}/">{{ c.theme.nom }}</a></dd></div>
-{% if c.notions %}<div><dt>Notions</dt><dd>{{ c.notions|map('notion')|join(', ')|capitalize }}</dd></div>
-{% endif %}{% if c.origine_texte %}<div><dt>Origine du sujet</dt><dd>{{ c.origine_texte }}</dd></div>
+<div><dt>Thème</dt><dd>{% if c.theme.actif %}<a href="{{ racine }}{{ c.theme.id }}/">{{ c.theme.nom }}</a>{% else %}{{ c.theme.nom }}{% endif %}</dd></div>
+{% if c.notions %}<div><dt>Notions</dt><dd>{{ c.notions|map('notion')|join(', ') }}</dd></div>
+{% endif %}{% if c.origine_texte %}<div><dt>Origine</dt><dd>{{ c.origine_texte }}</dd></div>
 {% endif %}</dl>
 {% if c.contenus_lies %}<p class="enveloppe-fiche-liens">Pour réviser : {% for l in c.contenus_lies %}<a href="{{ racine }}{{ l.chemin }}">{{ l.titre }}</a> ({{ l.type_nom|lower }}){{ ', ' if not loop.last }}{% endfor %}.</p>
-{% endif %}<p class="enveloppe-fiche-action"><a class="btn-jaune" href="#debut-annale">Commencer</a></p>
+{% endif %}<p class="enveloppe-fiche-credit">{{ credit(c) }}</p>
 </div>
 </section>
 {%- endmacro %}
@@ -79,22 +84,23 @@
 {% macro tete(racine, site, umami_script) -%}
 {{ debut() }}
 {% if not site.indexable %}<meta name="robots" content="noindex, nofollow">
-{% endif %}<style>@import url("{{ racine }}_/commun.css") layer(site);</style>
+{% endif %}<link rel="icon" href="data:,">
+<style>@import url("{{ racine }}_/commun.css") layer(site);</style>
 <script src="{{ racine }}_/commun.js" defer></script>
 <script src="{{ racine }}_/projeter.js" defer></script>
 {% if site.umami %}<script defer src="{{ umami_script }}" data-website-id="{{ site.umami }}"></script>
 {% endif %}{{ fin() }}
 {%- endmacro %}
 
+{#- data-page : identifiant de la page, seule propriété des événements de mesure d'audience (commun.js). -#}
 {% macro haut(c, racine, site, avec_fiche=false) -%}
 {{ debut() }}
-<header class="enveloppe-tete"><div class="enveloppe-tete-interieur">
+<header class="enveloppe-tete" data-page="{{ c.id }}"{% if c.type == 'annale' %} data-annale{% endif %}><div class="enveloppe-tete-interieur">
 <a class="logo" href="{{ racine }}">{{ site.nom }}</a>
 {{ fil_ariane(c, racine) }}
 {{ outils(racine) }}
 </div></header>
 {% if avec_fiche %}{{ fiche(c, racine) }}
-<span class="enveloppe-ancre" id="debut-annale"></span>
 {% endif %}{{ fin() }}
 {%- endmacro %}
 

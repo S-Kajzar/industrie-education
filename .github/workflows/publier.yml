@@ -1,5 +1,6 @@
 # Publication du site sur GitHub Pages.
-# À chaque envoi sur main : installation, construction de _site/, tests ; si les tests passent, mise en ligne.
+# À chaque envoi sur main : installation, construction de _site/ (avec le tableau de bord éditorial dans le
+# récapitulatif de l'exécution), tests ; si les tests passent, mise en ligne.
 # Prérequis (une fois) : Settings → Pages → Build and deployment → Source : « GitHub Actions ».
 name: Publier le site
 
@@ -50,6 +51,12 @@ jobs:
 
       - name: Installer Chromium pour les tests
         run: npx playwright install --with-deps chromium
+
+      # Tableau de bord éditorial de Sébastien : publiés et brouillons, annales sans source, cartes sans image, planche
+      # d'accueil, poids de l'accueil, mentions légales, indexation. Des comptes seulement, aucun secret. Affiché dans
+      # le récapitulatif de l'exécution (onglet Actions) ; en cas d'erreur de données, le message s'y trouve aussi.
+      - name: Construire le site et écrire le tableau de bord éditorial
+        run: python3 outils/construire.py --resume "$GITHUB_STEP_SUMMARY"
 
       - name: Construire le site et lancer les tests
         run: npm test

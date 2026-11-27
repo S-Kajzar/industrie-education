@@ -1,9 +1,14 @@
 # Back-office du site : configuration de Pages CMS (https://pagescms.org, licence MIT), TRAME § 9.
 # Mode d'emploi pour Sébastien : GUIDE-BACK-OFFICE.md.
 #
-# Chaque enregistrement fait un commit sur main ; l'Action « Publier le site » construit, teste et publie (quelques
-# minutes). Les listes fermées (types, niveaux, thèmes, filières, licences, statuts) recopient les données de
-# catalogue/ et d'outils/construire.py : le test tests/back-office.spec.js vérifie qu'elles restent synchronisées.
+# Chaque enregistrement fait un commit sur main ; l'Action « Publier le site » construit, teste et publie (environ
+# 2 minutes). Les listes fermées (types, niveaux, thèmes, filières, licences, statuts) recopient les données de
+# catalogue/ et d'outils/ : le test tests/back-office.spec.js vérifie qu'elles restent synchronisées.
+# Rubriques rangées par fréquence d'usage : Annales, Contenus, Images et crédits, Accueil, Notions, Thèmes, Réglages.
+#
+# Notions : Pages CMS 2.1 ne sait pas lire les options d'une liste dans un fichier (les listes « select » sont
+# écrites ici, les « références » ne visent que des rubriques de type collection). Les notions se saisissent donc
+# librement dans les fiches ; la construction refuse un identifiant absent de catalogue/notions.json.
 #
 # Organisation des fichiers choisie pour le back-office (justifiée dans NOTE-DE-LIVRAISON.md) :
 #   - annales : une fiche à plat annales/<id>.json, le fichier HTML dans medias/depots/ ;
@@ -66,7 +71,7 @@ components:
         type: string
   notions:
     label: Notions
-    description: "Identifiants partagés entre contenus et annales (ex. : statique, pfs, roulements) : ils relient une annale aux cours et exercices des mêmes notions."
+    description: "Identifiants de la rubrique Notions (ex. : statique, pfs, roulements), un par ligne : ils relient une annale aux cours et exercices des mêmes notions. Un identifiant absent de la rubrique Notions arrête la publication ; le message propose les identifiants proches."
     type: string
     list:
       collapsible: false
@@ -133,7 +138,7 @@ content:
   # --------------------------------------------------------------------------------------------------------------
   - name: annales
     label: Annales
-    description: "Une fiche par annale produite par le projet Claude « Exercices interactifs ». Publiée sur /annales/<identifiant>/ seulement au statut « relu »."
+    description: "Le plus fréquent : déposer une annale du projet Claude (fichier HTML + fiche). Publiée sur /annales/<identifiant>/ seulement au statut « Relu », avec sa source."
     type: collection
     path: annales
     format: json
@@ -157,12 +162,12 @@ content:
         required: true
       - name: presentation
         label: Présentation
-        description: "Deux ou trois phrases : le système étudié, les parties, la durée. Elles s'affichent dans la fiche au-dessus du sujet et servent de description pour les moteurs de recherche."
+        description: "Deux ou trois phrases (300 caractères au plus) : le système étudié, les parties, la durée. Elles servent de description pour les moteurs de recherche et sur la carte ; la page montre celles du fichier, juste sous la fiche."
         type: text
         required: true
       - name: fichier
         label: Fichier HTML du sujet
-        description: "Le fichier autonome livré par le projet Claude (un seul fichier .html, images intégrées, 5 Mo au plus). Il est publié tel quel, jamais modifié."
+        description: "Le fichier autonome livré par le projet Claude (un seul fichier .html, images intégrées, 3 Mo au plus pour l'envoi par le back-office). Il est publié tel quel, jamais modifié."
         type: file
         required: true
         options:
@@ -198,9 +203,43 @@ content:
             options:
               min: 1950
               max: 2100
+      - name: source
+        label: Source et licence du sujet (obligatoire pour publier)
+        description: "Affichée dans la fiche de l'annale par une ligne de crédit, quel que soit « Afficher l'origine », et sur la page Crédits. Sans source valide, une annale « Relu » arrête la publication."
+        type: object
+        fields:
+          - name: editeur
+            label: Éditeur
+            description: "Ex. : éduscol STI (sujets d'examen sur sti.eduscol.education.fr), éduscol (annales du bac sur eduscol.education.gouv.fr). Il devient le lien de la ligne de crédit."
+            type: string
+          - name: url
+            label: Adresse du document d'origine
+            description: "Adresse complète en https://, celle du fichier téléchargé (sujet ou dossier questionnaire). Obligatoire pour les licences CC BY-NC-SA et Licence Ouverte."
+            type: string
+            pattern:
+              regex: '^$|^https://[^\s/]+\.[^\s/]+(/\S*)?$'
+              message: "Une adresse complète qui commence par https://, ou rien."
+          - name: licence
+            label: Licence
+            description: "CC BY-NC-SA 2.0 FR : sujets d'éduscol STI. Licence Ouverte 2.0 : annales du bac sur eduscol.education.gouv.fr. Autorisation écrite : à référencer ci-dessous. Œuvre personnelle : sujet écrit par vous."
+            type: select
+            options:
+              values:
+                - value: cc-by-nc-sa-2.0-fr
+                  label: CC BY-NC-SA 2.0 FR (éduscol STI)
+                - value: etalab-2.0
+                  label: Licence Ouverte 2.0 (éduscol, annales du bac)
+                - value: autorisation-ecrite
+                  label: Autorisation écrite
+                - value: oeuvre-personnelle
+                  label: Œuvre personnelle
+          - name: reference_autorisation
+            label: Référence de l'autorisation
+            description: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
+            type: string
       - name: afficher_origine
         label: Afficher l'origine sur le site
-        description: "Décoché (par défaut) : le diplôme, l'épreuve et la session n'apparaissent nulle part sur le site. Coché : ils apparaissent dans la fiche, le titre de la page et l'index des annales. Le fichier HTML reste neutre dans les deux cas."
+        description: "Décoché (par défaut) : le diplôme, l'épreuve et la session n'apparaissent nulle part sur le site. Coché : ils apparaissent dans la fiche, le titre de la page et l'index des annales. Le fichier HTML reste neutre dans les deux cas. La ligne de crédit (source) est affichée dans les deux cas."
         type: boolean
         default: false
       - name: statut
@@ -216,7 +255,7 @@ content:
   # --------------------------------------------------------------------------------------------------------------
   - name: contenus
     label: Contenus
-    description: "Une rubrique par collection. Modifier une fiche existante (titre, description, notions, image de carte…) ou créer un nouveau contenu autonome (fiche + fichier HTML)."
+    description: "Une sous-rubrique par collection : modifier une fiche (titre, description, notions, image de carte…) ou créer un nouveau contenu autonome (fiche + fichier HTML)."
     type: group
     items:
       - name: contenus-statique
@@ -326,8 +365,68 @@ content:
         fields: *champs-contenu
 
   # --------------------------------------------------------------------------------------------------------------
+  - name: credits
+    label: Images et crédits
+    description: "Une entrée par image téléversée (carte ou planche) : chemin, auteur, source, licence. Sans entrée ici, la publication s'arrête. Jamais d'image générée par IA, ni de banque d'images."
+    type: file
+    path: medias/CREDITS.json
+    format: json
+    list: true
+    fields:
+      - name: fichier
+        label: Chemin de l'image
+        description: "Tel qu'il apparaît dans la fiche, ex. : medias/cartes/levage-linge.jpg ou medias/illustrations/encyclopedie-forge.png."
+        type: string
+        required: true
+        pattern:
+          regex: '^medias/(cartes|illustrations)/[^/]+\.(jpg|jpeg|png|webp)$'
+          message: "Un chemin de la forme medias/cartes/nom.jpg ou medias/illustrations/nom.png."
+      - name: titre
+        label: Titre de l'œuvre
+        type: string
+        required: true
+      - name: auteur
+        label: Auteur
+        type: string
+      - name: date
+        label: Date (année ou siècle)
+        type: string
+      - name: source
+        label: Source (adresse de la page d'origine)
+        type: string
+      - name: licence
+        label: Licence
+        description: "Domaine public : œuvre ancienne libre de droits (Encyclopédie, brevets américains anciens…). CC0 : dédiée au domaine public par son auteur (musées en accès ouvert). Œuvre personnelle : photo ou dessin de Sébastien. Autorisation écrite : accord écrit du propriétaire (constructeur…), à référencer ci-dessous."
+        type: select
+        required: true
+        options:
+          values:
+            - value: domaine-public
+              label: Domaine public
+            - value: cc0
+              label: CC0
+            - value: oeuvre-personnelle
+              label: Œuvre personnelle
+            - value: autorisation-ecrite
+              label: Autorisation écrite
+      - name: reference_autorisation
+        label: Référence de l'autorisation
+        description: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
+        type: string
+      - name: usage
+        label: Usage sur le site
+        description: "Ex. : carte de l'annale « Levage du linge », planche de l'accueil."
+        type: string
+      - name: decorative
+        label: Image décorative (texte alternatif vide)
+        description: "À cocher seulement si l'image n'apporte aucune information (ex. : planche derrière le titre)."
+        type: boolean
+        default: false
+
+  # --------------------------------------------------------------------------------------------------------------
   - name: accueil
     label: Accueil
+    description: "Contenus à la une, titres et planche de l'accueil, textes des pages Labo et Maquettes."
     type: group
     items:
       - name: a-la-une
@@ -386,11 +485,55 @@ content:
           - name: illustration_accueil
             component: planche
             label: Planche de l'accueil, derrière le titre
+      - name: a-venir
+        label: Labo et Maquettes (à venir)
+        description: "Textes du bloc « Bientôt » de l'accueil et des pages /labo/ et /maquettes/. Une phrase de promesse, sans date."
+        type: file
+        path: catalogue/a-venir.json
+        format: json
+        fields:
+          - name: labo
+            label: Labo
+            type: object
+            fields: &champs-a-venir
+              - name: titre
+                label: Titre
+                type: string
+                required: true
+              - name: promesse
+                label: Promesse (une phrase, sans date)
+                type: text
+                required: true
+              - name: illustration
+                component: planche
+          - name: maquettes
+            label: Maquettes
+            type: object
+            fields: *champs-a-venir
+
+  # --------------------------------------------------------------------------------------------------------------
+  - name: notions
+    label: Notions
+    description: "Ajouter une notion ou renommer son libellé. L'identifiant d'une notion déjà utilisée ne se change pas."
+    type: file
+    path: catalogue/notions.json
+    format: json
+    list: true
+    fields:
+      - name: id
+        component: identifiant
+        label: Identifiant
+        description: "Minuscules sans accent et tirets (ex. : cinematique-graphique). C'est lui qu'on écrit dans les fiches."
+      - name: nom
+        label: Libellé affiché
+        description: "Avec ses accents (ex. : Cinématique graphique)."
+        type: string
+        required: true
 
   # --------------------------------------------------------------------------------------------------------------
   - name: themes
     label: Thèmes
-    description: "Les cinq thèmes du site (leur identifiant et leur adresse ne changent pas)."
+    description: "Les cinq thèmes : nom, exemples, planche. Leur identifiant et leur adresse ne changent pas ; un thème sans contenu publié s'affiche « Bientôt »."
     type: file
     path: catalogue/themes.json
     format: json
@@ -420,67 +563,9 @@ content:
         component: planche
 
   # --------------------------------------------------------------------------------------------------------------
-  - name: credits
-    label: Crédits
-    description: "Une entrée par image téléversée (cartes et planches). Sans entrée ici, ou avec une licence hors liste, la publication s'arrête. Jamais d'image générée par IA, ni de banque d'images."
-    type: file
-    path: medias/CREDITS.json
-    format: json
-    list: true
-    fields:
-      - name: fichier
-        label: Chemin de l'image
-        description: "Tel qu'il apparaît dans la fiche, ex. : medias/cartes/levage-linge.jpg ou medias/illustrations/encyclopedie-forge.png."
-        type: string
-        required: true
-        pattern:
-          regex: '^medias/(cartes|illustrations)/[^/]+\.(jpg|jpeg|png|webp)$'
-          message: "Un chemin de la forme medias/cartes/nom.jpg ou medias/illustrations/nom.png."
-      - name: titre
-        label: Titre de l'œuvre
-        type: string
-        required: true
-      - name: auteur
-        label: Auteur
-        type: string
-      - name: date
-        label: Date (année ou siècle)
-        type: string
-      - name: source
-        label: Source (adresse de la page d'origine)
-        type: string
-      - name: licence
-        label: Licence
-        description: "Domaine public : œuvre ancienne libre de droits (Encyclopédie, brevets américains anciens…). CC0 : dédiée au domaine public par son auteur (musées en accès ouvert). Œuvre personnelle : photo ou dessin de Sébastien. Autorisation écrite : accord écrit du propriétaire (constructeur…), à référencer ci-dessous."
-        type: select
-        required: true
-        options:
-          values:
-            - value: domaine-public
-              label: Domaine public
-            - value: cc0
-              label: CC0
-            - value: oeuvre-personnelle
-              label: Œuvre personnelle
-            - value: autorisation-ecrite
-              label: Autorisation écrite
-      - name: reference_autorisation
-        label: Référence de l'autorisation
-        description: "Obligatoire pour une autorisation écrite : qui, quand, par quel écrit (ex. : courriel de la société X du 12/03/2027)."
-        type: string
-      - name: usage
-        label: Usage sur le site
-        description: "Ex. : carte de l'annale « Levage du linge », planche de l'accueil."
-        type: string
-      - name: decorative
-        label: Image décorative (texte alternatif vide)
-        description: "À cocher seulement si l'image n'apporte aucune information (ex. : planche derrière le titre)."
-        type: boolean
-        default: false
-
-  # --------------------------------------------------------------------------------------------------------------
   - name: reglages
     label: Réglages du site
+    description: "Mentions légales (éditeur, contact), mesure d'audience Umami, ouverture aux moteurs de recherche."
     type: file
     path: site.json
     format: json
@@ -512,7 +597,14 @@ content:
         pattern:
           regex: '^$|^[0-9a-fA-F-]{8,}$'
           message: "L'identifiant du site donné par Umami (lettres a-f, chiffres et tirets)."
+      - name: umami_script
+        label: Adresse du script Umami
+        description: "Celle du code de suivi donné par Umami (attribut src), elle dépend de la région choisie à la création du compte. Par défaut : https://cloud.umami.is/script.js."
+        type: string
+        pattern:
+          regex: '^https://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(:[0-9]+)?/\S*$'
+          message: "Une adresse complète qui commence par https:// (ex. : https://cloud.umami.is/script.js)."
       - name: indexable
         label: Ouvert aux moteurs de recherche
-        description: "Décoché tant que le site est en préproduction. À cocher seulement à la bascule sur le domaine industrie.education."
+        description: "Décoché tant que le site est en préproduction. À cocher seulement à la bascule sur le domaine industrie.education. Refusé tant que le nom de l'éditeur, le directeur de la publication ou l'adresse de contact sont vides."
         type: boolean

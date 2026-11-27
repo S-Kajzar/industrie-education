@@ -77,13 +77,13 @@ Règles :
 | En-tête du site | Bande blanche, bordure basse 2 px. Logo : rail jaune + « industrie.education » en titre 800. Liens Catalogue, Annales, Enseignants, bouton « Projeter » | `.site-tete` |
 | Pied de page | Liens de service, mention « gratuit, sans compte, sans cookie » | `.site-pied` |
 | Titre d'accueil | Grand titre sur rail jaune de 10 px, change selon le moment (voir § 7) | `.accueil-titre` |
-| Index des thèmes | Lignes bordées de noir : carré encre à chiffre jaune, nom du thème, exemples, nombre | `.index-themes` |
+| Index des thèmes | Lignes bordées de noir : carré encre à chiffre jaune, nom du thème, exemples, nombre de contenus et d'annales. Un thème sans contenu publié : carré `--trait-fin` à chiffre `--encre-2`, texte `--encre-2`, « Bientôt » à la place du nombre, sans lien | `.index-themes`, `.index-bientot` |
 | Titre de page | H1 sur rail jaune, sous-titre en `--encre-2` | `.page-titre` |
 | Recherche | Champ bordé 2 px + bouton jaune collé | `.recherche` |
 | Bloc de filtres | En-tête encre à texte jaune, options en lignes de 44 px min., sélection en `--jaune-pale` + gras | `.filtre` |
 | Carte de contenu | Bordure 2 px, rail jaune gauche 8 px, en tête **l'image de la carte si elle existe, sinon le bandeau typographique**, puis badges, titre, collection | `.carte` |
 | Image de carte | Format 16/9 recadré, fond blanc, bordure basse 2 px encre, `loading="lazy"`, texte alternatif ; même hauteur que le bandeau pour que la grille reste alignée | `.carte-image` |
-| Bandeau typographique | Fond encre, thème en petites capitales grises, collection en titre jaune. Utilisé quand la carte n'a pas d'image | `.carte-bandeau` |
+| Bandeau typographique | Fond encre tramé d'un quadrillage de 16 px (papier millimétré, `--encre-2` à 45 %), thème en petites capitales grises, collection en titre jaune. Utilisé quand la carte n'a pas d'image : la trame en fait un visuel fini, pas un emplacement vide | `.carte-bandeau` |
 | Badges | Type : fond jaune. Niveau : fond vert, texte blanc. Thème : bordure `--trait` | `.badge`, `.badge-niveau`, `.badge-theme` |
 | Bouton principal | Fond jaune, bordure encre 2 px, texte encre | `.btn-jaune` |
 | Bouton secondaire | Fond encre, texte blanc (bouton `.btn` de la charte) | `.btn` |
@@ -91,7 +91,9 @@ Règles :
 | Calque Projeter | Plein écran, QR code d'au moins 60 % de la hauteur, adresse, « Copier le lien », Échap | `.projeter` |
 | Bouton « Signaler une erreur » | Lien discret en bas de chaque contenu | `.signaler` |
 | Illustration de fond | Planche technique traitée (§ 9) derrière le titre d'accueil ou d'une page de thème | `.illustration-fond` |
-| Bloc « Bientôt » | Accueil : Labo et Maquettes à venir, chacun avec sa planche, sa promesse en une phrase et un lien | `.bientot` |
+| Bloc « Bientôt » | Accueil, rangée après « Annales » (grille M1 : étiquette sur 2 colonnes, corps sur 10) : Labo et Maquettes à venir, deux cases bordées de 2 px, chacune avec sa vignette de planche si elle existe, son titre et sa promesse en une phrase, toute la case est le lien. Pages `/labo/` et `/maquettes/` : la promesse en grand titre dans un cadre à rail jaune, surmontée de « Bientôt » ; aucune date, aucun formulaire | `.bientot`, `.bientot-page` |
+| Fiche d'annale | Bandeau compact au-dessus du fichier autonome, dans l'enveloppe : fond papier, rail jaune de 10 px, texte 0,875 rem. Surtitre en petites capitales `--encre-2` (« Annale corrigée et interactive · filières »), puis en ligne : durée, filières, thème, notions (libellé et valeur en gras), « Pour réviser » (liens bleus), ligne de crédit. Pas de titre ni de présentation : ceux du fichier suivent juste en dessous. Au plus 300 px de haut à 360 px ; à 1280 × 800, le titre du sujet reste au premier écran. Masquée en projection et à l'impression | `.enveloppe-fiche` |
+| Ligne de crédit | Dernière ligne de la fiche d'annale, 0,75 rem, `--encre-2`, lien bleu sur le nom de l'éditeur ; toujours affichée, quel que soit `afficher_origine`. Reprise sur la page Crédits | `.enveloppe-fiche-credit`, `.credit-ligne` |
 
 ## 6. Comportements
 

@@ -1,0 +1,23 @@
+{#- Labo et Maquettes tant qu'ils sont « à venir » (TRAME § 6) : titre, planche facultative et bloc « Bientôt »
+    (DESIGN § 5) avec la promesse de catalogue/a-venir.json. Aucune date, aucun formulaire. -#}
+{% extends "base.html" %}
+{% from "_composants.html" import illustration %}
+{% block corps %}
+<main id="contenu" class="conteneur">
+<div class="service-tete section-tete">
+<div class="page-titre">
+<h1>{{ section.titre }}</h1>
+<p>Bientôt sur {{ site.nom }}</p>
+</div>
+{% if section.planche %}{{ illustration(section.planche, racine, 'illustration-section', '(max-width: 640px) 100vw, 480px', 'eager') }}
+{% endif -%}
+</div>
+<div class="service-corps">
+<div class="bientot bientot-page">
+<p class="bientot-titre">Bientôt</p>
+<p class="bientot-promesse">{{ section.promesse }}</p>
+</div>
+<p>Cette rubrique est en préparation. En attendant, les cours, exercices et études de cas sont dans le <a href="{{ racine }}catalogue/">catalogue</a>, et les sujets d’examen corrigés dans les <a href="{{ racine }}annales/">annales</a>.</p>
+</div>
+</main>
+{% endblock %}

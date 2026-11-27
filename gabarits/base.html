@@ -6,12 +6,13 @@
 <title>{{ titre_document }}</title>
 <meta name="description" content="{{ description }}">
 {% if not site.indexable %}<meta name="robots" content="noindex, nofollow">
-{% endif %}<link rel="stylesheet" href="{{ racine }}_/commun.css">
+{% endif %}<link rel="icon" href="data:,">
+<link rel="stylesheet" href="{{ racine }}_/commun.css">
 <script src="{{ racine }}_/commun.js" defer></script>
 <script src="{{ racine }}_/projeter.js" defer></script>
 {% if site.umami %}<script defer src="{{ umami_script }}" data-website-id="{{ site.umami }}"></script>
 {% endif %}</head>
-<body class="{{ registre }}{% if avec_bande %} avec-bande{% endif %}">
+<body class="{{ registre }}{% if avec_bande %} avec-bande{% endif %}" data-page="{{ chemin.rstrip('/') or 'accueil' }}">
 <a class="lien-evitement" href="#contenu">Aller au contenu</a>
 <header class="site-tete">
 <div class="conteneur">

@@ -8,7 +8,7 @@
 <div class="page-titre">
 <h1>{{ collection.titre }}</h1>
 <p>{{ collection.description }}</p>
-<p><a href="{{ racine }}{{ collection.theme.id }}/">{{ collection.theme.nom }}</a>
+<p>{% if collection.theme.actif %}<a href="{{ racine }}{{ collection.theme.id }}/">{{ collection.theme.nom }}</a>{% else %}{{ collection.theme.nom }}{% endif %}
 {%- for p in collection.publics %} · {% if p.actif %}<a href="{{ racine }}{{ p.id }}/">{{ p.nom }}</a>{% else %}{{ p.nom }}{% endif %}{% endfor %} · {{ collection.contenus|length|pluriel('contenu') }}</p>
 </div>
 </div>

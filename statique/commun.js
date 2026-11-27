@@ -1,7 +1,9 @@
 /* industrie.education — commun.js
-   Trois améliorations progressives : titre évolutif de l'accueil, filtres du catalogue, mode projection.
+   Améliorations progressives : titre évolutif de l'accueil, filtres du catalogue, mode projection, et comptage
+   anonyme de quelques actions quand la mesure d'audience Umami est active.
    Sans ce script, chaque page reste complète (titre par défaut, toutes les cartes affichées).
-   Aucun cookie, aucun stockage, aucune requête : tout se calcule dans le navigateur. */
+   Aucun cookie, aucun stockage, aucune requête : tout se calcule dans le navigateur. Les seuls envois sont ceux du
+   script Umami (s'il est configuré dans site.json), via window.umami.track(). */
 (function () {
   'use strict';
 
@@ -111,8 +113,31 @@
       var p = new URLSearchParams();
       PARAMETRES.forEach(function (cle) { if (etat[cle]) p.set(cle, etat[cle]); });
       var requete = p.toString();
-      window.history.replaceState(null, '', window.location.pathname + (requete ? '?' + requete : '') + window.location.hash);
+      var adresse = window.location.pathname + (requete ? '?' + requete : '') + window.location.hash;
+      if (adresse !== window.location.pathname + window.location.search + window.location.hash) {
+        window.history.replaceState(null, '', adresse);
+      }
     }
+
+    // Pendant la frappe dans la recherche, l'adresse n'est réécrite qu'après une pause : Umami compte une page vue à
+    // chaque changement d'adresse, et une recherche ne doit pas compter une page par lettre. Elle est écrite tout de
+    // suite avant de quitter la page, de suivre un lien ou de projeter (le QR code reprend l'adresse).
+    var attente = null;
+    function ecrirePlusTard() {
+      window.clearTimeout(attente);
+      attente = window.setTimeout(function () { attente = null; ecrireAdresse(); }, 800);
+    }
+    function ecrireSiEnAttente() {
+      if (attente === null) return;
+      window.clearTimeout(attente);
+      attente = null;
+      ecrireAdresse();
+    }
+    document.addEventListener('click', function (evenement) {
+      var cible = evenement.target;
+      if (cible && cible.closest && cible.closest('a[href], [data-projeter]')) ecrireSiEnAttente();
+    }, true);
+    window.addEventListener('pagehide', ecrireSiEnAttente);
 
     function correspond(carte, e, mots) {
       if (e.theme && carte.theme !== e.theme) return false;
@@ -173,7 +198,11 @@
         var marque = ouvrir.querySelector('[data-filtres-actifs]');
         if (marque) marque.textContent = nbFiltres ? pluriel(nbFiltres, 'actif') : '';
       }
-      if (ecrire) ecrireAdresse();
+      if (ecrire) {
+        window.clearTimeout(attente);
+        attente = null;
+        ecrireAdresse();
+      }
     }
 
     boutons.forEach(function (b) {
@@ -190,8 +219,10 @@
       champ.value = etat.q;
       champ.addEventListener('input', function () {
         etat.q = champ.value.trim();
-        appliquer(true);
+        appliquer(false);
+        ecrirePlusTard();
       });
+      champ.addEventListener('blur', ecrireSiEnAttente);
     }
     if (formulaire) {
       formulaire.addEventListener('submit', function (evenement) {
@@ -251,10 +282,47 @@
     });
   }
 
+  /* ---------- mesure d'audience : cinq actions comptées, sans donnée personnelle ---------- */
+
+  // Boutons des annales, reconnus à leur libellé, fixé par le gabarit du projet Claude « Exercices interactifs » :
+  // rien n'est ajouté dans le fichier autonome, les clics sont écoutés depuis l'enveloppe (délégation).
+  var ACTIONS_ANNALE = {
+    'commencer l\'entrainement': 'annale-entrainement',
+    'composer en mode examen': 'annale-examen',
+    'j\'ai fini, je fais corriger ma copie': 'annale-copie-corrigee',
+    'imprimer ma copie': 'annale-impression'
+  };
+
+  // Envoi d'un événement, seulement si le script Umami est chargé. Seule propriété : l'identifiant de la page.
+  function envoyerEvenement(nom) {
+    var umami = window.umami;
+    if (!umami || typeof umami.track !== 'function') return;
+    var porteur = document.querySelector('[data-page]');
+    try {
+      umami.track(nom, { page: porteur ? porteur.getAttribute('data-page') : '' });
+    } catch (erreur) { /* la mesure d'audience ne doit jamais gêner la page */ }
+  }
+
+  function mesureAudience() {
+    var annale = document.querySelector('[data-annale]');
+    document.addEventListener('click', function (evenement) {
+      var cible = evenement.target;
+      if (!cible || !cible.closest) return;
+      if (cible.closest('[data-projeter]')) {
+        envoyerEvenement('projeter');
+        return;
+      }
+      var bouton = annale ? cible.closest('button') : null;
+      var nom = bouton ? ACTIONS_ANNALE[normaliser(bouton.textContent)] : null;
+      if (nom) envoyerEvenement(nom);
+    }, true);
+  }
+
   function demarrer() {
     titreEvolutif();
     catalogue();
     projection();
+    mesureAudience();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', demarrer);

@@ -20,11 +20,17 @@
   ],
   "duree_min": 300,
   "origine": {
-    "diplome": "",
-    "epreuve": "",
-    "session": null
+    "diplome": "BTS Maintenance industrielle",
+    "epreuve": "E4",
+    "session": 2013
   },
   "afficher_origine": false,
+  "source": {
+    "editeur": "éduscol STI",
+    "url": "https://sti.eduscol.education.fr/sites/eduscol.education.fr.sti/files/concours-examens/5111/5111-dossier-questionnaire-epreuve-e4-bts-mi-2013-metropole.docx",
+    "licence": "cc-by-nc-sa-2.0-fr",
+    "reference_autorisation": ""
+  },
   "statut": "relu",
   "mis_a_jour": "2026-11-26"
 }

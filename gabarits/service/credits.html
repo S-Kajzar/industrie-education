@@ -1,7 +1,9 @@
-{#- Page /credits/ : générée depuis medias/CREDITS.json (TRAME § 10). -#}
+{#- Page /credits/ : images (medias/CREDITS.json, TRAME § 10) et annales publiées (champ « source », TRAME § 11). -#}
+{%- from "_enveloppe.html" import credit -%}
 <p>Les images du site sont des planches techniques anciennes du domaine public ou sous CC0, des photos et dessins de
 l’auteur, ou des images publiées avec l’autorisation écrite de leur propriétaire. Aucune n’est générée par une
-intelligence artificielle.</p>
+intelligence artificielle. Les annales sont adaptées de sujets publiés sous licence Creative Commons ou Licence
+Ouverte, ou avec l’autorisation écrite de leur éditeur.</p>
 
 {% if credits -%}
 <h2 id="images">Images</h2>
@@ -21,6 +23,23 @@ intelligence artificielle.</p>
 </ul>
 {%- else -%}
 <p class="etat-vide">Aucune image n’est encore publiée : les cartes affichent un bandeau typographique.</p>
+{%- endif %}
+
+{% if annales -%}
+<h2 id="annales">Annales</h2>
+<ul class="credits">
+{% for a in annales -%}
+<li class="credit">
+<p class="credit-titre"><a href="{{ racine }}{{ a.chemin }}">{{ a.titre }}</a></p>
+<dl class="fiche">
+{% if a.credit.editeur %}<dt>Éditeur</dt><dd>{{ a.credit.editeur }}</dd>
+{% endif %}{% if a.credit.url %}<dt>Source</dt><dd><a href="{{ a.credit.url }}">{{ a.credit.url }}</a></dd>
+{% endif %}<dt>Licence</dt><dd>{{ a.credit.licence_nom }}{% if a.credit.reference_autorisation %} ({{ a.credit.reference_autorisation }}){% endif %}</dd>
+</dl>
+<p class="credit-ligne">{{ credit(a) }}</p>
+</li>
+{% endfor -%}
+</ul>
 {%- endif %}
 
 <h2 id="polices-et-programmes">Polices et programmes</h2>

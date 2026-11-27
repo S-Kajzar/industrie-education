@@ -100,10 +100,15 @@ test('Umami : script inséré sur chaque page, contenus repris compris, quand si
   });
 });
 
+// Mentions légales complètes : condition pour ouvrir le site aux moteurs (lot 1c).
+const MENTIONS = {
+  editeur: { nom: 'Éditeur d’essai', adresse: '', directeur_publication: 'Directeur d’essai' }, contact: 'contact@exemple.test',
+};
+
 test('indexable : robots.txt ouvert avec le sitemap, plus de noindex', () => {
   avecDepot((ecrire) => {
     const site = JSON.parse(fs.readFileSync(path.join(DEPOT, 'site.json'), 'utf8'));
-    ecrire('site.json', { ...site, indexable: true });
+    ecrire('site.json', { ...site, ...MENTIONS, indexable: true });
   }, (resultat, racine) => {
     expect(resultat.status, resultat.stderr).toBe(0);
     const robots = fs.readFileSync(path.join(racine, '_site', 'robots.txt'), 'utf8');
@@ -111,5 +116,21 @@ test('indexable : robots.txt ouvert avec le sitemap, plus de noindex', () => {
     expect(robots).not.toMatch(/^Disallow/m);
     expect(robots).toContain(`Sitemap: ${site.origine}${site.base}sitemap.xml`);
     for (const page of pagesHtml(path.join(racine, '_site'))) expect(fs.readFileSync(page, 'utf8'), page).not.toContain('noindex');
+  });
+});
+
+test('umami_script : adresse https complète exigée ; l’adresse donnée remplace celle par défaut', () => {
+  const IDENTIFIANT = '0f3c4b5a-1234-4cde-9abc-0123456789ab';
+  const reglages = () => JSON.parse(fs.readFileSync(path.join(DEPOT, 'site.json'), 'utf8'));
+  for (const mauvaise of ['http://cloud.umami.is/script.js', 'cloud.umami.is/script.js', 'https://']) {
+    avecDepot((ecrire) => ecrire('site.json', { ...reglages(), umami: IDENTIFIANT, umami_script: mauvaise }), (resultat) => {
+      expect(resultat.status, mauvaise).toBe(1);
+      expect(resultat.stderr).toContain('« umami_script » doit être l’adresse complète du script Umami, en https://');
+    });
+  }
+  avecDepot((ecrire) => ecrire('site.json', { ...reglages(), umami: IDENTIFIANT, umami_script: 'https://eu.umami.exemple/script.js' }), (resultat, racine) => {
+    expect(resultat.status, resultat.stderr).toBe(0);
+    expect(fs.readFileSync(path.join(racine, '_site', 'index.html'), 'utf8'))
+      .toContain(`<script defer src="https://eu.umami.exemple/script.js" data-website-id="${IDENTIFIANT}"></script>`);
   });
 });

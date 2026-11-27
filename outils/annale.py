@@ -12,9 +12,13 @@ ancien dépôt) est publié tel quel, seulement enveloppé. Avant cela, on véri
 
 Chaque problème est signalé avec le fichier et la ligne.
 
-Usage : python3 outils/annale.py FICHIER.html [FICHIER.html …]
+Pour une fiche d'annale (annales/<id>.json), on contrôle aussi le champ « source » (éditeur, adresse, licence de la
+liste fermée, référence d'une autorisation écrite), obligatoire pour publier, puis le fichier HTML qu'elle cite.
+
+Usage : python3 outils/annale.py FICHIER.html|FICHE.json [… autres fichiers]
 """
 
+import json
 import re
 import sys
 from html.parser import HTMLParser
@@ -22,6 +26,58 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 TAILLE_MAX = 5 * 1024 * 1024
+
+# Licences d'une annale (champ « source » de annale.json), liste fermée, avec la ligne de crédit affichée dans la
+# fiche du site ; {editeur} devient un lien vers la source.
+LICENCES_ANNALE = {
+    "cc-by-nc-sa-2.0-fr": {
+        "nom": "CC BY-NC-SA 2.0 FR",
+        "credit": "D’après un sujet publié par {editeur}, licence CC BY-NC-SA 2.0 FR. Adaptation interactive : "
+                  "industrie.education, sous la même licence.",
+    },
+    "etalab-2.0": {
+        "nom": "Licence Ouverte 2.0 (Etalab)",
+        "credit": "D’après un document publié par {editeur}, Licence Ouverte 2.0. Adaptation : industrie.education.",
+    },
+    "autorisation-ecrite": {
+        "nom": "Autorisation écrite",
+        "credit": "Reproduit avec l’autorisation de {editeur}.",
+    },
+    "oeuvre-personnelle": {
+        "nom": "Œuvre personnelle",
+        "credit": "Sujet original : industrie.education.",
+    },
+}
+# Licences ouvertes : l'attribution demande l'éditeur et l'adresse du document d'origine.
+LICENCES_AVEC_ADRESSE = ("cc-by-nc-sa-2.0-fr", "etalab-2.0")
+URL_SOURCE = re.compile(r"^https://[^\s/]+\.[^\s/]+(/\S*)?$")
+
+
+def controler_source(source, ou):
+    """Champ « source » d'une fiche d'annale : liste des problèmes, vide si la source permet de publier."""
+    if not isinstance(source, dict) or not any(str(v or "").strip() for v in source.values()):
+        return [f"{ou} : champ « source » manquant : renseignez l'éditeur, l'adresse et la licence du sujet "
+                "(rubrique Annales du back-office), obligatoires pour publier."]
+    problemes = []
+    licence = source.get("licence")
+    editeur = str(source.get("editeur") or "").strip()
+    adresse = str(source.get("url") or "").strip()
+    reference = str(source.get("reference_autorisation") or "").strip()
+    if licence not in LICENCES_ANNALE:
+        problemes.append(f"{ou} : licence de la source non acceptée « {licence or ''} ». Licences possibles : "
+                         f"{', '.join(LICENCES_ANNALE)}.")
+    if licence != "oeuvre-personnelle" and not editeur:
+        problemes.append(f"{ou} : éditeur de la source manquant (ex. « éduscol STI »).")
+    if licence in LICENCES_AVEC_ADRESSE and not adresse:
+        problemes.append(f"{ou} : adresse (url) de la source manquante : l'attribution exige un lien vers le document "
+                         "d'origine.")
+    if adresse and not URL_SOURCE.match(adresse):
+        problemes.append(f"{ou} : adresse de la source invalide « {adresse[:90]} » : une adresse complète en https:// "
+                         "est attendue.")
+    if licence == "autorisation-ecrite" and not reference:
+        problemes.append(f"{ou} : autorisation écrite sans référence : renseignez « reference_autorisation » (qui a "
+                         "autorisé, quand, par quel écrit).")
+    return problemes
 
 # Attributs qui chargent une ressource (sauf sur <a> et <area>, où href est un lien de navigation).
 ATTRIBUTS_RESSOURCE = {
@@ -174,13 +230,30 @@ def controler(chemin, nom=None, dossier_ressources=None, taille_max=TAILLE_MAX):
     return problemes
 
 
+def controler_fiche(chemin):
+    """Fiche d'annale (JSON) : source obligatoire, puis le fichier HTML cité par « fichier »."""
+    chemin = Path(chemin)
+    try:
+        fiche = json.loads(chemin.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as erreur:
+        return [f"{chemin} : fiche illisible ({erreur})."]
+    if not isinstance(fiche, dict):
+        return [f"{chemin} : un objet JSON est attendu."]
+    problemes = controler_source(fiche.get("source"), str(chemin))
+    fichier = str(fiche.get("fichier") or "").strip().lstrip("/")
+    if fichier:
+        racine = next((p for p in chemin.resolve().parents if (p / "medias").is_dir()), chemin.resolve().parent)
+        problemes += controler(racine / fichier, fichier)
+    return problemes
+
+
 def main(arguments):
     if not arguments:
         print(__doc__)
         return 2
     code = 0
     for fichier in arguments:
-        problemes = controler(fichier)
+        problemes = controler_fiche(fichier) if fichier.endswith(".json") else controler(fichier)
         if problemes:
             code = 1
             print("\n".join(problemes))

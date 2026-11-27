@@ -2,8 +2,8 @@
 // de S-Kajzar/etude-systeme-dechargement-et-levage-de-linge, publié tel quel et enveloppé. On vérifie que le fichier
 // publié est l'original plus les seuls ajouts de l'enveloppe, qu'aucun de ses styles n'est modifié, et qu'il
 // fonctionne enveloppé : modes entraînement et examen, documents, tracés, impression, fenêtre « Imprimer les DR »,
-// sans erreur JavaScript ni requête vers un autre site. Le dépôt d'origine ne contient pas de réponses de test :
-// le 20/20 n'est pas vérifié (une réponse fausse et sa correction le sont).
+// sans erreur JavaScript ni requête vers un autre site. La fiche du site, au-dessus du fichier, est un bandeau
+// compact (lot 1c). Le 20/20 de chaque annale est vérifié par tests/annale-parfaite.spec.js.
 'use strict';
 
 const fs = require('node:fs');
@@ -65,23 +65,47 @@ test('aucun style du fichier n’est modifié, élément par élément (accueil 
   }
 });
 
-test('fiche indexable au-dessus du sujet : titre, présentation, durée, filière, notions, liens, « Commencer »', async ({ page, baseURL }) => {
+test('fiche compacte au-dessus du sujet : informations, « Pour réviser », crédit ; ni titre ni présentation répétés', async ({ page, baseURL }) => {
   const { erreurs } = await ouvrir(page, baseURL);
+  // Titre et description du site inchangés (premiers <title> et meta description du document).
   expect(await page.title()).toBe(`${ANNALE.titre} : sujet corrigé interactif (BTS MS) — industrie.education`);
+  expect(await page.locator('meta[name="description"]').first().getAttribute('content')).toBe(ANNALE.presentation);
   const fiche = page.locator('.enveloppe-fiche');
-  await expect(fiche.locator('.enveloppe-fiche-titre')).toHaveText(ANNALE.titre);
-  await expect(fiche.locator('.enveloppe-fiche-presentation')).toHaveText(ANNALE.presentation);
-  await expect(fiche).toContainText('Durée conseillée5 h');
-  await expect(fiche.getByRole('link', { name: 'BTS MS' })).toHaveAttribute('href', '../../annales/bts-ms/');
-  await expect(fiche).toContainText('Statique, dynamique');
-  await expect(fiche.getByRole('link', { name: 'Cadre de vélo tout terrain' })).toHaveAttribute('href', '../../statique/cadre-velo/');
-  // Un seul h1 affiché : celui du sujet ; la fiche n'en ajoute pas.
+  await expect(fiche).not.toContainText(ANNALE.titre);
+  await expect(fiche).not.toContainText(ANNALE.presentation);
+  await expect(fiche.locator('.enveloppe-fiche-surtitre')).toHaveText('Annale corrigée et interactive · BTS MS');
+  const info = (terme) => fiche.locator('.enveloppe-fiche-infos > div').filter({ has: page.locator('dt', { hasText: terme }) }).locator('dd');
+  await expect(info('Durée')).toHaveText('5 h');
+  await expect(info('Filière').getByRole('link', { name: 'BTS MS' })).toHaveAttribute('href', '../../annales/bts-ms/');
+  await expect(info('Thème').getByRole('link', { name: 'Mécanique et conception' })).toHaveAttribute('href', '../../mecanique/');
+  // Libellés de catalogue/notions.json, accentués.
+  await expect(info('Notions')).toHaveText('Statique, Dynamique, Cinématique graphique, Roulements, Liaisons mécaniques');
+  await expect(fiche.locator('.enveloppe-fiche-liens').getByRole('link', { name: 'Cadre de vélo tout terrain' }))
+    .toHaveAttribute('href', '../../statique/cadre-velo/');
+  // Ligne de crédit (licence CC BY-NC-SA), lien sur le nom de l'éditeur ; l'origine n'est pas affichée.
+  const credit = fiche.locator('.enveloppe-fiche-credit');
+  await expect(credit).toHaveText('D’après un sujet publié par éduscol STI, licence CC BY-NC-SA 2.0 FR. Adaptation '
+    + 'interactive : industrie.education, sous la même licence.');
+  await expect(credit.getByRole('link', { name: 'éduscol STI' })).toHaveAttribute('href', ANNALE.source.url);
+  expect(ANNALE.afficher_origine).toBe(false);
+  await expect(page.locator('body')).not.toContainText(ANNALE.origine.diplome);
+  // Plus de bouton « Commencer » : le titre du sujet est juste sous la fiche. Un seul h1 affiché, celui du sujet.
+  await expect(fiche.getByRole('link', { name: 'Commencer' })).toHaveCount(0);
   await expect(page.locator('h1:visible')).toHaveCount(1);
-  await fiche.getByRole('link', { name: 'Commencer' }).click();
-  await expect(page).toHaveURL(/#debut-annale$/);
-  // Le début du sujet (son titre) vient en haut de l'écran.
-  await expect(page.locator('#home h1')).toBeInViewport();
   expect(erreurs).toEqual([]);
+});
+
+test('fiche : au plus 300 px de haut à 360 px de large ; titre du sujet visible sans défiler à 1280 × 800', async ({ browser, baseURL }) => {
+  for (const [largeur, hauteur] of [[360, 740], [1280, 800]]) {
+    const contexte = await browser.newContext({ viewport: { width: largeur, height: hauteur } });
+    const page = await contexte.newPage();
+    await page.goto(new URL(CHEMIN, baseURL).href);
+    const fiche = await page.locator('.enveloppe-fiche').boundingBox();
+    const titre = await page.locator('#home h1').boundingBox();
+    if (largeur === 360) expect(fiche.height, 'hauteur de la fiche à 360 px').toBeLessThanOrEqual(300);
+    else expect(titre.y + titre.height, 'bas du titre du sujet à 1280 × 800').toBeLessThanOrEqual(hauteur);
+    await contexte.close();
+  }
 });
 
 test('entraînement : documents, correction d’une réponse fausse, tracé, plein écran, « Imprimer les DR »', async ({ page, baseURL }) => {

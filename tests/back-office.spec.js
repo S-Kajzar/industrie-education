@@ -17,8 +17,10 @@ const CONFIG = DOCUMENT.toJSON();
 // Listes fermées de la construction (outils/construire.py), lues dans le code lui-même.
 const CONSTANTES = JSON.parse(spawnSync('python3', ['-c', [
   'import json, sys', `sys.path.insert(0, ${JSON.stringify(path.join(DEPOT, 'outils'))})`, 'import construire as c',
+  'import annale as a',
   'print(json.dumps({"types": list(c.TYPES), "niveaux": [str(n) for n in c.NIVEAUX], "licences": list(c.LICENCES),'
-  + ' "statuts": list(c.STATUTS), "identifiant": c.IDENTIFIANT.pattern}))',
+  + ' "statuts": list(c.STATUTS), "identifiant": c.IDENTIFIANT.pattern, "licences_annale": list(a.LICENCES_ANNALE),'
+  + ' "a_venir": list(c.A_VENIR)}))',
 ].join('\n')], { encoding: 'utf8' }).stdout);
 
 // Champ avec sa définition de composant fusionnée, comme le fait Pages CMS (resolveComponent).
@@ -48,9 +50,10 @@ test('.pages.yml est valide selon le schéma de configuration de Pages CMS', asy
   expect(resultat.success ? [] : resultat.error.errors.map((e) => `${e.path.join('.')} : ${e.message}`)).toEqual([]);
 });
 
-test('rubriques dans l’ordre demandé, libellés en français', () => {
+test('rubriques rangées par fréquence d’usage, libellés en français, une ligne d’aide chacune', () => {
   expect(CONFIG.content.map((e) => e.label))
-    .toEqual(['Annales', 'Contenus', 'Accueil', 'Thèmes', 'Crédits', 'Réglages du site']);
+    .toEqual(['Annales', 'Contenus', 'Images et crédits', 'Accueil', 'Notions', 'Thèmes', 'Réglages du site']);
+  for (const e of CONFIG.content) expect(e.description, e.label).toBeTruthy();
   expect(CONFIG.media.map((m) => m.input)).toEqual(['medias/cartes', 'medias/illustrations', 'medias/depots']);
   expect(CONFIG.settings.content.merge).toBe(true);
 });
@@ -86,6 +89,19 @@ test('listes fermées synchronisées avec les données et la construction', () =
     expect(valeurs(champs(e, 'statut')), e.name).toEqual(CONSTANTES.statuts);
   }
   expect(valeurs(champs(credits, 'licence'))).toEqual(CONSTANTES.licences);
+  // Source des annales : licences de outils/annale.py.
+  const source = champs(annales, 'source');
+  expect(source.fields.map((f) => f.name)).toEqual(['editeur', 'url', 'licence', 'reference_autorisation']);
+  expect(valeurs(source.fields.find((f) => f.name === 'licence'))).toEqual(CONSTANTES.licences_annale);
+  // Labo et Maquettes : les deux sections attendues par la construction.
+  const aVenir = entrees().find((e) => e.name === 'a-venir');
+  expect(aVenir.fields.map((f) => f.name)).toEqual(CONSTANTES.a_venir);
+  expect(Object.keys(lireJSON('catalogue/a-venir.json'))).toEqual(CONSTANTES.a_venir);
+  // Notions : identifiant au même format que la construction ; Umami : adresse https.
+  expect(champs(entrees().find((e) => e.name === 'notions'), 'id').pattern.regex).toBe(CONFIG.components.identifiant.pattern.regex);
+  const script = champs(entrees().find((e) => e.name === 'reglages'), 'umami_script');
+  expect(new RegExp(script.pattern.regex).test(lireJSON('site.json').umami_script)).toBe(true);
+  expect(new RegExp(script.pattern.regex).test('http://cloud.umami.is/script.js')).toBe(false);
   // Identifiants imposés en minuscules, sans accent, avec des tirets : même règle que la construction.
   expect(new RegExp(CONFIG.components.identifiant.pattern.regex).source).toBe(new RegExp(CONSTANTES.identifiant).source);
   for (const e of [annales, ...contenus]) expect(champs(e, 'id').pattern.regex, e.name).toBe(CONFIG.components.identifiant.pattern.regex);

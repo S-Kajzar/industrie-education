@@ -1,11 +1,12 @@
-{#- Liste d'un public (/si/…) ou d'un thème (/mecanique/…) : titre sur rail, collections groupées, cartes. -#}
+{#- Liste d'un public (/si/…) ou d'un thème (/mecanique/…) : titre sur rail, collections groupées, cartes, puis
+    les annales du public ou du thème. -#}
 {% extends "base.html" %}
 {% from "_composants.html" import carte, bande, illustration %}
 {% block corps %}
 <main id="contenu">
 {{ bande(h1, lignes, illustration(planche, racine, 'illustration-fond illustration-theme', '(max-width: 640px) 100vw, 480px', 'eager') if planche else '') }}
 <div class="conteneur atelier-corps">
-{% if groupes -%}
+{% if groupes or annales -%}
 <div class="groupes">
 {% for g in groupes -%}
 <section class="groupe" aria-labelledby="groupe-{{ g.collection.id }}">
@@ -19,6 +20,18 @@
 </ul>
 </section>
 {% endfor -%}
+{% if annales -%}
+<section class="groupe" aria-labelledby="groupe-annales">
+<div class="groupe-tete">
+<h2 id="groupe-annales"><a href="{{ racine }}{{ lien_annales }}">Annales</a></h2>
+<span class="groupe-nb">{{ annales|length|pluriel('sujet') }}</span>
+</div>
+<ul class="cartes">
+{% for a in annales %}{{ carte(a, racine) }}
+{% endfor -%}
+</ul>
+</section>
+{% endif -%}
 </div>
 {%- else -%}
 <p class="etat-vide">{{ message_vide }} <a href="{{ racine }}catalogue/">Voir tout le catalogue</a>.</p>

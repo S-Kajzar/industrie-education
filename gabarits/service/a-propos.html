@@ -3,7 +3,7 @@
 <h2 id="principes">Principes</h2>
 <ul>
 <li>Gratuit, sans compte, sans cookie.</li>
-<li>Aucune donnée personnelle collectée, aucune ressource chargée depuis un autre site{% if site.umami %}, à l’exception de la mesure d’audience Umami, sans cookie{% endif %}.</li>
+<li>Aucune donnée personnelle collectée, aucune ressource chargée depuis un autre site{% if site.umami %}, à l’exception de la mesure d’audience Umami, sans cookie, qui compte de façon anonyme les pages vues et quelques actions (annales commencées, copies corrigées, projections){% endif %}.</li>
 <li>Utilisable sur ordinateur, tablette et téléphone, et au vidéoprojecteur.</li>
 </ul>
 
@@ -12,4 +12,4 @@
 {% if site.contact %}Écrivez à <a href="mailto:{{ site.contact }}?subject={{ 'Signaler une erreur'|urlencode }}">{{ site.contact }}</a> en indiquant l’adresse de la page concernée.{% else %}L’adresse de contact sera indiquée ici. <span class="a-renseigner">Adresse de contact à renseigner.</span>{% endif %}</p>
 
 <h2 id="editeur">Éditeur</h2>
-<p>Les informations sur l’éditeur et l’hébergeur du site figurent dans les <a href="{{ racine }}mentions-legales/">mentions légales</a>.</p>
+<p>Les informations sur l’éditeur et l’hébergeur du site figurent dans les <a href="{{ racine }}mentions-legales/">mentions légales</a>, la source et la licence des annales et des images dans les <a href="{{ racine }}credits/">crédits</a>.</p>
