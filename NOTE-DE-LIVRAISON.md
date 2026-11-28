@@ -1,261 +1,276 @@
-# Note de livraison — lot 1d : back-office Sveltia CMS à l'adresse /admin/
+# Note de livraison — lot 1e : publication fiable et dépôt en un geste
 
-Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` après la fusion du lot 1c et de son correctif (PR n° 4
-et n° 5) ; pull request n° 6. Prompt : `prompts/LOT-1D.md`. `npm test` : **321 tests, tous verts** (environ 1 min 20, sans réseau).
+Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` (`2d3949b`, après le lot 1d et ses correctifs, PR n° 6
+et n° 7) ; pull request n° 9. Prompt : `prompts/LOT-1E.md`. `npm test` : **343 tests, tous verts** (environ 2 minutes, contrôle 20/20 compris, sans réseau).
 
-**Dépendance ajoutée** : `@sveltia/cms` **5.0.2**, figée (`dependencies` de `package.json` et `package-lock.json`),
-licence MIT. Justification :
-- c'est l'outil décidé le 27/11 ;
-- le site sert lui-même son script, copié depuis `node_modules/` à la construction (rien n'est versionné ni chargé
-  depuis unpkg) ;
-- sa licence est jointe dans `_site/admin/LICENSE.txt`.
+**Aucune nouvelle dépendance** dans `package.json` ni `requirements.txt`. Un module déjà installé avec
+`@sveltia/cms` est désormais servi par le site : **Immutable.js** 5.2.1 (MIT). Sveltia le charge depuis unpkg.com
+dès qu'un champ personnalisé s'affiche (« Tester le fichier ») ; comme la translittération et exifr au lot 1d, la
+table d'import le sert depuis `/admin/modules/`, avec sa licence.
 
-npm installe aussi les dépendances du paquet (Shiki, Leaflet, pdf.js, SVGO, exifr, translittération…), qui ne
-servent qu'à son entrée npm. Deux d'entre elles sont servies par le site, voir la vérification n° 9.
+## Point de départ
 
-`zod` est retiré (il ne servait qu'au test de Pages CMS). Aucune autre dépendance.
-
-## Correctif après la recette (27/11)
-
-La recette de Sébastien a commencé sur la préproduction, après la fusion de la PR n° 6. Elle a confirmé :
-- **Commits en français** : « Annale : création de test-abc +2 ». Le `+2` indique les autres fichiers enregistrés
-  avec la fiche.
-- **Fichier de 2,9 Mo** : il est passé par le back-office. Sveltia l'a envoyé dans un premier commit à lui seul
-  (`567e34c`), avant la fiche et l'image (`a657fbd`), sous le même message.
-- **Image** : elle est rangée dans `medias/cartes/`, avec son nom nettoyé.
-
-Le second commit a fait échouer la publication, sur un seul test sur 323 : « outils/annale.py contrôle aussi la
-source d'une fiche ».
-
-- **Cause** : la fiche d'essai est un brouillon sans source, ce que la construction accepte, comme le prévoit TRAME
-  § 11. Mais `outils/annale.py`, lancé sur une fiche, exigeait la source quel que soit le statut, et le test le
-  lançait sur toutes les fiches, brouillons compris. Défaut du lot 1d.
-- **Correction** : `outils/annale.py` n'exige la source qu'au statut « relu », comme la construction. En brouillon,
-  l'absence de source devient un rappel (« brouillon : à régler avant de passer en « relu » »), sans erreur. Le test
-  vérifie les fiches du dépôt et, sur des fiches d'essai, qu'un brouillon sans source passe avec ce rappel et qu'une
-  fiche « relu » sans source est refusée.
-- **Résultat** : `npm test` donne 323 tests, tous verts, avec les fiches d'essai de la recette présentes.
-
-**Suite de la recette** : supprimer la fiche `test-abc` et ses deux fichiers (point 3). L'image d'essai
-(`medias/cartes/toyota-rav4-trail-2023-1.jpg`) est une photo de voiture dont la licence n'est pas déclarée : le
-dépôt étant public, elle doit être supprimée elle aussi, et une image de la recette n'est gardée qu'avec une licence
-de la liste fermée.
+Le 27/11, `main` était encore bloqué par la fiche d'essai `test-abc` : relue, avec une présentation de 13 caractères,
+elle faisait échouer un test de page (« description de plus de 20 caractères ») et tout le site restait figé. Avec ce
+lot, la même fiche est **retenue** : elle n'est pas publiée, elle est listée « À corriger » avec le champ et la
+correction, et tout le reste part en ligne. L'image d'essai `medias/cartes/toyota-rav4-trail-2023-1.jpg`, que plus
+aucune fiche ne cite, est signalée « image orpheline ».
 
 ## Fait
 
-1. **Back-office servi par le site, à `/admin/`** :
-   - `outils/construire.py` copie dans `_site/admin/` :
-     - `dist/sveltia-cms.js` et `dist/chunks/`, sans les `.map` ;
-     - `locales/fr.json` et la licence ;
-     - deux petits modules (translittération et `exifr`), avec leur licence ;
-     - `admin/config.yml`.
-   - La page `admin/index.html` est générée par `gabarits/admin.html`, avec la base de `site.json` :
-     - titre « Administration — industrie.education » ;
-     - `noindex, nofollow` ;
-     - `<script src="./sveltia-cms.js">` ;
-     - un petit script de mise en route (langue, requêtes coupées) et une table d'import.
-   - **Sans le paquet**, la construction s'arrête : « le paquet npm @sveltia/cms est introuvable … Lancez « npm ci » ».
-   - **Hors du site public** :
-     - absent du sitemap, `Disallow: /industrie-education/admin/` dans `robots.txt` (en préproduction comme
-       après l'ouverture) ;
-     - jamais lié depuis une page publique (test).
-   - **Noms réservés** : `admin`, `classe` et `compte` ajoutés (TRAME § 3).
-2. **`admin/config.yml`**, qui commence par le lien vers son schéma :
-   - **Rubriques**, dans l'ordre : Annales, Contenus, Images et crédits, Accueil (« à la une », « à venir »),
-     Notions, Thèmes, Réglages du site.
-   - **Repris de `.pages.yml`** : les mêmes aides, les mêmes champs et libellés, les champs obligatoires, les motifs
-     de contrôle (messages en français) et les listes fermées.
-   - **Connexion et commits** : backend `github`, ce dépôt, branche `main`, **connexion par jeton seulement**
-     (`auth_methods: [token]`), commits directs, messages en français.
-   - **Médias** :
-     - les mêmes trois dossiers (`asset_collections`) ;
-     - 5 Mo au plus, noms nettoyés (minuscules, sans accent) ;
-     - aucune transformation, **banques d'images désactivées**.
-   - **Mobile** : sur téléphone, le dépôt d'une annale tient dans un seul formulaire. Le fichier HTML ne se choisit
-     que par téléversement (« Parcourir »), sans chemin à saisir ; les blocs facultatifs (image, origine) sont
-     repliés ; le type de contenu s'affiche en boutons plutôt qu'en liste déroulante.
-   - **Lien vers la préproduction** : « Afficher sur le site en ligne » sur chaque annale et chaque contenu.
-3. **Limites de Pages CMS** (annexe A du lot 1c), levées ou non :
+1. **Une fiche retenue plutôt qu'un site bloqué (option A)**, `outils/construire.py` :
+   - chaque fiche est contrôlée **en entier** : toutes ses erreurs sont notées, chacune avec le **nom du champ dans
+     /admin/** et la **correction en une phrase** (classe `Controle`, tables `CHAMPS_ANNALE` et `CHAMPS_CONTENU`) ;
+   - une fiche « relu » fautive est **retenue** : pas de page, absente du sitemap, de l'accueil, des listes, de « Pour
+     réviser », de la une et du catalogue, aucun lien vers elle ; une collection dont `collection.json` est invalide
+     est retenue avec ses contenus ;
+   - une fiche **déjà en ligne** qui devient invalide est retirée et signalée « Retirée du site » : la construction
+     compare avec l'état de la version en ligne (`--precedent`, que l'Action télécharge) ;
+   - une **erreur de structure ou de code** arrête toujours la construction : `site.json`, `catalogue/`, gabarit,
+     programme (le résumé dit alors « Publication arrêtée », à transmettre à une session Claude Code) ;
+   - classement complet ci-dessous (« Erreurs de contenu, erreurs de code »).
+2. **Contrôles dès la saisie (option B)**, `admin/config.yml` :
+   - source d'une annale **obligatoire dès la création** : éditeur, adresse `https://…` (motif), licence ;
+   - titre d'annale de 70 caractères au plus, présentation de 20 à 300, description de contenu de 20 au moins : motifs
+     avec un message en français qui dit quoi faire ;
+   - image : texte alternatif et crédit facultatifs, case de risque.
+3. **Crédit saisi avec l'image (option B et décisions du 27/11)** :
+   - chaque champ image (cartes des contenus et annales, planches de l'accueil, des thèmes, de Labo et Maquettes) est
+     un objet `fichier`, `alt`, `licence`, `source`, `auteur`, `reference_autorisation`, `risque_accepte` ;
+   - trois cas à la construction (classe `Images`), conformes au tableau du prompt ; une licence hors liste n'est
+     jamais publiée, même case cochée ; une image introuvable ou illisible n'est pas publiée ; **une image ne retient
+     jamais sa fiche** ;
+   - `/credits/` est produit à partir des fiches (une entrée par fichier, avec ses usages), sans les images à
+     régulariser ;
+   - **`medias/CREDITS.json` supprimé** (voir « Choix ») ; rubrique « Images et crédits » retirée de /admin/ ;
+   - **image orpheline** (téléversée, citée par aucune fiche, brouillons compris) signalée, sans rien bloquer.
+4. **Un brouillon ne bloque jamais (option C)** : un brouillon passe les mêmes contrôles qu'une fiche publiée, mais ce
+   ne sont que des **avertissements** ; une fiche **illisible** (JSON invalide) est ignorée et signalée, quel que
+   soit son statut. Le contrôle 20/20 d'un brouillon est un avertissement. Aucun test ne traite plus un brouillon
+   comme s'il était publié.
+5. **Échec visible tout de suite (option E)** :
+   - **bandeau d'état** en haut de /admin/ (`admin/admin.js`, `admin/admin.css`) : « Publication en cours », « En
+     ligne depuis hh:mm » ou « Échec : voir le détail » ; nombre de fiches retenues, d'images à régulariser, de
+     nouvelles versions à relire et des autres points, chacun relié à sa liste avec les corrections ; bouton
+     « Actualiser » ;
+   - sources : `_site/admin/etat.json`, écrit par la construction, et l'**API publique de GitHub, sans jeton** (la
+     dernière exécution de « Publier le site » sur `main`, hors exécutions annulées par la file d'attente) ;
+     interrogée au chargement, au retour sur l'onglet, 20 secondes après un enregistrement (événement `postSave` de
+     Sveltia) et sur « Actualiser », au plus une fois toutes les 20 secondes, jamais en continu ;
+   - **résumé de publication** (`--resume`) : il commence par « À corriger » (fiches retenues, avertissements des
+     brouillons et des nouvelles versions, images non publiées, images orphelines, fichiers non importés, notions
+     proposées, autres), puis « Images à régulariser », le rapport d'import et le tableau de bord éditorial ;
+   - guide : alerte e-mail d'échec de GitHub.
+6. **Dépôt en un geste** :
+   - rubrique **Dépôt rapide** : 1 à 10 fichiers HTML en un enregistrement, sans rien saisir (voir « Choix ») ;
+   - **`outils/importer.py`**, lancé par l'Action avant la construction : contrôles de `outils/annale.py`, bloc de
+     métadonnées ou extraction déterministe, fiche **toujours en brouillon**, fichier rangé dans
+     `medias/depots/<id>.html` sans être modifié, notions inconnues dans `notions_proposees`, un seul commit
+     (« Import : 3 fiches créées en brouillon »), un fichier en échec n'empêche pas les autres ; les fiches créées sont
+     alignées sur le format du back-office (`node outils/format-donnees.js --fiches`) ;
+   - **nouvelle version** d'une fiche existante (même identifiant) : rangée dans `medias/a-relire/<id>.html`, champ
+     caché `nouvelle_version` ; la version en ligne reste en ligne ; la case « Valider la nouvelle version » cochée et
+     enregistrée, l'import suivant remplace l'ancien fichier (même chemin) et supprime le nouveau de `a-relire/` ;
+   - **« Télécharger pour tester »** dans chaque fiche (voir « Choix ») ;
+   - format du bloc documenté dans **`production/FICHE-INTEGREE.md`** (référence du projet Claude) et TRAME § 11.
+7. **Workflow** `.github/workflows/publier.yml` : permission `contents: write` (et rien d'autre) pour le commit de
+   l'import ; file d'attente `concurrency` (une publication à la fois, aucune interrompue) ; chaque exécution travaille
+   sur la **dernière version de `main`** ; étapes : import, état de la version en ligne, chaîne (20/20 puis
+   construction), tests, mise en ligne. La double construction de l'ancien workflow (écart n° 15 du lot 1c) disparaît.
+8. **`outils/annale.py`** : un fichier déposé seul ne doit contenir **aucun lien vers une page absente** (adresse
+   relative ou chemin absolu) et **chaque ancre** `#…` doit viser un identifiant du fichier. Sans ce contrôle, un lien
+   cassé dans une annale faisait échouer le test des liens et bloquait tout le site.
+9. **Tests indépendants du contenu réel** : le test de l'annale de référence porte sur un site d'essai construit avec
+   une fiche, un catalogue et un contenu lié **figés** ; un choix fait dans /admin/ (`afficher_origine`, filières,
+   libellé d'une notion) ne peut plus faire échouer un test. Une filière inactive visée par une page publiée est
+   signalée par la construction (autrefois un test bloquant). `outils/annale.py` est testé sur des fiches d'essai.
+10. **Documentation** : `CLAUDE.md` (règle « Images », import, commandes, checklist), `TRAME.md` (§ 2, 4, 5, 7, 9,
+    10, 11, 13), `README.md`, `GUIDE-BACK-OFFICE.md` (dépôt rapide, test d'un brouillon, nouvelle version, crédit et
+    case de risque, bandeau, « À corriger », alerte e-mail), `prompts/LOT-1E.md`.
 
-   | Limite | Avec Sveltia |
-   |---|---|
-   | Notions en saisie libre | **Levée** : choisies dans la liste de `catalogue/notions.json` (libellés accentués) |
-   | Taille de téléversement (environ 3 Mo) | **Levée** : 5 Mo, comme `outils/annale.py` ; le fichier de 2,9 Mo de la recette est passé par GitHub (commit `567e34c`) |
-   | Fichiers dont la racine est une liste | **Levée** : notions, thèmes et crédits se modifient entrée par entrée |
-   | Une sous-rubrique par collection | **Levée** : une seule rubrique « Contenus », en arborescence ; une nouvelle collection apparaît d'elle-même (le test qui exigeait une sous-rubrique est retiré) |
-   | Valeurs par défaut appliquées aux fiches existantes | **Non levée** : même comportement (vérification n° 7) ; pas de statut par défaut sur les contenus |
-   | Listes fermées enregistrées en texte | **Levée** : le niveau reste un nombre |
-   | Interface en anglais | **Levée** : interface en français |
-   | `main` sans règle « pull request obligatoire » | **Inchangée** : commits directs |
+## L'enchaînement de la publication
 
-4. **Format des données aligné sur le back-office**, dans un commit à part :
-   - `outils/format-donnees.js` calcule le format qu'écrit Sveltia et réaligne les fichiers ;
-   - 14 fichiers sont concernés ;
-   - le test « fichiers alignés » garde ce format ;
-   - six enregistrements réels par Sveltia, en mode « dépôt local », ne changent que le champ modifié (test).
-5. **Construction** : un `editeur` absent de `site.json` est accepté (Sveltia n'écrit pas un objet vide).
-6. **Pages CMS retiré** : `.pages.yml`, `tests/pages-cms/`, `tests/back-office.spec.js` et `zod` sont supprimés ;
-   le guide est réécrit.
-7. **Documentation** :
-   - `CLAUDE.md` : exception `/admin/` et ses hôtes, dans la règle « Public mineur » ;
-   - `TRAME.md` : § 2 (back-office, décision du 27/11), § 3 (noms réservés, `/admin/`), § 4, § 7 (ligne 1d),
-     § 8 et § 9 réécrit ;
-   - `README.md` ;
-   - `GUIDE-BACK-OFFICE.md`, réécrit.
+Le plus simple trouvé, sans construction candidate :
 
-## Les 9 vérifications, dans le paquet installé
+1. **Import** (`outils/importer.py --commit`) : fiches créées en brouillon, nouvelles versions rangées ou validées,
+   un commit poussé sur `main`. Un commit fait avec le jeton de l'Action ne relance pas l'Action : l'import est
+   construit et publié **dans la même exécution**.
+2. **État en ligne** : l'Action télécharge `admin/etat.json` de la préproduction (pour repérer une fiche « retirée »).
+3. **Contrôle 20/20** (`outils/verifier-annales.js`, code commun avec le test : `outils/annale-parfaite.js`) : chaque
+   fichier d'annale du dépôt est ouvert **tel quel** dans Chromium, une copie entièrement juste est remplie dans les
+   deux modes. Résultat dans `.cache/verifications.json`. Ce contrôle n'échoue jamais pour une annale ; seule une
+   panne du navigateur l'arrête.
+4. **Construction** (`outils/construire.py --verifications …`) : une annale **relue** sous 20/20 est retenue ; un
+   brouillon ou une nouvelle version reçoit un avertissement. Les étapes 3 et 4 forment `outils/chaine.js`, que
+   `npm test` lance aussi.
+5. **Tests** : le test « annale parfaite » vérifie les annales **publiées**, sur leur page enveloppée. S'il échoue,
+   c'est l'enveloppe du site qui casse une annale : erreur de code.
 
-Résultats tirés du code de `dist/sveltia-cms.js` 5.0.2, de `schema/sveltia-cms.json` et `locales/fr.json`, et
-d'essais dans Chromium en mode « dépôt local ».
+Une construction seule (`python3 outils/construire.py`) n'a pas le résultat du 20/20 : elle publie l'annale relue,
+et c'est la chaîne qui l'exclut (testé).
 
-1. **Interface en français.**
-   - **Option** : aucune option de configuration ne fixe la langue. Sveltia prend d'abord la langue choisie dans
-     ses préférences (`localStorage`, clé `sveltia-cms.prefs`, propriété `locale`), puis celle du navigateur. La
-     page `/admin/` y inscrit `fr` si aucune langue n'a été choisie ; un autre choix fait dans les préférences reste
-     respecté.
-   - **Traductions** : seul l'anglais est dans le bundle. Les autres langues sont téléchargées sur
-     `https://unpkg.com/@sveltia/cms@5.0.2/locales/<langue>.json`, puis gardées dans IndexedDB. La page redirige
-     cette requête vers `./locales/fr.json`, copiée par la construction.
-   - **Testé** avec un navigateur en anglais : écran de connexion en français, aucune requête vers unpkg.
-2. **Notions.**
-   - **Liste** : oui. Une collection peut lire un fichier JSON dont la racine est une liste d'objets (option `file`
-     d'une collection d'entrées, chaque objet étant une entrée). La rubrique « Notions » pointe sur
-     `catalogue/notions.json`, et le champ `relation` (`collection: notions`, `value_field: id`, `display_fields:
-     [nom]`, `multiple: true`) propose les libellés.
-   - **Format** : le fichier garde sa forme ; `{"notions": [...]}` n'est pas nécessaire, donc pas d'écart.
-   - **Autres fichiers** : thèmes et crédits sont traités de même.
-3. **Fichier HTML d'annale** :
-   - widget `file`, `accept: ".html,text/html"`, dossier `/medias/depots`, `choose_url: false` ;
-   - `max_file_size: 5242880`, soit la valeur `TAILLE_MAX` de `outils/annale.py` (test d'égalité) ;
-   - au-delà, refus « Fichier volumineux … dépasse la taille maximale de 5,2 Mo » : Sveltia compte les mégaoctets
-     en puissances de 10 (testé).
-4. **Images.**
-   - **Dossiers** : `medias/cartes`, `medias/illustrations` et `medias/depots`, les mêmes qu'avant.
-   - **Transformations** : aucune option `transformations` ; le code n'en applique que si elle est définie. Les
-     originaux restent tels quels, et `outils/illustrations.py` fait les variantes.
-   - **Banques d'images** : actives par défaut (dont Lorem Picsum, sans clé), désactivées par
-     `media_libraries.stock_assets: false`.
-   - **Traduction et IA** : ces services (Google, DeepL, OpenAI, Anthropic, Gemini…) ne servent qu'aux sites
-     multilingues (option `i18n`, absente). Ils restent dans le bundle et dans les préférences de l'utilisateur,
-     mais n'apparaissent nulle part dans le formulaire ; aucune clé n'est configurée.
-5. **Messages de commit** :
-   - modèles `{{collection}} : création | mise à jour | suppression de {{slug}}` et `Médias : ajout | suppression de
-     {{path}}` ;
-   - `{{collection}}` prend le **libellé au singulier**, d'où par exemple « Annale : mise à jour de
-     levage-dechargement-sacs-linge » ;
-   - pour Notions, Thèmes et Images et crédits, `{{slug}}` est la **position** dans la liste (« Notion : mise à
-     jour de 1 ») ;
-   - non testable ici : le mode local ne fait pas de commit. Recette.
-6. **Lien « Afficher sur le site en ligne »** :
-   - `preview_path` sur Annales et Contenus ;
-   - Sveltia ne garde que le domaine de `site_url`, donc chaque `preview_path` commence par la base
-     (`industrie-education/`) ;
-   - adresses vérifiées : `…/industrie-education/annales/levage-dechargement-sacs-linge/` et
-     `…/industrie-education/statique/cadre-velo/` ;
-   - un test compare `site_url` et les `preview_path` à `site.json`, pour la bascule.
-7. **Valeurs par défaut** : elles s'appliquent **aussi aux fiches existantes** auxquelles le champ manque. Essai :
-   une annale sans `statut` s'ouvre en « Brouillon » et s'enregistre ainsi.
-   - **Annales** : le défaut `brouillon` reste sans risque, car toutes ont un statut et la construction traite déjà
-     un statut absent comme un brouillon.
-   - **Contenus** : pas de valeur par défaut sur le statut (test).
-8. **Format d'écriture des JSON**, observé :
-   - indentation de 2 espaces, listes et objets toujours développés, retour à la ligne final ;
-   - clés dans l'ordre des champs de la configuration ;
-   - avec `omit_empty_optional_fields: true` (choisi), un champ facultatif vide n'est pas écrit, et un objet dont
-     tous les sous-champs sont vides non plus, même obligatoire ;
-   - les champs cachés sont recopiés tels quels.
+## Erreurs de contenu, erreurs de code
 
-   Sans cette option, Sveltia écrivait `"statut": ""`, `"fichier": ""` et `"image": null` dans chaque contenu. Les
-   fichiers du dépôt sont alignés dans un commit à part, « Format des données aligné sur le back-office » (voir
-   l'écart n° 2).
-9. **Hôtes contactés** : voir la section suivante.
-
-## Hôtes contactés par /admin/
-
-| Hôte | Quand | Statut |
+| Contrôle | Catégorie | Effet |
 |---|---|---|
-| le site lui-même | page, script, morceaux, configuration, traduction, modules | servi par le site |
-| `api.github.com` | lecture du dépôt (REST et GraphQL) et commits | **nécessaire** |
-| `avatars.githubusercontent.com` | avatar du compte connecté | reste |
-| `cdn.jsdelivr.net` | polices de l'interface : Source Sans 3 (2 fichiers) et Material Symbols (icônes) | **reste** : déclarées dans le CSS du bundle ; les servir demanderait de copier ces polices, donc une autre dépendance |
-| `unpkg.com` — traductions | chargement | **redirigé** vers `./locales/fr.json` |
-| `unpkg.com` — vérification de nouvelle version | chargement, puis toutes les heures | **coupée** |
-| `unpkg.com` — translittération des noms de fichiers, lecture EXIF des images | à la demande | **servies par le site** (table d'import `importmap`) |
-| `www.githubstatus.com` | état de GitHub | **coupé** |
-| `unpkg.com` — autres modules à la demande : HEIC, transformations, pdf.js, SVGO, carte, éditeur de code, Markdown, langues de dates | jamais avec cette configuration (aucun de ces champs ni formats) | non concerné |
+| Fiche illisible (JSON invalide, fichier `contenu.json` manquant) | contenu | ignorée, signalée (quel que soit le statut) |
+| Identifiant invalide, différent du nom du fichier, réservé, en double | contenu | fiche retenue (la seconde, pour un doublon) |
+| Titre manquant ; présentation (annale) ou description (contenu) manquante, de moins de 20 caractères ; présentation de plus de 300 | contenu | fiche retenue |
+| Type, niveau, durée, filière, thème, notion inconnus ou invalides ; statut inconnu (traité comme brouillon) | contenu | fiche retenue |
+| Source d'annale absente ou invalide (éditeur, adresse, licence, référence d'autorisation) | contenu | fiche retenue |
+| Fichier autonome : introuvable, plus de 5 Mo, pas en UTF-8, document incomplet, ressource extérieure, `<base>`, lien vers une page absente, ancre sans cible, enveloppe impossible ; contenu natif avec `<html>` | contenu | fiche retenue |
+| Annale relue sous 20/20 | contenu | fiche retenue |
+| `collection.json` invalide, nom de collection réservé ou invalide | contenu | collection retenue avec ses contenus |
+| Image sans crédit complet ni case, licence hors liste, image introuvable ou illisible | image | image non publiée, fiche publiée |
+| Image sans crédit, case cochée | image | image publiée, « à régulariser » |
+| Contenu « à la une » non publié, « ordre » d'une collection qui cite un inconnu, filière inactive visée | alerte | signalé, sans effet sur la publication |
+| Fichier déposé refusé à l'import, notion proposée, image orpheline | alerte | signalé |
+| `site.json` (base, origine, titres d'accueil, Umami, `indexable` sans mentions légales), `catalogue/` (thèmes, publics, notions, à venir, à la une illisible) | structure | construction arrêtée |
+| Gabarit, programme, paquet du back-office absent | code | construction arrêtée |
+| Test de page, de lien, de requêtes, de poids, d'enveloppe | code | publication arrêtée |
 
-**Testé** : au chargement, sans connexion, le seul hôte extérieur est `cdn.jsdelivr.net`. En mode local, à
-l'ouverture des fiches et à la création d'une annale avec téléversement, aucun autre. L'exception est documentée
-dans `CLAUDE.md` et TRAME § 9 ; la règle « aucune requête vers un tiers » reste entière, et testée, pour toutes les
-autres pages.
+## Règles que Sveltia ne sait pas exiger, contrôlées par la construction
 
-## Poids de /admin/
+- La **référence d'autorisation** quand la licence est « autorisation écrite » (source d'une annale, crédit d'une
+  image) : Sveltia n'a pas de règle conditionnelle.
+- Le **crédit complet ou la case cochée** d'une image (même raison).
+- Une **notion inconnue** (fiche importée ou modifiée sur GitHub ; dans /admin/, les notions se choisissent dans la
+  liste).
+- L'**identifiant unique sur tout le site** et égal au nom du fichier de la fiche.
+- Une licence d'image ou de source **hors liste** (fichier modifié sur GitHub).
+- Le **fichier autonome** (ressources extérieures, liens, ancres, structure) et le **20/20**.
+- L'existence d'une **image** ou d'un **fichier HTML** cité, d'un contenu **à la une**.
+- Le **titre de 70 caractères au plus** n'est exigé que dans /admin/ (motif), pas par la construction.
 
-Le dossier pèse **3,50 Mo** (3 495 844 octets) :
+## Choix faits pendant le lot
 
-| Fichier | Poids |
-|---|---|
-| `sveltia-cms.js` | 2,68 Mo |
-| `chunks/`, chargés à la demande | 0,56 Mo |
-| `locales/fr.json` | 130 ko |
-| modules | 133 ko |
-| `config.yml` | 26 ko |
-
-À l'ouverture de l'écran de connexion, le navigateur télécharge **2,93 Mo** non compressés (GitHub Pages les
-compresse), plus les polices de jsDelivr. Les règles de poids du site public ne s'appliquent pas à `/admin/`.
+- **`medias/CREDITS.json` supprimé**, plutôt que produit par la construction : il était vide (`[]`), la migration
+  n'avait donc rien à reporter dans les fiches ; un fichier produit et non versionné n'aurait servi à personne, la
+  page `/credits/`, le résumé et `etat.json` portant déjà l'information.
+- **Dépôt rapide = une collection d'entrées** (`medias/import/`, une entrée par dépôt, champ fichier
+  `multiple: true`, 1 à 10) : c'est le seul moyen de Sveltia qui téléverse plusieurs fichiers **en un seul
+  enregistrement**, depuis le formulaire habituel, sur téléphone aussi. Chaque dépôt crée une **nouvelle** entrée :
+  deux dépôts successifs ne se marchent pas dessus ; l'import supprime l'entrée. Sveltia envoie un fichier lourd dans
+  un commit à part (lot 1d) : l'import traite les fichiers présents dans `medias/import/`, quelle que soit l'entrée.
+- **Nouvelle version rangée à part**, dans `medias/a-relire/<id>.html` : jamais lue par la construction, donc jamais
+  publiée ; à la validation, son contenu remplace l'ancien fichier **au même chemin** (l'adresse ne change pas).
+- **« Télécharger pour tester »** : un champ personnalisé (`widget: telecharger`) affiche le lien dans la fiche. Le
+  fichier est récupéré par l'API publique de GitHub (`/contents/…`, `Accept: application/vnd.github.raw`, sans jeton)
+  et **enregistré sur l'ordinateur** sous `<id>.html`, en HTML. Il n'est jamais ouvert dans l'onglet de /admin/ : il
+  y aurait accès au jeton de Sveltia. Ni archive ni artefact d'Action nécessaires.
+- **Case « Valider la nouvelle version »** rendue par ce même champ, seulement quand une nouvelle version attend :
+  une case ordinaire de Sveltia écrivait `"valider_nouvelle_version": false` dans chaque fiche à chaque
+  enregistrement (essai). Décochée, rien n'est écrit.
+- **Fichier d'état public** : `/admin/etat.json` (hors site public, `noindex`, interdit dans `robots.txt`) contient
+  des chemins, des titres et des messages, tous déjà lisibles dans le dépôt public ; aucune donnée personnelle.
 
 ## Testé
 
 | Exigence | Test |
 |---|---|
-| Configuration valide selon le schéma du paquet : chargée par Sveltia sans aucun avertissement de configuration (son validateur embarque `schema/sveltia-cms.json`) ; YAML sans erreur ; lien vers le schéma en tête | `tests/admin.spec.js` |
-| Chaque rubrique et chaque dossier de médias pointe vers un fichier ou un dossier existant ; **chaque fiche existante s'ouvre** (25 fiches en mode dépôt local, sans autre hôte extérieur que jsDelivr) | `tests/admin.spec.js` |
-| Aucune clé des données absente de la configuration ; clés techniques listées (`mode` et `source` des contenus ; `nom`, `base`, `origine`, `hebergeur` du site) ; chaque fichier modifié par une seule rubrique | `tests/admin.spec.js` |
-| Listes fermées identiques à `construire.py`, `annale.py` et `catalogue/` (types, niveaux, statuts, filières, thèmes, licences d'images, licences des sources, identifiants) ; notions en relation ; 5 Mo = `TAILLE_MAX` | `tests/admin.spec.js` |
-| Données au format du back-office ; enregistrement réel = seul le champ modifié change (6 fichiers) | `tests/admin.spec.js` |
-| `/admin/` en local : script servi par le site, écran de connexion en français avec un navigateur en anglais, aucune erreur JavaScript, seul hôte extérieur jsDelivr (appels extérieurs bloqués) | `tests/admin.spec.js` |
-| Dépôt d'une annale sur téléphone : un formulaire, fichier par téléversement sans chemin à saisir, refus au-delà de 5 Mo, fiche écrite en brouillon, fichier rangé et renommé | `tests/admin.spec.js` |
-| `/admin/` : `noindex`, absent du sitemap, `Disallow` dans `robots.txt`, jamais lié ; construction arrêtée sans le paquet ; noms réservés | `tests/admin.spec.js`, `tests/construction.spec.js` |
-| Aucune requête tierce sur toutes les autres pages (`/admin/` seul exclu) ; poids, liens, `h1` : `/admin/` exclu des règles du site public | `tests/outils.js` (`pagesConstruites`), suite complète |
-| Tous les tests des lots précédents | suite complète |
+| Fiche relue sans source, notion inconnue (avec les identifiants proches), annale relue sous 20/20, identifiant en double ou différent du dossier, type ou public inconnu, collection invalide, document sans `<body>`, description trop courte, JSON illisible : fiche retenue, site construit, ni page, ni sitemap, ni lien ; toutes les erreurs listées avec champ et correction | `tests/construction.spec.js`, `tests/coherence.spec.js`, `tests/annale-parfaite.spec.js` |
+| Aucun lien cassé, sur le site réel (fiche `test-abc` retenue) | `tests/liens.spec.js` (suite complète) |
+| Trois cas d'image (crédit complet, case cochée, ni l'un ni l'autre), licence hors liste, autorisation sans référence, image introuvable, alt vide = décorative : publication ou non de l'image, `/credits/`, signalement ; fiche publiée dans tous les cas | `tests/images-annales.spec.js` |
+| `/credits/` construit à partir des fiches, sans les images à régulariser ; image orpheline signalée | `tests/images-annales.spec.js` |
+| Erreur de code simulée (gabarit cassé) : construction arrêtée, rien n'est publié, « Publication arrêtée » dans le résumé | `tests/construction.spec.js` |
+| Fiche en ligne devenue invalide : retirée et signalée comme telle | `tests/construction.spec.js` |
+| Brouillon invalide : avertissement seulement ; brouillon sous 20/20 : avertissement | `tests/coherence.spec.js`, `tests/annale-parfaite.spec.js` |
+| Résumé : « À corriger » en tête, puis images à régulariser, tableau de bord ; fiche illisible signalée sans arrêter | `tests/coherence.spec.js` |
+| Configuration de /admin/ : source obligatoire ; champs d'image facultatifs, case de risque décochée par défaut, même libellé et même aide partout ; listes fermées identiques à la construction ; rubrique « Crédits » absente ; « Dépôt rapide » présente ; champs techniques cachés | `tests/admin.spec.js` |
+| /admin/ en mode dépôt local : chaque fiche s'ouvre (dont « Dépôt rapide »), un enregistrement ne change que le champ modifié, dépôt d'une annale sur téléphone avec la source obligatoire ; seul hôte extérieur jsDelivr, plus l'API de GitHub pour le bandeau, sans jeton | `tests/admin.spec.js` |
+| Bandeau : trois états à partir d'un fichier d'état et d'une réponse d'API simulés, API indisponible, comptes reliés aux listes avec corrections, une seule requête au chargement, aucun en-tête `Authorization`, interface de Sveltia sous le bandeau | `tests/bandeau.spec.js` |
+| « Télécharger pour tester » (fichier et nouvelle version) ; case de validation : décochée, rien n'est écrit ; cochée, `true` | `tests/bandeau.spec.js` |
+| Import : avec bloc (fiche identique au bloc), sans bloc (titre, présentation, durée extraits de la vraie annale ; reste à compléter), fichier invalide (laissé, signalé, les autres importés), notion inconnue (proposée, non créée), exercice dans sa collection, sans collection (refusé), jamais « relu », nouvelle version (l'ancienne reste publiée jusqu'à la validation, puis remplacée), un seul commit poussé (`--commit`, dépôt Git d'essai) | `tests/import.spec.js` |
+| Fichiers de données au format du back-office, fiches importées comprises | `tests/admin.spec.js`, `tests/import.spec.js` |
+| Tous les tests des lots précédents, dont aucune requête tierce hors /admin/, poids de l'accueil, un seul `h1` | suite complète |
 
-**Non testé ici**, faute d'accès à l'API GraphQL de GitHub : un vrai enregistrement (commit), les messages de
-commit, la connexion par jeton et par QR code, le téléversement d'une image. Dans le navigateur de test, le dépôt
-d'une image ne déclenche rien, alors que celui d'un fichier HTML fonctionne. C'est la recette ci-dessous ;
-les commits en français, le fichier de 2,9 Mo et le téléversement d'une image y sont déjà confirmés (voir plus haut).
+**Non testé ici** (pas d'accès à GitHub depuis les tests) : un vrai enregistrement par /admin/, un vrai dépôt rapide
+suivi de l'import et du commit par l'Action, la permission d'écriture de l'Action, l'API réelle de GitHub (le
+bandeau et le téléchargement sont testés avec des réponses simulées), l'alerte e-mail. C'est la recette.
 
 ## Recette à faire par Sébastien
 
-Sur <https://s-kajzar.github.io/industrie-education/admin/>, une fois la pull request fusionnée et publiée :
+Sur <https://s-kajzar.github.io/industrie-education/admin/>, une fois la pull request fusionnée et publiée (la
+première publication retient `test-abc`, voir plus haut) :
 
-1. **Connexion par jeton** : créer le jeton (guide, « Accès »), se connecter. Vérifier que l'interface est en
-   français et que les 7 rubriques sont là.
-2. **Réglage** : modifier un titre d'accueil (Réglages du site), enregistrer ; environ 2 minutes plus tard, voir la
-   préproduction à jour.
-3. **Fichier de 2,9 Mo** : déposer en **brouillon** le fichier de test reçu (copie de l'annale, complétée par un
-   commentaire HTML), avec une fiche d'essai. Vérifier le commit sur GitHub, puis supprimer la fiche (bouton
-   « Supprimer » de la fiche) et le fichier (Ressources → Fichiers HTML déposés → Supprimer).
-4. **Notion** : dans une fiche, ajouter une notion choisie dans la liste ; enregistrer.
-5. **Image** : ajouter une image à une carte (guide, « Ta première image en 5 minutes ») puis son crédit ; vérifier
-   la carte et la page Crédits en préproduction.
-6. **Commit en français** : sur GitHub, onglet Code → Commits, vérifier les messages (« Annale : mise à jour de … »).
-7. **Annuler** une modification (guide, « Annuler une modification »).
-8. **Téléphone** : se connecter sur mobile par le code QR (menu du compte → « Se connecter sur mobile ») ou en
-   collant le jeton ; ouvrir une annale.
+1. **Dépôt de 3 fichiers en un enregistrement** : **Dépôt rapide** → **Nouveau** → choisir ensemble la copie de test
+   de 2,9 Mo, un fichier sans bloc de métadonnées (par exemple une annale déjà produite) et un fichier volontairement
+   invalide (une copie dans laquelle on ajoute `<script src="https://exemple.com/x.js"></script>` dans le `<head>`)
+   → **Enregistrer**.
+2. **Vérifier les 3 résultats** (environ 3 minutes) : deux fiches en brouillon dans **Annales** ; le fichier invalide
+   dans **Ressources → Dépôt rapide : fichiers en attente** ; le bandeau (« Publication en cours », puis « En ligne
+   depuis… ») et **À corriger** (fichier refusé avec sa raison, champs à compléter des brouillons). Sur GitHub, un
+   seul commit « Import : 2 fiches créées en brouillon ». Supprimer ensuite le fichier invalide.
+3. **Fiche retenue** : /admin/ refuse désormais d'enregistrer une annale sans source ; pour l'essai, passer par
+   GitHub : ouvrir `annales/<id>.json` de la fiche importée **sans bloc** (elle n'a pas de source) → crayon
+   (**Edit**) → remplacer `"brouillon"` par `"relu"` → **Commit changes**. La fiche est **retenue** (non publiée,
+   listée dans le bandeau avec « Source et licence du sujet »), et le reste du site part en ligne.
+4. **Télécharger un brouillon et le tester** : dans la fiche, **Tester le fichier** → **Télécharger pour tester** ;
+   ouvrir le fichier téléchargé, le parcourir en entraînement.
+5. **Nouvelle version** : déposer dans **Dépôt rapide** une nouvelle version de l'annale en ligne (même identifiant) ;
+   vérifier que l'ancienne reste visible sur le site et que la fiche affiche « Nouvelle version à relire » ; la
+   télécharger, puis cocher **Valider la nouvelle version** et enregistrer ; vérifier la page après publication.
+6. **Images** :
+   - ajouter une image avec son crédit : publiée, citée sur la page Crédits ;
+   - ajouter une image sans crédit, case cochée : elle s'affiche et figure dans « Images à régulariser » ;
+   - ajouter une image sans crédit ni case cochée : la fiche s'affiche avec le bandeau typographique, l'image est
+     signalée dans « À corriger ».
+7. **Alerte e-mail** : l'activer (guide, partie 8).
+8. **Ménage** : supprimer la fiche `test-abc`, ses fichiers (`medias/depots/test-taille-3mo.html`) et l'image
+   orpheline `medias/cartes/toyota-rav4-trail-2023-1.jpg`, ainsi que les fiches d'essai de la recette.
 
-Pendant la recette, dans l'onglet Réseau du navigateur (outils de développement), noter les hôtes contactés et les
-comparer au tableau ci-dessus.
+Pendant la recette, noter dans l'onglet Réseau les hôtes contactés : par rapport au lot 1d, seul `api.github.com`
+s'ajoute pour le bandeau et le téléchargement, **sans en-tête `Authorization`**.
 
 ## À faire par Sébastien
 
-1. **Recette** ci-dessus ; signaler tout écart.
-2. **Révoquer l'accès de Pages CMS**, qui ne sert plus : sur GitHub, *Settings* → *Applications* → *Installed
-   GitHub Apps* → Pages CMS → *Uninstall*.
-3. Les points encore ouverts des lots précédents (annexes), dont la confirmation de l'annale existante (origine,
-   source, statut `relu`, valeur par défaut de `afficher_origine`), les mentions légales et Umami.
-4. **Trancher** les écarts n° 1 et 2 ci-dessous.
+1. **Recette** ci-dessus.
+2. **Transmettre `production/FICHE-INTEGREE.md` au projet Claude « Exercices interactifs »**, pour qu'il ajoute le
+   bloc de métadonnées à chaque fichier produit.
+3. Si l'import échoue avec « l'import n'a pas pu être poussé sur main » : vérifier que l'Action peut écrire
+   (*Settings* → *Actions* → *General* → *Workflow permissions* : le workflow demande lui-même `contents: write`, mais
+   une règle de l'organisation ou une protection de `main` peut l'en empêcher).
+4. **Trancher** les écarts ci-dessous et ceux des annexes.
 
 ## Écarts avec TRAME, DESIGN, CLAUDE.md et le prompt
+
+1. **Champ `collection` ajouté au bloc de métadonnées** (exercices) : le format 1 ne dit pas où ranger un exercice ;
+   sans collection connue, le fichier est refusé et signalé. **À valider.**
+2. **Présentation (annale) ou description (contenu) : 20 caractères au moins**, présentation de 300 au plus :
+   devenues des règles de contenu (fiche retenue), car le test de page « description de plus de 20 caractères »
+   bloquait toute la publication. Le titre de 70 caractères au plus n'est exigé que dans /admin/. **À valider.**
+3. **Crédit complet** = licence de la liste fermée, plus la référence pour une autorisation écrite ; la source et
+   l'auteur sont affichés s'ils sont donnés, mais non exigés (comme l'ancien `CREDITS.json`). Le crédit perd le titre
+   de l'œuvre, la date, l'usage et la case « décorative » de l'ancien registre (le texte alternatif vide la
+   remplace) ; `/credits/` affiche les usages à la place du titre. **À valider.**
+4. **Licence hors liste** : l'image n'est pas publiée, même case cochée (la case ne couvre que l'absence de crédit).
+5. **Statut inconnu** (fichier modifié sur GitHub) : la fiche est traitée comme un brouillon et signalée.
+6. **Liste des annales** : pas de mention « nouvelle version à relire » dans le résumé de la liste (Sveltia refuse un
+   résumé qui cite un champ caché) ; la fiche, le bandeau et le résumé de publication la signalent.
+7. **Bandeau** : fixé en haut de /admin/, il décale l'interface de Sveltia par une règle CSS sur une classe interne
+   (`.sui.app-shell`). À revérifier à chaque mise à jour de Sveltia (le test « l'interface de Sveltia commence sous le
+   bandeau » le surveille).
+8. **Requêtes vers l'API de GitHub** : bandeau et téléchargement partagent la limite de 60 requêtes par heure et par
+   adresse IP, sans jeton. Usage normal : quelques requêtes par heure.
+9. **Exécutions en file d'attente** : GitHub ne garde qu'une exécution en attente ; les intermédiaires sont annulées
+   (« cancelled »), sans perte, puisque chaque exécution construit la dernière version de `main`. Le bandeau les saute.
+10. **Première publication du lot 1e** : la version en ligne n'a pas encore d'`etat.json` ; aucune fiche ne peut donc
+    être marquée « retirée » cette fois-là.
+11. **Annale de référence** : ses tests portent désormais sur une copie figée de sa fiche ; le fichier HTML reste celui
+    du dépôt. Une nouvelle version validée qui changerait le gabarit (documents, tracés, impression) pourrait faire
+    échouer ces tests : ce serait alors à traiter comme une évolution du gabarit (lot 2).
+12. **Tests de page encore bloquants** : un contenu imprévu qui casserait une page malgré les contrôles (par exemple
+    une fiche d'annale trop haute à 360 px avec un très grand nombre de notions) arrête la publication comme une
+    erreur de code. Les cas connus (description, liens, ressources extérieures, 20/20, crédits) sont désormais des
+    erreurs de contenu.
+13. **Requêtes d'élèves** (`requetes`) : stockées dans les fiches et ajoutées au texte de recherche du catalogue ;
+    `pistes_image` est seulement affiché dans /admin/.
+
+---
+
+# Annexe A : écarts du lot 1d encore ouverts
+
+Ceux du lot 1d (NOTE de la PR n° 6), toujours ouverts. Le n° 15 de l'annexe B (double construction dans l'Action) est résolu par le lot 1e.
 
 1. **Titres et planche de l'accueil déplacés de la rubrique « Accueil » vers « Réglages du site »**.
    - Ils sont dans `site.json`, comme les réglages. Avec deux rubriques sur ce même fichier, Sveltia réécrivait, en
@@ -294,9 +309,7 @@ comparer au tableau ci-dessus.
 12. **« À la une »** : reste une liste d'identifiants (l'ordre d'affichage compte), et non une relation.
 13. **Avertissement de l'Action** sur `actions/cache@v4` (Node.js 20, voir le correctif du lot 1c) : inchangé.
 
----
-
-# Annexe A : écarts du lot 1c encore ouverts
+# Annexe B : écarts du lot 1c encore ouverts
 
 À trancher : **n° 1** annales sur les pages de filière et de thème ; **n° 2** bandeau des cartes tramé ; **n° 9**
 `catalogue/a-venir.json` en objet `{labo, maquettes}` sans date ; **n° 11** titre « Crédits ».
@@ -326,7 +339,7 @@ Pour information :
 - dans le projet Claude, `id` ou `name` des champs du gabarit et ligne de crédit dans le fichier ;
 - autorisation de la DGESCO (TRAME § 13).
 
-# Annexe B : écarts du lot 1b encore ouverts
+# Annexe C : écarts du lot 1b encore ouverts
 
 - **n° 2 `catalogue/a-la-une.json`** en `{"contenus": […]}` (l'ancien format reste accepté). **À valider.**
 - **n° 3 Bandeau des cartes en 16/9** au lieu de 16/7. **À trancher.**
@@ -346,7 +359,7 @@ Pour information :
 
 Les limites de Pages CMS de l'annexe A du lot 1c sont traitées au point 3 de « Fait » ci-dessus.
 
-# Annexe C : écarts du lot 0 encore ouverts (TRAME § 13)
+# Annexe D : écarts du lot 0 encore ouverts (TRAME § 13)
 
 - **n° 2 Liens d'origine des contenus repris** : `cadre-velo.html` cite `cours-statique-analytique.html`, cassé
   tant que le cours n'est pas repris (exception de `tests/liens-connus.json`). **À trancher pour le lot 1.**

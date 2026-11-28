@@ -1,0 +1,38 @@
+/* Bandeau d'état de la publication et champ « Tester le fichier » de /admin/ (lot 1e, admin/admin.js).
+   Uniquement les jetons de statique/commun.css (copiés en tête de ce fichier par outils/construire.py). Le bandeau est
+   fixé en haut de la page ; l'interface de Sveltia CMS (elle aussi en position fixe) commence juste en dessous :
+   admin.js tient à jour la hauteur du bandeau dans --hauteur-bandeau. */
+#etat-publication{
+  position:fixed; top:0; left:0; right:0; z-index:10; box-sizing:border-box; max-height:50vh; overflow:auto;
+  padding:6px 12px; border-bottom:var(--trait-fort) solid var(--encre); border-left:var(--rail-titre) solid var(--jaune);
+  background:var(--papier); color:var(--encre); font:14px/1.45 var(--f-texte);
+}
+#etat-publication .etat-ligne{display:flex; flex-wrap:wrap; align-items:center; gap:4px 14px; margin:0}
+#etat-publication .etat-statut{font-weight:700; padding:2px 8px; border:var(--trait-fort) solid var(--encre)}
+#etat-publication .etat-en-ligne{background:var(--vert-pale); color:var(--vert); border-color:var(--vert)}
+#etat-publication .etat-en-cours{background:var(--jaune-pale); color:var(--encre)}
+#etat-publication .etat-echec{background:var(--rouge-pale); color:var(--rouge); border-color:var(--rouge)}
+#etat-publication .etat-note{color:var(--encre-2)}
+#etat-publication a{color:var(--bleu)}
+#etat-publication .etat-actualiser{
+  margin-left:auto; min-height:32px; padding:2px 10px; border:var(--trait-fort) solid var(--encre);
+  background:var(--jaune); color:var(--encre); font:inherit; font-weight:600; cursor:pointer;
+}
+#etat-publication :focus-visible,.tester-fichier :focus-visible{outline:3px solid var(--bleu); outline-offset:2px}
+#etat-publication details{margin:6px 0 2px}
+#etat-publication summary{cursor:pointer; font-weight:700}
+#etat-publication h3{margin:8px 0 2px; font-size:14px}
+#etat-publication ul{margin:2px 0; padding-left:20px}
+#etat-publication .correction{color:var(--encre-2)}
+#etat-publication .retiree{color:var(--rouge); font-weight:700}
+.tester-fichier p{margin:4px 0}
+.tester-fichier .tester-bouton{
+  min-height:36px; padding:4px 12px; border:var(--trait-fort) solid var(--encre); background:var(--jaune);
+  color:var(--encre); font:inherit; font-weight:600; cursor:pointer;
+}
+.tester-fichier .tester-valider{display:flex; align-items:center; gap:8px; min-height:44px; font-weight:700; cursor:pointer}
+.tester-fichier .tester-valider input{width:22px; height:22px; accent-color:var(--encre)}
+.tester-fichier .tester-nouvelle-version{margin-top:8px; padding:6px 10px; border-left:var(--rail-carte) solid var(--jaune); background:var(--jaune-pale)}
+/* L'interface de Sveltia commence sous le bandeau. « transform » en fait le cadre de ses propres éléments fixes
+   (éditeur d'une fiche, panneaux), qui restent ainsi sous le bandeau au lieu de passer dessous. */
+.sui.app-shell{top:var(--hauteur-bandeau,0px)!important; height:calc(100dvh - var(--hauteur-bandeau,0px))!important; max-height:calc(100dvh - var(--hauteur-bandeau,0px)); transform:translateZ(0)}

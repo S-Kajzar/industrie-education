@@ -6,17 +6,72 @@
 // compact (lot 1c). Le 20/20 de chaque annale est vérifié par tests/annale-parfaite.spec.js.
 'use strict';
 
+// Lot 1e : ces tests portent sur un site d'essai construit à partir du fichier de référence et d'une fiche FIGÉE
+// ci-dessous (catalogue et contenu lié figés aussi). Modifier la fiche réelle depuis le back-office (filières,
+// afficher_origine, libellé d'une notion…) ne peut donc jamais faire échouer ces tests et bloquer la publication :
+// ils vérifient l'enveloppe du site autour du gabarit, pas les choix éditoriaux.
+
 const fs = require('node:fs');
 const path = require('node:path');
-const { test, expect } = require('@playwright/test');
-const { DEPOT, SITE, annales, stylesDuCorps } = require('./outils');
+const { test: base, expect } = require('@playwright/test');
+const { DEPOT, depotFactice, construire, servirSite, stylesDuCorps } = require('./outils');
 
-const ANNALE = annales().find((a) => a.id === 'levage-dechargement-sacs-linge');
-const CHEMIN = ANNALE.chemin;
+const ANNALE = {
+  id: 'levage-dechargement-sacs-linge',
+  titre: 'Système de levage et de déchargement des sacs de linge',
+  presentation: 'Étude d\'un système industriel de manutention, dans une blanchisserie. Sujet complet : 5 parties, 5 h de '
+    + 'travail conseillées, 39 questions notées (unités comprises) et 4 tracés sur documents réponses, avec les dossiers '
+    + 'de présentation et technique intégrés.',
+  fichier: 'medias/depots/levage-dechargement-sacs-linge.html',
+  publics: ['bts-ms'], theme: 'mecanique',
+  notions: ['statique', 'dynamique', 'cinematique-graphique', 'roulements', 'liaisons'],
+  duree_min: 300,
+  origine: { diplome: 'BTS Maintenance industrielle', epreuve: 'E4', session: 2013 },
+  afficher_origine: false,
+  source: {
+    editeur: 'éduscol STI',
+    url: 'https://sti.eduscol.education.fr/sites/eduscol.education.fr.sti/files/concours-examens/5111/5111-dossier-questionnaire-epreuve-e4-bts-mi-2013-metropole.docx',
+    licence: 'cc-by-nc-sa-2.0-fr',
+  },
+  statut: 'relu', mis_a_jour: '2026-11-26',
+};
+const NOTIONS = [
+  { id: 'statique', nom: 'Statique' }, { id: 'dynamique', nom: 'Dynamique' },
+  { id: 'cinematique-graphique', nom: 'Cinématique graphique' }, { id: 'roulements', nom: 'Roulements' },
+  { id: 'liaisons', nom: 'Liaisons mécaniques' },
+];
+const CHEMIN = `annales/${ANNALE.id}/`;
 const ORIGINAL = path.join(DEPOT, ANNALE.fichier);
 const ENVELOPPE = /<!-- début de l’enveloppe industrie\.education -->[\s\S]*?<!-- fin de l’enveloppe industrie\.education -->/g;
 
+// Site d'essai, construit et servi une fois par processus de test.
+const test = base.extend({
+  essai: [async ({}, utiliser, infos) => { // eslint-disable-line no-empty-pattern
+    const racine = depotFactice((ecrire, dossier) => {
+      fs.mkdirSync(path.join(dossier, 'medias', 'depots'), { recursive: true });
+      fs.copyFileSync(ORIGINAL, path.join(dossier, ANNALE.fichier));
+      ecrire(`annales/${ANNALE.id}.json`, ANNALE);
+      ecrire('catalogue/notions.json', NOTIONS);
+      const themes = JSON.parse(fs.readFileSync(path.join(dossier, 'catalogue', 'themes.json'), 'utf8'));
+      ecrire('catalogue/themes.json', themes.map((t) => (t.id === 'mecanique' ? { ...t, nom: 'Mécanique et conception' } : t)));
+      const publics = JSON.parse(fs.readFileSync(path.join(dossier, 'catalogue', 'publics.json'), 'utf8'));
+      ecrire('catalogue/publics.json', publics.map((p) => (p.id === 'bts-ms' ? { ...p, nom: 'BTS MS', actif: true } : p)));
+      ecrire('contenus/essai/un/contenu.json', {
+        id: 'un', titre: 'Cadre de vélo tout terrain', type: 'exercice', niveau: 3, description: 'Contenu factice lié par la notion Statique.',
+        mode: 'natif', notions: ['statique'],
+      });
+    });
+    const resultat = construire(racine);
+    if (resultat.status !== 0) throw new Error(resultat.stderr);
+    const serveur = await servirSite(path.join(racine, '_site'), 4250 + infos.workerIndex);
+    await utiliser({ adresse: serveur.adresse, site: path.join(racine, '_site') });
+    serveur.arreter();
+    fs.rmSync(racine, { recursive: true, force: true });
+  }, { scope: 'worker' }],
+});
+
 async function ouvrir(page, baseURL, adresse = CHEMIN) {
+  adresse = new URL(adresse, baseURL).href;
   const erreurs = [];
   const tierces = [];
   const origine = new URL(baseURL).origin;
@@ -41,9 +96,9 @@ async function tracer(page, croquis) {
   await page.mouse.up();
 }
 
-test('le fichier publié est l’original, plus les seuls ajouts de l’enveloppe, à leur place', () => {
+test('le fichier publié est l’original, plus les seuls ajouts de l’enveloppe, à leur place', ({ essai }) => {
   const original = fs.readFileSync(ORIGINAL, 'utf8');
-  const publie = fs.readFileSync(path.join(SITE, CHEMIN, 'index.html'), 'utf8');
+  const publie = fs.readFileSync(path.join(essai.site, CHEMIN, 'index.html'), 'utf8');
   const [debutTete, tete, haut, bas, ...reste] = publie.match(ENVELOPPE) || [];
   expect(reste).toHaveLength(0);
   expect(publie.replace(ENVELOPPE, '')).toBe(original);
@@ -56,7 +111,8 @@ test('le fichier publié est l’original, plus les seuls ajouts de l’envelopp
   expect(publie.indexOf(bas) + bas.length).toBe(publie.lastIndexOf('</body>'));
 });
 
-test('aucun style du fichier n’est modifié, élément par élément (accueil du sujet, puis entraînement)', async ({ browser, baseURL }) => {
+test('aucun style du fichier n’est modifié, élément par élément (accueil du sujet, puis entraînement)', async ({ browser, essai }) => {
+  const baseURL = essai.adresse;
   for (const apres of [null, (page) => page.click('[data-mode=training]')]) {
     const original = await stylesDuCorps(browser, `file://${ORIGINAL}`, apres);
     const enveloppe = await stylesDuCorps(browser, new URL(CHEMIN, baseURL).href, apres);
@@ -65,7 +121,8 @@ test('aucun style du fichier n’est modifié, élément par élément (accueil 
   }
 });
 
-test('fiche compacte au-dessus du sujet : informations, « Pour réviser », crédit ; ni titre ni présentation répétés', async ({ page, baseURL }) => {
+test('fiche compacte au-dessus du sujet : informations, « Pour réviser », crédit ; ni titre ni présentation répétés', async ({ page, essai }) => {
+  const baseURL = essai.adresse;
   const { erreurs } = await ouvrir(page, baseURL);
   // Titre et description du site inchangés (premiers <title> et meta description du document).
   expect(await page.title()).toBe(`${ANNALE.titre} : sujet corrigé interactif (BTS MS) — industrie.education`);
@@ -81,7 +138,7 @@ test('fiche compacte au-dessus du sujet : informations, « Pour réviser », cr�
   // Libellés de catalogue/notions.json, accentués.
   await expect(info('Notions')).toHaveText('Statique, Dynamique, Cinématique graphique, Roulements, Liaisons mécaniques');
   await expect(fiche.locator('.enveloppe-fiche-liens').getByRole('link', { name: 'Cadre de vélo tout terrain' }))
-    .toHaveAttribute('href', '../../statique/cadre-velo/');
+    .toHaveAttribute('href', '../../essai/un/');
   // Ligne de crédit (licence CC BY-NC-SA), lien sur le nom de l'éditeur ; l'origine n'est pas affichée.
   const credit = fiche.locator('.enveloppe-fiche-credit');
   await expect(credit).toHaveText('D’après un sujet publié par éduscol STI, licence CC BY-NC-SA 2.0 FR. Adaptation '
@@ -97,7 +154,8 @@ test('fiche compacte au-dessus du sujet : informations, « Pour réviser », cr�
 
 // La hauteur dépend de la police : system-ui vaut Inter ici, DejaVu Sans sur le serveur de GitHub (15 % plus large).
 // À 360 px, on mesure donc aussi avec DejaVu Sans imposée, pour que le test donne le même résultat partout.
-test('fiche : au plus 300 px de haut à 360 px de large ; titre du sujet visible sans défiler à 1280 × 800', async ({ browser, baseURL }) => {
+test('fiche : au plus 300 px de haut à 360 px de large ; titre du sujet visible sans défiler à 1280 × 800', async ({ browser, essai }) => {
+  const baseURL = essai.adresse;
   for (const [largeur, hauteur, police] of [[360, 740, null], [360, 740, 'DejaVu Sans'], [1280, 800, null]]) {
     const contexte = await browser.newContext({ viewport: { width: largeur, height: hauteur } });
     const page = await contexte.newPage();
@@ -111,7 +169,8 @@ test('fiche : au plus 300 px de haut à 360 px de large ; titre du sujet visible
   }
 });
 
-test('entraînement : documents, correction d’une réponse fausse, tracé, plein écran, « Imprimer les DR »', async ({ page, baseURL }) => {
+test('entraînement : documents, correction d’une réponse fausse, tracé, plein écran, « Imprimer les DR »', async ({ page, essai }) => {
+  const baseURL = essai.adresse;
   const { erreurs, tierces } = await ouvrir(page, baseURL);
   await page.click('[data-mode=training]');
   await expect(page.locator('main.page')).toBeVisible();
@@ -157,7 +216,8 @@ test('entraînement : documents, correction d’une réponse fausse, tracé, ple
   expect(tierces).toEqual([]);
 });
 
-test('examen : pas de correction pendant la composition, puis remise de la copie et note', async ({ page, baseURL }) => {
+test('examen : pas de correction pendant la composition, puis remise de la copie et note', async ({ page, essai }) => {
+  const baseURL = essai.adresse;
   const { erreurs, tierces } = await ouvrir(page, baseURL);
   await page.click('[data-mode=exam]');
   const id = await page.locator('.q[data-q]').first().getAttribute('id');
@@ -171,7 +231,8 @@ test('examen : pas de correction pendant la composition, puis remise de la copie
   expect(tierces).toEqual([]);
 });
 
-test('impression : l’enveloppe et la fiche disparaissent, la copie s’imprime comme l’original', async ({ browser, baseURL }) => {
+test('impression : l’enveloppe et la fiche disparaissent, la copie s’imprime comme l’original', async ({ browser, essai }) => {
+  const baseURL = essai.adresse;
   async function imprimer(adresse) {
     const contexte = await browser.newContext({ viewport: { width: 1366, height: 900 } });
     const page = await contexte.newPage();

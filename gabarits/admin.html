@@ -2,7 +2,8 @@
 {#- Back-office (lot 1d) : Sveltia CMS servi par le site, à l'adresse /admin/. Hors du site public : noindex, absent
     du sitemap, interdit dans robots.txt, jamais lié. Le script et ses morceaux (chunks/) sont copiés depuis le
     paquet npm @sveltia/cms par outils/construire.py ; rien n'est chargé depuis unpkg.
-    Aucune couleur ni police ici : l'interface est entièrement celle de Sveltia CMS. -#}
+    Aucune couleur ni police ici : l'interface est celle de Sveltia CMS. Le bandeau d'état de la publication et le
+    champ « Tester le fichier » (lot 1e) viennent de admin.js, stylés par admin.css avec les jetons de commun.css. -#}
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -49,7 +50,9 @@
 {% if modules %}<script type="importmap">
 {"imports": { {%- for m in modules %}"{{ m.adresse }}": "./modules/{{ m.nom }}/"{{ ", " if not loop.last }}{% endfor -%} }}
 </script>
-{% endif %}<script src="./sveltia-cms.js"></script>
+{% endif %}<link rel="stylesheet" href="./admin.css">
+<script src="./sveltia-cms.js"></script>
+<script src="./admin.js" data-depot="{{ depot }}"></script>
 </head>
 <body>
 <noscript><p>Le back-office demande JavaScript. En cas de besoin, les fichiers se modifient aussi sur GitHub (voir GUIDE-BACK-OFFICE.md).</p></noscript>

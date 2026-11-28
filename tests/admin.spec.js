@@ -1,11 +1,13 @@
-// Back-office /admin/ (lot 1d, TRAME § 9) : Sveltia CMS servi par le site.
+// Back-office /admin/ (lot 1d, TRAME § 9 ; lot 1e) : Sveltia CMS servi par le site.
 //   - admin/config.yml : rubriques, chemins existants, aucune clé de données oubliée, listes fermées identiques à
 //     celles de la construction, données au format du back-office ;
 //   - _site/admin/ : copié depuis le paquet npm, hors du site public (noindex, sitemap, robots.txt, aucun lien) ;
 //   - dans le navigateur, sans GitHub (appels extérieurs bloqués) : script servi par le site, écran de connexion en
 //     français, aucune erreur JavaScript, configuration acceptée par le validateur du paquet lui-même ;
 //   - en mode « dépôt local » (tests/depot-local.js) : chaque fiche s'ouvre, un enregistrement ne change que le champ
-//     modifié, une annale se dépose depuis un téléphone, un fichier de plus de 5 Mo est refusé.
+//     modifié, une annale se dépose depuis un téléphone, un fichier de plus de 5 Mo est refusé ;
+//   - lot 1e : rubrique « Dépôt rapide », source obligatoire, crédit et case de risque avec chaque image, rubrique
+//     « Crédits » retirée ; bandeau d'état et champ « Tester le fichier » : tests/bandeau.spec.js.
 // Un vrai enregistrement sur GitHub (API GraphQL) n'est pas joignable depuis les tests : recette de Sébastien.
 'use strict';
 
@@ -38,7 +40,8 @@ const CONSTANTES = JSON.parse(spawnSync('python3', ['-c', [
 
 // Clés techniques volontairement non modifiables dans le back-office (champs cachés, recopiés tels quels).
 const TECHNIQUES = {
-  contenus: ['mode', 'source'],
+  annales: ['nouvelle_version'],
+  contenus: ['nouvelle_version', 'mode', 'source'],
   reglages: ['nom', 'base', 'origine', 'hebergeur'],
 };
 
@@ -61,7 +64,9 @@ test.describe('admin/config.yml', () => {
 
   test('rubriques dans l’ordre, chacune avec sa ligne d’aide ; Accueil avec « à la une » et « à venir »', () => {
     expect(CONFIG.collections.map((c) => c.label))
-      .toEqual(['Annales', 'Contenus', 'Images et crédits', 'Accueil', 'Notions', 'Thèmes', 'Réglages du site']);
+      .toEqual(['Dépôt rapide', 'Annales', 'Contenus', 'Accueil', 'Notions', 'Thèmes', 'Réglages du site']);
+    // Lot 1e : plus de rubrique « Crédits » ; le crédit se saisit avec chaque image.
+    expect(CONFIG.collections.filter((c) => /crédit/i.test(c.label) || c.file === 'medias/CREDITS.json')).toEqual([]);
     for (const c of CONFIG.collections) expect(c.description, c.label).toBeTruthy();
     expect(collection('accueil').files.map((f) => f.name)).toEqual(['a-la-une', 'a-venir']);
   });
@@ -78,7 +83,7 @@ test.describe('admin/config.yml', () => {
     }
     expect(existe(CONFIG.media_folder, true)).toBe(true);
     for (const a of CONFIG.asset_collections) expect(existe(a.media_folder, true), a.media_folder).toBe(true);
-    expect(CONFIG.asset_collections.map((a) => a.media_folder)).toEqual(['medias/cartes', 'medias/illustrations', 'medias/depots']);
+    expect(CONFIG.asset_collections.map((a) => a.media_folder)).toEqual(['medias/cartes', 'medias/illustrations', 'medias/depots', 'medias/import']);
     (function parcourir(champs) {
       for (const c of champs) {
         if (c.media_folder) expect(existe(c.media_folder, true), c.media_folder).toBe(true);
@@ -103,6 +108,7 @@ test.describe('admin/config.yml', () => {
     }
     expect(oubliees, 'clés perdues au premier enregistrement').toEqual([]);
     const caches = (champs) => champs.filter((c) => c.widget === 'hidden').map((c) => c.name);
+    expect(caches(collection('annales').fields)).toEqual(TECHNIQUES.annales);
     expect(caches(collection('contenus').fields)).toEqual(TECHNIQUES.contenus);
     expect(caches(collection('reglages').files[0].fields)).toEqual(TECHNIQUES.reglages);
     // Les fichiers modifiés par le back-office le sont chacun par une seule rubrique.
@@ -120,7 +126,13 @@ test.describe('admin/config.yml', () => {
     expect(options(champ(a, 'publics'))).toEqual(publics.map((p) => p.id));
     expect(options(champ(a, 'theme'))).toEqual(themes.map((t) => t.id));
     expect(options(champ(champ(a, 'source').fields, 'licence'))).toEqual(CONSTANTES.licences_annale);
-    expect(options(champ(collection('credits').fields, 'licence'))).toEqual(CONSTANTES.licences);
+    // Licence de chaque image (cartes, planches des thèmes, de Labo et Maquettes, de l'accueil) : liste fermée.
+    const planches = [champ(collection('themes').fields, 'illustration'),
+      champ(collection('accueil').files.find((f) => f.name === 'a-venir').fields[0].fields, 'illustration'),
+      champ(collection('reglages').files[0].fields, 'illustration_accueil')];
+    for (const image of [champ(a, 'image'), champ(c, 'image'), ...planches]) {
+      expect(options(champ(image.fields, 'licence'))).toEqual(CONSTANTES.licences);
+    }
     expect(collection('accueil').files.find((f) => f.name === 'a-venir').fields.map((f) => f.name)).toEqual(CONSTANTES.a_venir);
     for (const champs of [a, c, collection('notions').fields]) {
       expect(new RegExp(champ(champs, 'id').pattern[0]).source).toBe(new RegExp(CONSTANTES.identifiant).source);
@@ -134,6 +146,54 @@ test.describe('admin/config.yml', () => {
     // Statut sans valeur par défaut pour les contenus : Sveltia l'appliquerait aussi aux fiches existantes.
     expect(champ(c, 'statut').default).toBeUndefined();
     expect(champ(a, 'statut').default).toBe('brouillon');
+  });
+
+  test('source d’une annale : éditeur, adresse et licence obligatoires dès la création (lot 1e)', () => {
+    const source = champ(collection('annales').fields, 'source');
+    expect(source.required).toBeUndefined();
+    for (const nom of ['editeur', 'url', 'licence']) expect(champ(source.fields, nom).required, nom).toBeUndefined();
+    expect(champ(source.fields, 'reference_autorisation').required).toBe(false);
+    const [motif, message] = champ(source.fields, 'url').pattern;
+    expect(new RegExp(motif).test('https://sti.eduscol.education.fr/sujet.docx')).toBe(true);
+    expect(new RegExp(motif).test('')).toBe(false);
+    expect(message).toMatch(/https:\/\//);
+    // Motifs avec un message en français qui dit quoi faire.
+    for (const [champs, nom] of [[collection('annales').fields, 'titre'], [collection('annales').fields, 'presentation'],
+      [collection('contenus').fields, 'description']]) {
+      expect(champ(champs, nom).pattern[1], nom).toMatch(/^(Écrivez|70 caractères)/);
+    }
+  });
+
+  test('images : texte alternatif et crédit facultatifs, case de risque décochée par défaut (lot 1e)', () => {
+    const planches = [champ(collection('themes').fields, 'illustration'),
+      champ(collection('accueil').files.find((f) => f.name === 'a-venir').fields[0].fields, 'illustration'),
+      champ(collection('reglages').files[0].fields, 'illustration_accueil')];
+    for (const image of [champ(collection('annales').fields, 'image'), champ(collection('contenus').fields, 'image'), ...planches]) {
+      expect(image.required, image.name).toBe(false);
+      expect(image.fields.map((f) => f.name)).toEqual(['fichier', 'alt', 'licence', 'source', 'auteur', 'reference_autorisation', 'risque_accepte']);
+      for (const f of image.fields) expect(f.required, `${image.name}.${f.name}`).toBe(false);
+      const risque = champ(image.fields, 'risque_accepte');
+      expect(risque).toMatchObject({ widget: 'boolean', label: 'J\'accepte le risque : image publiée sans crédit',
+        hint: 'À régulariser dès que possible ; la case ne couvre que l\'absence de crédit.' });
+      expect(risque.default === undefined || risque.default === false).toBe(true);
+    }
+  });
+
+  test('« Dépôt rapide » : 1 à 10 fichiers HTML en un enregistrement, dans medias/import/ (lot 1e)', () => {
+    const depot = collection('depot-rapide');
+    expect(depot).toMatchObject({ label: 'Dépôt rapide', folder: 'medias/import', create: true });
+    expect(depot.fields.map((f) => f.name)).toEqual(['fichiers']);
+    expect(depot.fields[0]).toMatchObject({ widget: 'file', multiple: true, min: 1, max: 10, choose_url: false,
+      media_folder: '/medias/import' });
+    expect(depot.fields[0].accept.split(',')).toContain('.html');
+    // Nouvelle version d'une fiche : champ caché, lien de téléchargement, case de validation.
+    for (const nom of ['annales', 'contenus']) {
+      const champs = collection(nom).fields;
+      expect(champ(champs, 'nouvelle_version').widget).toBe('hidden');
+      // Lien « Télécharger pour tester » et case « Valider la nouvelle version » (admin/admin.js) : la case n'écrit
+      // rien tant qu'elle est décochée (tests/bandeau.spec.js).
+      expect(champ(champs, 'valider_nouvelle_version')).toMatchObject({ widget: 'telecharger', label: 'Tester le fichier', required: false });
+    }
   });
 
   test('médias : mêmes dossiers, 5 Mo comme outils/annale.py, ni banques d’images ni transformations', () => {
@@ -204,8 +264,9 @@ test.describe('_site/admin/ : construit, hors du site public', () => {
       }));
       try {
         const r = construire(racine);
-        expect(r.status, nom).toBe(1);
-        expect(r.stderr).toContain(`Nom de collection réservé : « ${nom} »`);
+        expect(r.status, nom).toBe(0);
+        const etat = JSON.parse(fs.readFileSync(path.join(racine, '_site', 'admin', 'etat.json'), 'utf8'));
+        expect(JSON.stringify(etat.a_corriger.fiches_retenues)).toContain(`Nom de collection réservé : « ${nom} »`);
       } finally {
         fs.rmSync(racine, { recursive: true, force: true });
       }
@@ -220,14 +281,34 @@ async function ouvrirAdmin(browser, baseURL, options = {}) {
   const origine = new URL(baseURL).origin;
   await contexte.route((url) => url.origin !== origine, (route) => route.abort());
   const page = await contexte.newPage();
+  page.setDefaultTimeout(20_000);
   const exterieures = new Set();
   const erreurs = [];
-  page.on('request', (r) => { if (!r.url().startsWith(`${origine}/`) && !/^(data|blob):/.test(r.url())) exterieures.add(new URL(r.url()).host); });
+  // Le bandeau d'état (lot 1e) interroge l'API publique de GitHub, sans jeton : seul cet appel est admis.
+  const BANDEAU = /^https:\/\/api\.github\.com\/repos\/S-Kajzar\/industrie-education\/actions\/workflows\/publier\.yml\/runs\?/;
+  page.on('request', (r) => {
+    if (r.url().startsWith(`${origine}/`) || /^(data|blob):/.test(r.url())) return;
+    if (BANDEAU.test(r.url()) && !r.headers().authorization) return;
+    exterieures.add(new URL(r.url()).host);
+  });
   page.on('pageerror', (e) => erreurs.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !m.text().startsWith('Failed to load resource')) erreurs.push(m.text()); });
   page.on('dialog', (d) => d.accept());
   await page.goto(new URL('admin/', baseURL).href);
   return { contexte, page, exterieures, erreurs, adresse: new URL('admin/', baseURL).href };
+}
+
+// Sveltia n'affiche les champs d'un long formulaire qu'au fil du défilement : on descend jusqu'au champ voulu.
+async function reveler(page, cible) {
+  for (let i = 0; i < 40 && !(await cible.count()); i++) {
+    await page.evaluate(() => {
+      let zone = document.querySelector('section[data-key-path]');
+      while (zone && !(zone.scrollHeight > zone.clientHeight && /(auto|scroll)/.test(getComputedStyle(zone).overflowY))) zone = zone.parentElement;
+      if (zone) zone.scrollTop += 400;
+    });
+    await page.waitForTimeout(100);
+  }
+  return cible;
 }
 
 async function entrerEnLocal(page, fichiers) {
@@ -268,11 +349,10 @@ test.describe('/admin/ dans le navigateur', () => {
         .map((f) => `contenus/entries/${f.split(path.sep).slice(0, 2).join('/')}/contenu`),
       ...lireJSON('catalogue/notions.json').map((_, i) => `notions/entries/${i}`),
       ...themes.map((_, i) => `themes/entries/${i}`),
-      ...lireJSON('medias/CREDITS.json').map((_, i) => `credits/entries/${i}`),
       'accueil/entries/a-la-une', 'accueil/entries/a-venir', 'reglages/entries/reglages',
     ];
     expect(fiches.length).toBeGreaterThan(20);
-    for (const fiche of fiches) {
+    for (const fiche of [...fiches, 'depot-rapide/new']) {
       await page.goto(`${adresse}#/collections/${fiche}`);
       await expect(page.getByRole('button', { name: 'Enregistrer', exact: true }), fiche).toBeVisible();
       await expect(page.locator('section[data-key-path]').first(), fiche).toBeVisible();
@@ -299,7 +379,8 @@ test.describe('/admin/ dans le navigateur', () => {
     for (const [fichier, fiche, libelle, valeur, modifier] of CAS) {
       const avant = await lireDepotLocal(page, fichier);
       await page.goto(`${adresse}#/collections/${fiche}`);
-      const saisie = page.getByRole('textbox', { name: libelle, exact: true }).or(page.getByRole('spinbutton', { name: libelle, exact: true })).first();
+      await expect(page.locator('section[data-key-path]').first()).toBeVisible();
+      const saisie = await reveler(page, page.getByRole('textbox', { name: libelle, exact: true }).or(page.getByRole('spinbutton', { name: libelle, exact: true })).first());
       await saisie.fill(valeur);
       await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
       await expect(page.getByText('Entrée enregistrée.')).toBeVisible();
@@ -336,8 +417,15 @@ test.describe('/admin/ dans le navigateur', () => {
       await page.getByRole('textbox', { name: 'Titre', exact: true }).fill('Pont roulant d’essai');
       await page.getByRole('textbox', { name: 'Présentation', exact: true }).fill('Sujet factice déposé depuis un téléphone.');
       await fichier.locator('input[type=file]').first().setInputFiles(sujet);
-      await page.getByText('BTS MS', { exact: true }).first().click();
-      await page.getByText('Mécanique et conception', { exact: true }).first().click();
+      await (await reveler(page, page.getByText('BTS MS', { exact: true }).first())).click();
+      await (await reveler(page, page.getByText('Mécanique et conception', { exact: true }).first())).click();
+      // Source obligatoire dès la création (lot 1e) : sans elle, l'enregistrement est refusé.
+      await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+      await expect(page.getByText('Entrée enregistrée.')).toHaveCount(0);
+      await (await reveler(page, page.getByRole('textbox', { name: 'Éditeur', exact: true }))).fill('éduscol STI');
+      await page.getByRole('textbox', { name: 'Adresse du document d’origine', exact: true }).or(page.getByRole('textbox', { name: 'Adresse du document d\'origine', exact: true })).first()
+        .fill('https://sti.eduscol.education.fr/sujet.docx');
+      await (await reveler(page, page.getByText('CC BY-NC-SA 2.0 FR (éduscol STI)', { exact: true }).first())).click();
       await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
       await expect(page.getByText('Entrée enregistrée.')).toBeVisible();
       expect(await listerDepotLocal(page, 'medias/depots')).toContain('sujet-pont-roulant.html');
@@ -345,7 +433,9 @@ test.describe('/admin/ dans le navigateur', () => {
       expect(fiche).toEqual({
         id: 'pont-roulant-essai', titre: 'Pont roulant d’essai', presentation: 'Sujet factice déposé depuis un téléphone.',
         fichier: '/medias/depots/sujet-pont-roulant.html', publics: ['bts-ms'], theme: 'mecanique',
-        afficher_origine: false, statut: 'brouillon',
+        afficher_origine: false,
+        source: { editeur: 'éduscol STI', url: 'https://sti.eduscol.education.fr/sujet.docx', licence: 'cc-by-nc-sa-2.0-fr' },
+        statut: 'brouillon',
       });
       // Noms de fichiers nettoyés (translittération servie par le site) : aucun autre hôte que les polices.
       expect([...exterieures].filter((h) => h !== 'cdn.jsdelivr.net')).toEqual([]);

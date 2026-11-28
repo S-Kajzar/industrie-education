@@ -1,6 +1,11 @@
-# Publication du site sur GitHub Pages.
-# À chaque envoi sur main : installation, construction de _site/ (avec le tableau de bord éditorial dans le
-# récapitulatif de l'exécution), tests ; si les tests passent, mise en ligne.
+# Publication du site sur GitHub Pages (lot 1e).
+# À chaque envoi sur main :
+#   1. import des fichiers déposés (« Dépôt rapide » de /admin/, ou medias/import/ sur GitHub) et des nouvelles
+#      versions validées : outils/importer.py, un seul commit poussé sur main ;
+#   2. contrôle 20/20 des annales, puis construction : outils/chaine.js. Une erreur de contenu retient seulement sa
+#      fiche ; le résumé de publication (récapitulatif de l'exécution) commence par « À corriger » ;
+#   3. tests ; s'ils passent, mise en ligne. Une erreur de code (construction ou test) arrête tout : le site en ligne
+#      ne change pas.
 # Prérequis (une fois) : Settings → Pages → Build and deployment → Source : « GitHub Actions ».
 name: Publier le site
 
@@ -9,9 +14,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# L'import écrit dans le dépôt (fiches créées, fichiers rangés) : permission d'écriture sur le contenu, et rien
+# d'autre. Les commits faits avec ce jeton ne relancent pas l'Action : l'import est publié dans la même exécution.
 permissions:
-  contents: read
+  contents: write
 
+# File d'attente : une seule publication à la fois, aucune n'est interrompue. Si plusieurs envois arrivent pendant
+# une publication, seul le dernier attend son tour (GitHub annule les intermédiaires) ; comme chaque exécution
+# travaille sur la dernière version de main, rien n'est perdu.
 concurrency:
   group: pages
   cancel-in-progress: false
@@ -21,8 +31,10 @@ jobs:
     name: Construire et tester
     runs-on: ubuntu-latest
     steps:
-      - name: Récupérer le dépôt
+      - name: Récupérer le dépôt (dernière version de main)
         uses: actions/checkout@v5
+        with:
+          ref: main
 
       - name: Installer Python
         uses: actions/setup-python@v6
@@ -49,17 +61,26 @@ jobs:
       - name: Installer Playwright, les polices et le back-office (Sveltia CMS)
         run: npm ci
 
-      - name: Installer Chromium pour les tests
+      - name: Installer Chromium (contrôle 20/20 et tests)
         run: npx playwright install --with-deps chromium
 
-      # Tableau de bord éditorial de Sébastien : publiés et brouillons, annales sans source, cartes sans image, planche
-      # d'accueil, poids de l'accueil, mentions légales, indexation. Des comptes seulement, aucun secret. Affiché dans
-      # le récapitulatif de l'exécution (onglet Actions) ; en cas d'erreur de données, le message s'y trouve aussi.
-      - name: Construire le site et écrire le tableau de bord éditorial
-        run: python3 outils/construire.py --resume "$GITHUB_STEP_SUMMARY"
+      # Fiches créées en brouillon pour les fichiers déposés, nouvelles versions validées : un seul commit.
+      - name: Importer les fichiers déposés
+        run: python3 outils/importer.py --commit --rapport .cache/import.md
 
-      - name: Construire le site et lancer les tests
-        run: npm test
+      # Liste des pages en ligne : une fiche retenue qui y figure est signalée « retirée du site ».
+      - name: Lire l'état de la version en ligne
+        run: |
+          adresse=$(python3 -c "import json; s = json.load(open('site.json')); print(s['origine'] + s['base'] + 'admin/etat.json')")
+          curl -fsSL "$adresse" -o .cache/etat-en-ligne.json || echo "Pas d'état en ligne (première publication du lot 1e)."
+
+      # Résumé de publication de Sébastien : « À corriger » d'abord, puis images à régulariser, import, tableau de
+      # bord éditorial. Des titres, des chemins et des comptes ; aucun secret.
+      - name: Contrôle 20/20, construction et résumé de publication
+        run: node outils/chaine.js --resume "$GITHUB_STEP_SUMMARY" --precedent .cache/etat-en-ligne.json --import .cache/import.md
+
+      - name: Tester le site construit
+        run: npx playwright test
 
       - name: Préparer _site/ pour GitHub Pages
         uses: actions/upload-pages-artifact@v4

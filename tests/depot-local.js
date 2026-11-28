@@ -12,8 +12,9 @@ const { DEPOT } = require('./outils');
 function fichiersDuDepot(modifier = (f) => f) {
   const liste = [];
   const ajouter = (rel) => liste.push(modifier({ chemin: rel, b64: fs.readFileSync(path.join(DEPOT, rel)).toString('base64') }));
-  for (const f of ['site.json', 'medias/CREDITS.json']) ajouter(f);
-  for (const d of ['catalogue', 'annales', 'medias/depots', 'medias/cartes', 'medias/illustrations']) {
+  ajouter('site.json');
+  for (const d of ['catalogue', 'annales', 'medias/depots', 'medias/cartes', 'medias/illustrations', 'medias/import']) {
+    if (!fs.existsSync(path.join(DEPOT, d))) continue;
     for (const f of fs.readdirSync(path.join(DEPOT, d), { recursive: true })) {
       if (fs.statSync(path.join(DEPOT, d, f)).isFile()) ajouter(`${d}/${f}`);
     }

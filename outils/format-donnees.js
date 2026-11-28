@@ -10,6 +10,8 @@
 //
 // Usage : node outils/format-donnees.js           # liste les fichiers à aligner (code 1 s'il y en a)
 //         node outils/format-donnees.js --ecrire  # les réécrit
+//         node outils/format-donnees.js --fiches F…  # aligne ces fiches d'annale ou de contenu, d'un dépôt
+//                                                   # quelconque (outils/importer.py, lot 1e)
 'use strict';
 
 const fs = require('node:fs');
@@ -61,7 +63,7 @@ function fichiersGeres(config, depot = DEPOT) {
       if (fs.existsSync(path.join(depot, f))) liste.push([f, collection('contenus').fields, false]);
     }
   }
-  for (const nom of ['credits', 'notions', 'themes']) liste.push([collection(nom).file, collection(nom).fields, true]);
+  for (const nom of ['notions', 'themes']) liste.push([collection(nom).file, collection(nom).fields, true]);
   for (const [nom, fichier] of [['accueil', 'a-la-une'], ['accueil', 'a-venir'], ['reglages', 'reglages']]) {
     const f = fichierDe(nom, fichier);
     liste.push([f.file, f.fields, false]);
@@ -83,7 +85,19 @@ function aAligner(depot = DEPOT) {
   }).filter(({ texte, attendu }) => texte !== attendu);
 }
 
-if (require.main === module) {
+// Fiche d'annale (…/annales/<id>.json) ou de contenu (…/contenus/<collection>/<id>/contenu.json), alignée seule.
+function alignerFiche(chemin, config = configuration()) {
+  const nom = /(^|[\\/])annales[\\/][^\\/]+\.json$/.test(chemin) ? 'annales' : 'contenus';
+  const champs = config.collections.find((c) => c.name === nom).fields;
+  const texte = fs.readFileSync(chemin, 'utf8');
+  const attendu = formater(texte, champs, false);
+  if (attendu !== texte) fs.writeFileSync(chemin, attendu);
+}
+
+if (require.main === module && process.argv.includes('--fiches')) {
+  const config = configuration();
+  for (const fiche of process.argv.slice(process.argv.indexOf('--fiches') + 1)) alignerFiche(path.resolve(fiche), config);
+} else if (require.main === module) {
   const ecrire = process.argv.includes('--ecrire');
   const liste = aAligner();
   for (const { fichier, attendu } of liste) {
@@ -94,4 +108,4 @@ if (require.main === module) {
   process.exitCode = !ecrire && liste.length ? 1 : 0;
 }
 
-module.exports = { configuration, canonique, fichiersGeres, formater, aAligner };
+module.exports = { configuration, canonique, fichiersGeres, formater, aAligner, alignerFiche };

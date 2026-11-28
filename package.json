@@ -4,8 +4,9 @@
   "description": "Site de cours, exercices interactifs et annales en sciences industrielles : génération et tests",
   "scripts": {
     "construire": "python3 outils/construire.py",
+    "chaine": "node outils/chaine.js",
     "servir": "node tests/serveur.js",
-    "test": "python3 outils/construire.py && playwright test"
+    "test": "node outils/chaine.js && playwright test"
   },
   "devDependencies": {
     "@fontsource/barlow-condensed": "5.3.0",

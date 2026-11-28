@@ -20,18 +20,32 @@ Organisation des fiches (les deux sont acceptées, les adresses publiques sont l
   - une fiche à plat, créée par le back-office : contenus/<collection>/<id>.json, annales/<id>.json, avec le fichier
     HTML autonome déposé dans medias/depots/ (champ « fichier »).
 
-Rien n'est publié au statut « brouillon ». La construction s'arrête avec un message clair au premier problème :
-nom réservé, type, thème, public, niveau ou notion inconnus, identifiant en double, image sans crédit ou
-introuvable, licence hors liste, texte alternatif manquant, fichier autonome qui charge une ressource extérieure,
-annale publiée sans source, indexation demandée alors que les mentions légales sont incomplètes, etc.
+Rien n'est publié au statut « brouillon ». Deux sortes d'erreurs (lot 1e) :
+  - erreur de contenu, propre à une fiche (titre ou présentation manquants, source, filière, thème ou notion inconnus,
+    identifiant en double, fichier autonome invalide, note différente de 20/20…) : toutes les erreurs de la fiche sont
+    notées, avec le champ de /admin/ et la correction. Une fiche « relu » fautive est retenue (non publiée, signalée
+    « retirée » si elle était en ligne) ; pour un brouillon, ce ne sont que des avertissements. Une fiche illisible
+    (JSON invalide) est ignorée et signalée. Le reste du site se construit, sans lien vers les fiches retenues ;
+  - erreur de structure ou de code (site.json, catalogue/, gabarit, paquet du back-office…) : la construction s'arrête
+    et rien n'est publié.
+Une image ne retient jamais sa fiche : crédit complet, elle est publiée et citée sur /credits/ ; crédit incomplet et
+case « J'accepte le risque » cochée, elle est publiée et listée « à régulariser » ; sinon, elle n'est pas publiée (le
+bandeau typographique la remplace) et elle est signalée « à corriger ».
+
+Chaque construction écrit l'état de la publication dans _site/admin/etat.json (lu par le bandeau de /admin/) et, avec
+--resume, le résumé de publication, qui commence par la rubrique « À corriger ».
 
 Usage :
     python3 outils/construire.py                        # lit le dépôt, écrit _site/
     python3 outils/construire.py --racine D --sortie S  # autre dépôt (tests), autre dossier de sortie
-    python3 outils/construire.py --resume "$GITHUB_STEP_SUMMARY"   # dans l'Action : tableau de bord éditorial
+    python3 outils/construire.py --resume "$GITHUB_STEP_SUMMARY"   # dans l'Action : résumé de publication
+    python3 outils/construire.py --verifications F      # résultats du contrôle 20/20 (outils/verifier-annales.js)
+    python3 outils/construire.py --precedent F          # état de la version en ligne (fiches « retirées »)
+    python3 outils/construire.py --import F             # rapport de outils/importer.py, repris dans le résumé
 """
 
 import argparse
+import datetime
 import difflib
 import json
 import os
@@ -53,16 +67,20 @@ import annale as controle_autonome  # noqa: E402  (outils/annale.py)
 import illustrations  # noqa: E402  (outils/illustrations.py)
 
 DEPOT = Path(__file__).resolve().parent.parent
+# Gabarits Jinja2. La variable d'environnement permet aux tests de simuler une erreur de code (gabarit cassé).
+GABARITS = Path(os.environ.get("INDUSTRIE_GABARITS") or DEPOT / "gabarits")
 UMAMI_SCRIPT = "https://cloud.umami.is/script.js"
 # Paquet npm du back-office (npm install). La variable d'environnement permet aux tests d'en simuler l'absence.
 SVELTIA = Path(os.environ.get("INDUSTRIE_SVELTIA") or DEPOT / "node_modules" / "@sveltia" / "cms")
 # Modules que Sveltia charge à la demande depuis unpkg.com et que le site sert lui-même (table d'import de
 # admin/index.html) : dépendances du paquet, installées avec lui ; seuls les fichiers utiles et la licence sont copiés.
 #   - translittération des noms de fichiers téléversés (accents, œ, ß…) ;
-#   - lecture des métadonnées EXIF d'une image téléversée (date de prise de vue).
+#   - lecture des métadonnées EXIF d'une image téléversée (date de prise de vue) ;
+#   - Immutable.js, qui enveloppe les données d'une fiche transmises au champ « Tester le fichier » (lot 1e).
 MODULES_ADMIN = {
     "@sindresorhus/transliterate": ("index.js", "replacements.js", "locale-replacements.js", "license"),
     "exifr": ("dist/lite.esm.mjs", "LICENSE"),
+    "immutable": ("dist/immutable.es.js", "LICENSE"),
 }
 
 # TRAME § 3 : adresses prises par les pages du site. Les identifiants des thèmes et des publics s'y ajoutent.
@@ -109,6 +127,14 @@ ANNALES_ACCUEIL = 3
 IDENTIFIANT = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 CHEMIN_IMAGE = re.compile(r"^medias/(cartes|illustrations)/[^/]+\.(jpe?g|png|webp)$", re.IGNORECASE)
 CHEMIN_DEPOT = re.compile(r"^medias/depots/[^/]+\.html?$", re.IGNORECASE)
+# Nouvelle version d'un fichier autonome, déposée par l'import et en attente de validation (lot 1e).
+CHEMIN_A_RELIRE = re.compile(r"^medias/a-relire/[^/]+\.html?$", re.IGNORECASE)
+# Dossiers des images téléversées (images orphelines) et du dépôt rapide (fichiers en attente d'import).
+DOSSIERS_IMAGES = ("medias/cartes", "medias/illustrations")
+DOSSIER_IMPORT = "medias/import"
+EXTENSIONS_IMAGES = (".jpg", ".jpeg", ".png", ".webp")
+# Longueur de la présentation d'une annale ou de la description d'un contenu (description de la page).
+TEXTE_MIN, PRESENTATION_MAX = 20, 300
 
 # Pages de service : (adresse, gabarit de texte, titre, description).
 SERVICE = (
@@ -129,7 +155,78 @@ SERVICE = (
 
 
 class ErreurConstruction(Exception):
-    """Problème de données : la construction s'arrête avec ce message."""
+    """Erreur de structure ou de code ; levée dans le contrôle d'une fiche, c'est une erreur de contenu (Controle)."""
+
+    def __init__(self, message, correction=None):
+        super().__init__(message)
+        self.correction = correction
+
+
+# Champs des fiches tels qu'ils s'appellent dans /admin/ (admin/config.yml), avec la correction à faire, en une phrase.
+# Les signalements de la construction (résumé, bandeau de /admin/) citent ces libellés.
+CORRECTION_FICHIER = ("Faites corriger le fichier dans le projet Claude « Exercices interactifs », puis déposez la "
+                      "nouvelle version (rubrique « Dépôt rapide »).")
+CHAMPS_ANNALE = {
+    "fiche": ("Fiche entière (fichier JSON)", "Rétablissez la version précédente de la fiche sur GitHub (fichier → "
+              "History), ou corrigez la syntaxe JSON à l'endroit indiqué."),
+    "id": ("Identifiant (adresse de la page)", "Remettez l'identifiant d'origine, qui est le nom du fichier de la fiche "
+           "(minuscules sans accent, chiffres et tirets) : il ne se change plus après la création."),
+    "titre": ("Titre", "Écrivez le titre de l'annale."),
+    "presentation": ("Présentation", f"Écrivez deux ou trois phrases ({TEXTE_MIN} à {PRESENTATION_MAX} caractères) : le "
+                     "système étudié, les parties, la durée."),
+    "fichier": ("Fichier HTML du sujet", "Téléversez le fichier HTML autonome livré par le projet Claude."),
+    "publics": ("Filières", "Choisissez au moins une filière."),
+    "theme": ("Thème", "Choisissez le thème dans la liste."),
+    "notions": ("Notions", "Choisissez les notions dans la liste ; une notion manque ? Ajoutez-la d'abord dans la "
+                "rubrique « Notions »."),
+    "duree_min": ("Durée conseillée (en minutes)", "Indiquez une durée en minutes, par un nombre entier positif."),
+    "afficher_origine": ("Afficher l'origine sur le site", "Cochez ou décochez la case."),
+    "source": ("Source et licence du sujet", "Remplissez l'éditeur, l'adresse du document en https:// et la licence ; "
+               "pour une autorisation écrite, sa référence."),
+    "statut": ("Statut", "Choisissez « Brouillon » ou « Relu »."),
+    "mis_a_jour": ("Mis à jour le", "Choisissez la date dans le calendrier."),
+    "nouvelle_version": ("Nouvelle version à relire", CORRECTION_FICHIER),
+    "requetes": ("Requêtes d'élèves", "Écrivez une requête par ligne."),
+}
+CHAMPS_CONTENU = {
+    **{cle: CHAMPS_ANNALE[cle] for cle in ("fiche", "id", "notions", "duree_min", "statut", "nouvelle_version",
+                                          "requetes")},
+    "titre": ("Titre", "Écrivez le titre du contenu."),
+    "type": ("Type", "Choisissez le type dans la liste."),
+    "niveau": ("Niveau", "Choisissez le niveau 1, 2 ou 3, ou laissez vide pour un formulaire."),
+    "description": ("Description", f"Écrivez une ou deux phrases ({TEXTE_MIN} caractères au moins) : ce que l'élève "
+                    "fait, sur quel système."),
+    "mots_cles": ("Mots-clés (recherche du catalogue)", "Écrivez un mot-clé par ligne."),
+    "fichier": ("Fichier HTML (nouveau contenu seulement)", "Téléversez le fichier HTML autonome du contenu."),
+    "theme": ("Thème (contenus/<collection>/collection.json)", "Corrigez le thème sur GitHub : un identifiant de "
+              "catalogue/themes.json."),
+    "publics": ("Filières (contenus/<collection>/collection.json)", "Corrigez les filières sur GitHub : des "
+                "identifiants de catalogue/publics.json."),
+    "mode": ("Mode (champ technique, sur GitHub)", "Corrigez le mode sur GitHub : « repris » ou « natif »."),
+    "collection": ("Collection (contenus/<collection>/collection.json, sur GitHub)", "Corrigez collection.json sur "
+                   "GitHub (titre, description, thème, filières), ou renommez le dossier de la collection."),
+}
+
+
+class Controle:
+    """Erreurs de contenu d'une fiche (lot 1e), toutes notées au lieu de s'arrêter à la première : champ de /admin/,
+    message, correction en une phrase."""
+
+    def __init__(self, champs):
+        self.champs = champs
+        self.erreurs = []
+
+    def noter(self, cle, message, correction=None):
+        libelle, par_defaut = self.champs.get(cle, (cle, ""))
+        self.erreurs.append({"champ": libelle, "message": str(message).strip(), "correction": correction or par_defaut})
+
+    def __call__(self, cle, fonction, *arguments, sinon=None, **options):
+        """Appelle fonction ; une ErreurConstruction devient une erreur notée, et sinon est renvoyé."""
+        try:
+            return fonction(*arguments, **options)
+        except ErreurConstruction as erreur:
+            self.noter(cle, erreur, erreur.correction)
+            return sinon
 
 
 # ---------------------------------------------------------------------------
@@ -264,19 +361,39 @@ def liste_textes(donnees, champ, ou):
 def notions_valides(donnees, ou, notions_connues):
     """Identifiants de notions de la fiche, tous déclarés dans catalogue/notions.json."""
     notions = liste_textes(donnees, "notions", ou)
+    messages = []
     for notion in notions:
         if notion in notions_connues:
             continue
         # D'abord les identifiants qui contiennent la saisie (ou y sont contenus), sinon les plus ressemblants.
         proches = [n for n in notions_connues if notion in n or n in notion][:3]
         proches = proches or difflib.get_close_matches(notion, list(notions_connues), n=3, cutoff=0.75)
+        messages.append(f"Notion inconnue « {notion} » dans {ou}."
+                        + (f" Identifiants proches : {', '.join(proches)}." if proches else ""))
+    if messages:
         raise ErreurConstruction(
-            f"Notion inconnue « {notion} » dans {ou}. "
-            + (f"Identifiants proches : {', '.join(proches)}. " if proches else "")
-            + "Corrigez l’identifiant, ou ajoutez la notion dans la rubrique « Notions » du back-office "
-            "(catalogue/notions.json)."
+            " ".join(messages) + " Corrigez l’identifiant, ou ajoutez la notion dans la rubrique « Notions » du "
+            "back-office (catalogue/notions.json)."
         )
     return notions
+
+
+def texte_mesure(donnees, champ, ou, minimum, maximum=None):
+    """Texte obligatoire d'une longueur donnée : il sert de description de la page (moteurs de recherche, cartes)."""
+    texte = texte_requis(donnees, champ, ou)
+    longueur = len(" ".join(texte.split()))
+    if longueur < minimum:
+        raise ErreurConstruction(f"Champ « {champ} » trop court dans {ou} : {longueur} caractères, {minimum} au moins.")
+    if maximum and longueur > maximum:
+        raise ErreurConstruction(f"Champ « {champ} » trop long dans {ou} : {longueur} caractères, {maximum} au plus.")
+    return texte
+
+
+def date_facultative(donnees, champ, ou):
+    valeur = texte_facultatif(donnees, champ, ou)
+    if valeur and not re.match(r"^\d{4}-\d{2}-\d{2}$", valeur):
+        raise ErreurConstruction(f"Champ « {champ} » invalide dans {ou} : date AAAA-MM-JJ attendue.")
+    return valeur
 
 
 def statut_valide(donnees, ou, defaut):
@@ -288,20 +405,46 @@ def statut_valide(donnees, ou, defaut):
     return valeur
 
 
-def image_declaree(valeur, ou, champ="image"):
-    """Objet {fichier, alt} du back-office ; None quand aucune image n'est choisie."""
+CHAMPS_CREDIT = ("licence", "source", "auteur", "reference_autorisation")
+
+
+def image_declaree(valeur, ou, usage, champ):
+    """Objet image d'une fiche (lot 1e) : fichier, alt, crédit (licence, source, auteur, reference_autorisation) et
+    case risque_accepte. None quand aucune image n'est choisie.
+
+    Une image ne retient jamais sa fiche : une valeur invalide est notée dans « probleme », et l'image n'est pas
+    publiée (classe Images). usage : ce que l'image illustre (page Crédits) ; champ : où la corriger dans /admin/."""
     if vide(valeur) or (isinstance(valeur, dict) and vide(valeur.get("fichier"))):
         return None
+    image = {"fichier": "", "alt": "", **{c: "" for c in CHAMPS_CREDIT}, "risque_accepte": False, "cite_par": ou,
+             "usage": usage, "champ": champ, "probleme": None, "etat": None}
     if not isinstance(valeur, dict) or not isinstance(valeur.get("fichier"), str):
-        raise ErreurConstruction(f"Champ « {champ} » invalide dans {ou} : {{\"fichier\": …, \"alt\": …}} attendu.")
-    fichier = valeur["fichier"].strip().lstrip("/")
-    if not CHEMIN_IMAGE.match(fichier):
-        raise ErreurConstruction(
-            f"Image « {fichier} » refusée dans {ou} : elle doit être une image JPEG, PNG ou WebP de medias/cartes/ "
-            "ou de medias/illustrations/."
-        )
-    alt = valeur.get("alt")
-    return {"fichier": fichier, "alt": alt.strip() if isinstance(alt, str) else "", "cite_par": ou}
+        image["fichier"] = str(valeur)[:80]
+        image["probleme"] = "valeur invalide : un objet {fichier, alt, licence…} est attendu"
+        return image
+    image["fichier"] = valeur["fichier"].strip().lstrip("/")
+    for cle in ("alt", *CHAMPS_CREDIT):
+        texte = valeur.get(cle)
+        image[cle] = texte.strip() if isinstance(texte, str) else ""
+    image["risque_accepte"] = valeur.get("risque_accepte") is True
+    if not CHEMIN_IMAGE.match(image["fichier"]):
+        image["probleme"] = "fichier refusé : une image JPEG, PNG ou WebP de medias/cartes/ ou medias/illustrations/ est attendue"
+    return image
+
+
+def chemins_images(valeur):
+    """Chemins d'images cités par une valeur JSON quelconque (fiche, thème, réglages) : images orphelines."""
+    if isinstance(valeur, dict):
+        trouves = set()
+        for cle, sous_valeur in valeur.items():
+            if cle == "fichier" and isinstance(sous_valeur, str) and CHEMIN_IMAGE.match(sous_valeur.strip().lstrip("/")):
+                trouves.add(sous_valeur.strip().lstrip("/"))
+            else:
+                trouves |= chemins_images(sous_valeur)
+        return trouves
+    if isinstance(valeur, list):
+        return set().union(*map(chemins_images, valeur)) if valeur else set()
+    return set()
 
 
 # ---------------------------------------------------------------------------
@@ -368,7 +511,8 @@ def charger_site(lecteur):
             + (f" Inconnus : {', '.join(inconnus)}." if inconnus else "")
         )
     site["titres_accueil"] = {m: titres[m].replace("\r\n", "\n") for m in MOMENTS}
-    site["illustration_accueil"] = image_declaree(site.get("illustration_accueil"), ou, "illustration_accueil")
+    site["illustration_accueil"] = image_declaree(site.get("illustration_accueil"), ou, "Planche de l’accueil",
+                                                  "Réglages du site → Planche de l'accueil")
     return site
 
 
@@ -385,10 +529,11 @@ def charger_catalogue(lecteur):
         if not isinstance(t, dict):
             raise ErreurConstruction(f"{ou} : un objet est attendu.")
         ident = texte_requis(t, "id", ou)
-        texte_requis(t, "nom", ou)
+        nom = texte_requis(t, "nom", ou)
         t["court"] = t.get("court") or t["nom"]
         t["exemples"] = liste_textes(t, "exemples", ou)
-        t["illustration"] = image_declaree(t.get("illustration"), ou, "illustration")
+        t["illustration"] = image_declaree(t.get("illustration"), ou, f"Planche du thème « {nom} »",
+                                           f"Thèmes → {nom} → Planche d'illustration")
         if ident in vus:
             raise ErreurConstruction(f"Identifiant en double dans catalogue/themes.json : « {ident} ».")
         vus.add(ident)
@@ -441,66 +586,21 @@ def charger_a_venir(lecteur):
         section = donnees.get(ident)
         if not isinstance(section, dict):
             raise ErreurConstruction(f"{ou} : un objet {{\"titre\", \"promesse\"}} est attendu.")
+        titre = texte_requis(section, "titre", ou)
         sections.append({
             "id": ident,
-            "titre": texte_requis(section, "titre", ou),
+            "titre": titre,
             "promesse": texte_requis(section, "promesse", ou),
-            "illustration": image_declaree(section.get("illustration"), ou, "illustration"),
+            "illustration": image_declaree(section.get("illustration"), ou, f"Planche de la page « {titre} »",
+                                           f"Accueil → Labo et Maquettes (à venir) → {titre} → Planche d'illustration"),
             "chemin": f"{ident}/",
         })
     return sections
 
 
-def charger_credits(lecteur):
-    """medias/CREDITS.json : une entrée par image, licence dans la liste fermée (TRAME § 10)."""
-    chemin = lecteur.racine / "medias" / "CREDITS.json"
-    if not chemin.is_file():
-        return {}
-    entrees = lecteur.json(chemin, (list, dict))
-    if isinstance(entrees, dict):
-        entrees = entrees.get("images") or []
-    credits = {}
-    for i, entree in enumerate(entrees, 1):
-        ou = f"medias/CREDITS.json (image n° {i})"
-        if not isinstance(entree, dict):
-            raise ErreurConstruction(f"{ou} : un objet est attendu.")
-        fichier = texte_requis(entree, "fichier", ou).lstrip("/")
-        ou = f"medias/CREDITS.json ({fichier})"
-        if not CHEMIN_IMAGE.match(fichier):
-            raise ErreurConstruction(
-                f"{ou} : « fichier » doit être une image de medias/cartes/ ou de medias/illustrations/ "
-                "(ex. « medias/cartes/levage-linge.jpg »)."
-            )
-        if fichier in credits:
-            raise ErreurConstruction(f"Image déclarée deux fois dans medias/CREDITS.json : « {fichier} ».")
-        licence = entree.get("licence")
-        if licence not in LICENCES:
-            raise ErreurConstruction(
-                f"Licence non acceptée « {licence or ''} » pour {fichier} dans medias/CREDITS.json. Licences "
-                f"possibles : {', '.join(LICENCES)} (jamais d’image générée par IA ni de banque d’images)."
-            )
-        reference = texte_facultatif(entree, "reference_autorisation", ou)
-        if licence == "autorisation-ecrite" and not reference:
-            raise ErreurConstruction(
-                f"Autorisation écrite sans référence pour {fichier} dans medias/CREDITS.json : renseignez "
-                "« reference_autorisation » (qui a autorisé, quand, par quel écrit)."
-            )
-        credits[fichier] = {
-            "fichier": fichier,
-            "titre": texte_requis(entree, "titre", ou),
-            "auteur": texte_facultatif(entree, "auteur", ou),
-            "date": texte_facultatif(entree, "date", ou),
-            "source": texte_facultatif(entree, "source", ou),
-            "licence": licence,
-            "licence_nom": LICENCES[licence],
-            "reference_autorisation": reference,
-            "usage": texte_facultatif(entree, "usage", ou),
-            "decorative": entree.get("decorative") is True,
-        }
-    return credits
-
-
 def theme_connu(valeur, themes_par_id, ou):
+    if vide(valeur):
+        raise ErreurConstruction(f"Champ « theme » manquant dans {ou}.")
     if valeur not in themes_par_id:
         raise ErreurConstruction(
             f"Thème inconnu « {valeur} » dans {ou}. Thèmes possibles : {', '.join(themes_par_id)}."
@@ -539,38 +639,22 @@ def fichier_depose(lecteur, donnees, ou, obligatoire):
     return chemin
 
 
-def charger_contenus(lecteur, themes, publics, reserves, notions):
+def charger_contenus(lecteur, themes, publics, reserves, notions, verifications=None):
+    """Collections et contenus (TRAME § 5). Une erreur de contenu retient la fiche (ou toute la collection si
+    collection.json est invalide) ; le reste se construit. Renvoie les collections publiées, les contenus publiés par
+    identifiant, les fiches retenues, les brouillons (avec leurs avertissements) et les alertes."""
     themes_par_id = {t["id"]: t for t in themes}
     publics_par_id = {p["id"]: p for p in publics}
     dossier_contenus = lecteur.racine / "contenus"
     if not dossier_contenus.is_dir():
         raise ErreurConstruction("Dossier manquant : contenus/.")
-
-    collections, contenus_par_id, brouillons = [], {}, []
+    resultat = {"collections": [], "publies": {}, "retenues": [], "brouillons": [], "alertes": [],
+                "images_citees": set(), "notions_proposees": [], "nouvelles_versions": []}
+    vus = {}
 
     for dossier in sorted(d for d in dossier_contenus.iterdir() if d.is_dir() and not d.name.startswith(".")):
         nom = dossier.name
-        if nom in reserves:
-            raise ErreurConstruction(
-                f"Nom de collection réservé : « {nom} » (contenus/{nom}/). Cette adresse appartient déjà à une page "
-                f"du site. Renommez le dossier. Noms réservés : {', '.join(sorted(reserves))}."
-            )
-        if not IDENTIFIANT.match(nom):
-            raise ErreurConstruction(
-                f"Nom de collection invalide : « {nom} » (contenus/{nom}/). Minuscules sans accent, chiffres et tirets."
-            )
-        ou = f"contenus/{nom}/collection.json"
-        donnees = lecteur.json(dossier / "collection.json", dict)
-        collection = {
-            "id": nom,
-            "titre": texte_requis(donnees, "titre", ou),
-            "description": texte_requis(donnees, "description", ou),
-            "theme": theme_connu(donnees.get("theme"), themes_par_id, ou),
-            "publics": publics_connus(donnees.get("publics"), publics_par_id, ou),
-            "contenus": [],
-        }
-
-        # Une fiche par dossier (<id>/contenu.json) ou à plat (<id>.json, créée par le back-office).
+        # Une fiche par dossier (<id>/contenu.json) ou à plat (<id>.json, créée par Pages CMS ou à la main).
         fiches = []
         for element in sorted(dossier.iterdir()):
             if element.name.startswith("."):
@@ -580,94 +664,211 @@ def charger_contenus(lecteur, themes, publics, reserves, notions):
             elif element.suffix == ".json" and element.name != "collection.json":
                 fiches.append(("plat", element))
 
-        contenus = []
-        for organisation, chemin in fiches:
-            contenu = charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id,
-                                      notions)
-            deja = contenus_par_id.get(contenu["id"]) or next((b for b in brouillons if b["id"] == contenu["id"]), None)
-            if deja:
-                raise ErreurConstruction(
-                    f"Identifiant en double : « {contenu['id']} » ({deja['source']} et {contenu['source']}). "
-                    "Chaque contenu doit avoir un identifiant unique sur tout le site."
-                )
-            if contenu["statut"] == "brouillon":
-                brouillons.append(contenu)
-                continue
-            contenus_par_id[contenu["id"]] = contenu
-            contenus.append(contenu)
+        ou = f"contenus/{nom}/collection.json"
+        c = Controle(CHAMPS_CONTENU)
+        if nom in reserves:
+            c.noter("collection", f"Nom de collection réservé : « {nom} » (contenus/{nom}/) : cette adresse appartient "
+                                  f"déjà à une page du site. Noms réservés : {', '.join(sorted(reserves))}.",
+                    "Renommez le dossier de la collection sur GitHub.")
+        if not IDENTIFIANT.match(nom):
+            c.noter("collection", f"Nom de collection invalide : « {nom} » (contenus/{nom}/) : minuscules sans accent, "
+                                  "chiffres et tirets.", "Renommez le dossier de la collection sur GitHub.")
+        donnees = c("collection", lecteur.json, dossier / "collection.json", dict) or {}
+        collection = {
+            "id": nom,
+            "titre": c("collection", texte_requis, donnees, "titre", ou, sinon=nom),
+            "description": c("collection", texte_requis, donnees, "description", ou, sinon=""),
+            "theme": c("collection", theme_connu, donnees.get("theme"), themes_par_id, ou),
+            "publics": c("collection", publics_connus, donnees.get("publics"), publics_par_id, ou, sinon=[]),
+            "contenus": [],
+        }
+        if c.erreurs:
+            c.noter("collection", f"Les {pluriel(len(fiches), 'contenu')} de la collection ne sont pas publiés tant "
+                                  "qu’elle est invalide.")
+            resultat["retenues"].append({"fiche": ou, "id": nom, "titre": collection["titre"], "rubrique": "Contenus",
+                                         "chemin": f"{nom}/", "type": None, "statut": "relu", "erreurs": c.erreurs})
+            for organisation, chemin in fiches:
+                fiche = chemin / "contenu.json" if organisation == "dossier" else chemin
+                try:
+                    resultat["images_citees"] |= chemins_images(json.loads(fiche.read_text(encoding="utf-8")))
+                except (OSError, ValueError):
+                    pass
+            continue
 
-        collection["contenus"] = ordonner(contenus, donnees.get("ordre"), ou, {b["id"] for b in brouillons})
+        contenus, connus = [], set()
+        for organisation, chemin in fiches:
+            lu = charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id, notions,
+                                 verifications)
+            resultat["images_citees"] |= lu["images_citees"]
+            signal = lu["signalement"]
+            resultat["notions_proposees"] += signal.get("notions_proposees", [])
+            if signal["nouvelle_version"]:
+                resultat["nouvelles_versions"].append({**signal["nouvelle_version"], "fiche": signal["fiche"],
+                                                       "titre": signal["titre"], "rubrique": signal["rubrique"]})
+            connus.add(signal["id"])
+            if signal["id"] in vus:
+                signal["erreurs"].append({
+                    "champ": CHAMPS_CONTENU["id"][0],
+                    "message": f"Identifiant en double : « {signal['id']} » est déjà celui de {vus[signal['id']]}.",
+                    "correction": "Chaque contenu doit avoir un identifiant unique sur tout le site : créez la fiche "
+                                  "sous un autre identifiant.",
+                })
+            else:
+                vus[signal["id"]] = signal["fiche"]
+            if signal["statut"] == "illisible":
+                resultat["retenues"].append(signal)  # fiche ignorée : statut inconnu, rien n'est publié
+            elif signal["statut"] != "relu":
+                resultat["brouillons"].append(signal)
+            elif signal["erreurs"] or lu["contenu"] is None:
+                resultat["retenues"].append(signal)
+            else:
+                resultat["publies"][signal["id"]] = lu["contenu"]
+                contenus.append(lu["contenu"])
+
+        collection["contenus"] = ordonner(contenus, donnees.get("ordre"), ou, resultat["alertes"], connus)
         if not collection["contenus"]:
             print(f"Attention : la collection « {nom} » ne contient aucun contenu publié.", file=sys.stderr)
         for i, contenu in enumerate(collection["contenus"]):
             contenu["precedent"] = collection["contenus"][i - 1] if i > 0 else None
             contenu["suivant"] = collection["contenus"][i + 1] if i + 1 < len(collection["contenus"]) else None
-        collections.append(collection)
+        resultat["collections"].append(collection)
 
-    return collections, contenus_par_id, brouillons
+    return resultat
 
 
-def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id, notions):
+def essayer_enveloppe(chemin, ou):
+    """Un fichier autonome publié est enveloppé sans être modifié : ses balises <head> et <body> doivent le permettre."""
+    envelopper(chemin.read_text(encoding="utf-8"), ou, "", "", "")
+
+
+def controler_fichier(lecteur, controle, chemin, dossier_ressources, verifications, cle="fichier"):
+    """Fichier autonome d'une fiche : contrôles de outils/annale.py, enveloppe possible, note de 20/20 (résultats de
+    outils/verifier-annales.js, s'ils sont fournis)."""
+    ou = lecteur.rel(chemin)
+    problemes = controle_autonome.controler(chemin, ou, dossier_ressources)
+    for probleme in problemes:
+        controle.noter(cle, probleme, CORRECTION_FICHIER)
+    if not problemes:
+        controle(cle, essayer_enveloppe, chemin, ou)
+    verification = (verifications or {}).get(ou)
+    if verification and not verification.get("ok", True):
+        controle.noter(cle, f"{ou} : une copie entièrement juste n’obtient pas 20/20 : "
+                            + " ; ".join(verification.get("erreurs") or ["note inattendue"]),
+                       "Faites corriger les questions citées dans le projet Claude « Exercices interactifs », puis "
+                       "déposez la nouvelle version.")
+
+
+def lire_nouvelle_version(lecteur, donnees, ou, verifications, champs):
+    """Champ « nouvelle_version » (import, lot 1e) : fichier en attente de relecture dans medias/a-relire/, jamais
+    publié avant sa validation. Ses problèmes sont des avertissements : la version en ligne reste en ligne."""
+    valeur = donnees.get("nouvelle_version")
+    if vide(valeur):
+        return None
+    c = Controle(champs)
+    fichier = valeur.get("fichier") if isinstance(valeur, dict) else None
+    fichier = fichier.strip().lstrip("/") if isinstance(fichier, str) else ""
+    if not CHEMIN_A_RELIRE.match(fichier):
+        c.noter("nouvelle_version", f"Nouvelle version invalide dans {ou} : un fichier .html de medias/a-relire/ est "
+                                    "attendu.")
+    elif not (lecteur.racine / fichier).is_file():
+        c.noter("nouvelle_version", f"Nouvelle version introuvable : {fichier} (citée par {ou}).")
+    else:
+        controler_fichier(lecteur, c, lecteur.racine / fichier, None, verifications, cle="nouvelle_version")
+    deposee = valeur.get("deposee_le") if isinstance(valeur, dict) else ""
+    return {"fichier": fichier, "deposee_le": deposee if isinstance(deposee, str) else "", "avertissements": c.erreurs}
+
+
+def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, publics_par_id, notions, verifications):
+    """Une fiche de contenu, contrôlée en entier. Renvoie {contenu (None si non publié), signalement, images_citees}."""
     if organisation == "dossier":
         fiche = chemin / "contenu.json"
         ident_attendu = chemin.name
-        if not fiche.is_file():
-            raise ErreurConstruction(
-                f"Fichier manquant : {lecteur.rel(fiche)} (chaque dossier d’une collection est un contenu)."
-            )
     else:
         fiche = chemin
         ident_attendu = chemin.stem
     ou = lecteur.rel(fiche)
-    donnees = lecteur.json(fiche, dict)
+    c = Controle(CHAMPS_CONTENU)
+    signal = {"fiche": ou, "id": ident_attendu, "titre": ident_attendu, "rubrique": "Contenus",
+              "chemin": f"{collection['id']}/{ident_attendu}/", "type": None, "statut": "relu", "erreurs": c.erreurs,
+              "fichier": None, "nouvelle_version": None, "image": None}
+    resultat = {"contenu": None, "signalement": signal, "images_citees": set()}
+    if organisation == "dossier" and not fiche.is_file():
+        signal["statut"] = "illisible"
+        c.noter("fiche", f"Fichier manquant : {ou} (chaque dossier d’une collection est un contenu).",
+                "Créez la fiche du contenu, ou supprimez le dossier sur GitHub.")
+        return resultat
+    donnees = c("fiche", lecteur.json, fiche, dict)
+    if donnees is None:
+        signal["statut"] = "illisible"
+        return resultat
+    resultat["images_citees"] = chemins_images(donnees)
+    signal["notions_proposees"] = notions_proposees(donnees, ou)
+    signal["statut"] = c("statut", statut_valide, donnees, ou, "relu", sinon="brouillon")
 
-    ident = texte_requis(donnees, "id", ou)
+    ident = c("id", texte_requis, donnees, "id", ou, sinon=ident_attendu)
     if ident != ident_attendu:
         lieu = "son dossier" if organisation == "dossier" else "son fichier"
-        raise ErreurConstruction(f"L’identifiant « {ident} » de {ou} doit être le nom de {lieu} (« {ident_attendu} »).")
-    if not IDENTIFIANT.match(ident):
-        raise ErreurConstruction(f"Identifiant invalide « {ident} » ({ou}) : minuscules sans accent, chiffres et tirets.")
-    statut = statut_valide(donnees, ou, defaut="relu")
-    if statut == "brouillon":
-        # Un brouillon n'est pas contrôlé ; son type sert seulement au résumé de publication.
-        return {"id": ident, "statut": statut, "source": ou,
-                "type": donnees.get("type") if donnees.get("type") in TYPES else None}
-
-    type_ = texte_requis(donnees, "type", ou)
-    if type_ not in TYPES:
-        raise ErreurConstruction(f"Type inconnu « {type_} » dans {ou}. Types possibles : {', '.join(TYPES)}.")
-    depose = fichier_depose(lecteur, donnees, ou, obligatoire=(organisation == "plat"))
-    if organisation == "plat" or depose:
+        c.noter("id", f"L’identifiant « {ident} » de {ou} doit être le nom de {lieu} (« {ident_attendu} »).")
+    elif not IDENTIFIANT.match(ident):
+        c.noter("id", f"Identifiant invalide « {ident} » ({ou}) : minuscules sans accent, chiffres et tirets.")
+    ident = ident_attendu
+    titre = c("titre", texte_requis, donnees, "titre", ou, sinon="")
+    signal["titre"] = titre or ident
+    type_ = c("type", type_valide, donnees, ou)
+    signal["type"] = type_
+    depose = c("fichier", fichier_depose, lecteur, donnees, ou, organisation == "plat")
+    if organisation == "plat" or not vide(donnees.get("fichier")):
         mode = "repris"  # un fichier déposé par le back-office est toujours un fichier autonome
     else:
         mode = donnees.get("mode") or "repris"
         if mode not in MODES:
-            raise ErreurConstruction(f"Mode inconnu « {mode} » dans {ou}. Modes possibles : {', '.join(MODES)}.")
+            c.noter("mode", f"Mode inconnu « {mode} » dans {ou}. Modes possibles : {', '.join(MODES)}.")
+            mode = "repris"
+    source_html = dossier_ressources = None
     if depose:
-        source_html, dossier_ressources = depose, None
-    else:
+        source_html = depose
+    elif organisation == "dossier" and vide(donnees.get("fichier")):
         source_html, dossier_ressources = chemin / "index.html", chemin
         if not source_html.is_file():
-            raise ErreurConstruction(f"Fichier manquant : {lecteur.rel(source_html)}.")
+            c.noter("fichier", f"Fichier manquant : {lecteur.rel(source_html)}.")
+            source_html = None
+    signal["fichier"] = lecteur.rel(source_html) if source_html else None
 
-    theme = theme_connu(donnees["theme"], themes_par_id, ou) if not vide(donnees.get("theme")) else collection["theme"]
-    publics = (publics_connus(donnees["publics"], publics_par_id, ou) if not vide(donnees.get("publics"))
-               else collection["publics"])
-    mots_cles = liste_textes(donnees, "mots_cles", ou)
+    theme = (c("theme", theme_connu, donnees["theme"], themes_par_id, ou) if not vide(donnees.get("theme"))
+             else collection["theme"])
+    publics = (c("publics", publics_connus, donnees["publics"], publics_par_id, ou, sinon=[])
+               if not vide(donnees.get("publics")) else collection["publics"])
+    mots_cles = c("mots_cles", liste_textes, donnees, "mots_cles", ou, sinon=[])
+    requetes = c("requetes", liste_textes, donnees, "requetes", ou, sinon=[])
+    description = c("description", texte_mesure, donnees, "description", ou, TEXTE_MIN, sinon="")
+    niveau = c("niveau", niveau_valide, donnees, ou)
+    duree_min = c("duree_min", entier_positif, donnees, "duree_min", ou)
+    notions_contenu = c("notions", notions_valides, donnees, ou, notions, sinon=[])
+    if source_html and mode == "natif":
+        if re.search(r"<\s*(html|head|body)[\s>]", source_html.read_text(encoding="utf-8"), re.IGNORECASE):
+            c.noter("fichier", f"{lecteur.rel(source_html)} : un contenu natif est un fragment, sans <html>, <head> ni "
+                               "<body> (le gabarit « contenu » les fournit).", "Retirez ces balises du fragment.")
+    elif source_html:
+        controler_fichier(lecteur, c, source_html, dossier_ressources, verifications)
+    signal["nouvelle_version"] = lire_nouvelle_version(lecteur, donnees, ou, verifications, CHAMPS_CONTENU)
+    signal["image"] = image_declaree(donnees.get("image"), ou, f"Carte du contenu « {titre or ident} »",
+                                     "Image de la carte")
+    if c.erreurs or signal["statut"] != "relu" or theme is None:
+        return resultat
 
     contenu = {
         "id": ident,
-        "titre": texte_requis(donnees, "titre", ou),
-        "description": texte_requis(donnees, "description", ou),
+        "titre": titre,
+        "description": description,
         "type": type_,
         "type_nom": TYPES[type_],
-        "niveau": niveau_valide(donnees, ou),
-        "duree_min": entier_positif(donnees, "duree_min", ou),
+        "niveau": niveau,
+        "duree_min": duree_min,
         "mots_cles": mots_cles,
-        "notions": notions_valides(donnees, ou, notions),
-        "image": image_declaree(donnees.get("image"), ou),
+        "notions": notions_contenu,
+        "image": signal["image"],
         "mode": mode,
-        "statut": statut,
+        "statut": "relu",
         "theme": theme,
         "publics": publics,
         "collection": collection,
@@ -684,23 +885,37 @@ def charger_contenu(lecteur, organisation, chemin, collection, themes_par_id, pu
         "fil": [
             {"libelle": theme["court"], "chemin": f"{theme['id']}/"},
             {"libelle": collection["titre"], "chemin": f"{collection['id']}/"},
-            {"libelle": texte_requis(donnees, "titre", ou), "chemin": None},
+            {"libelle": titre, "chemin": None},
         ],
     }
     # Texte lu par la recherche du catalogue (normalisé dans le navigateur : minuscules, sans accents).
     contenu["texte"] = " ".join(
-        [contenu["titre"], contenu["description"], *mots_cles, *(notions[n] for n in contenu["notions"]),
+        [titre, description, *mots_cles, *requetes, *(notions[n] for n in notions_contenu),
          collection["titre"], theme["nom"], theme["court"], contenu["type_nom"], *(p["nom"] for p in publics)]
     )
-    return contenu
+    resultat["contenu"] = contenu
+    return resultat
 
 
-def credit_annale(donnees, ou):
-    """Champ « source » d'une annale publiée : obligatoire (outils/annale.py) ; ligne de crédit de la fiche."""
-    source = donnees.get("source")
-    problemes = controle_autonome.controler_source(source, ou)
-    if problemes:
-        raise ErreurConstruction("annale sans source valide :\n  " + "\n  ".join(problemes))
+def notions_proposees(donnees, ou):
+    """Champ « notions_proposees » (import, lot 1e) : notions absentes de catalogue/notions.json, proposées par le
+    projet Claude. Elles ne sont jamais créées automatiquement : le résumé les liste."""
+    valeur = donnees.get("notions_proposees")
+    if not isinstance(valeur, list):
+        return []
+    return [{"id": str(n.get("id") or "").strip(), "nom": str(n.get("nom") or "").strip(), "fiche": ou}
+            for n in valeur if isinstance(n, dict) and (n.get("id") or n.get("nom"))]
+
+
+def type_valide(donnees, ou):
+    type_ = texte_requis(donnees, "type", ou)
+    if type_ not in TYPES:
+        raise ErreurConstruction(f"Type inconnu « {type_} » dans {ou}. Types possibles : {', '.join(TYPES)}.")
+    return type_
+
+
+def credit_annale(source):
+    """Ligne de crédit d'une annale publiée, à partir de sa source (contrôlée par outils/annale.py)."""
     licence = controle_autonome.LICENCES_ANNALE[source["licence"]]
     editeur = str(source.get("editeur") or "").strip()
     avant, _, apres = licence["credit"].partition("{editeur}")
@@ -717,13 +932,16 @@ def credit_annale(donnees, ou):
     }
 
 
-def charger_annales(lecteur, themes, publics, reserves_annales, notions):
-    """annales/<id>.json (back-office) ou annales/<id>/annale.json : fiches des annales (TRAME § 11)."""
+def charger_annales(lecteur, themes, publics, reserves_annales, notions, verifications=None):
+    """annales/<id>.json (back-office) ou annales/<id>/annale.json : fiches des annales (TRAME § 11), contrôlées en
+    entier. Renvoie les annales publiées, les fiches retenues et les brouillons (avec leurs avertissements)."""
     themes_par_id = {t["id"]: t for t in themes}
     publics_par_id = {p["id"]: p for p in publics}
+    resultat = {"publiees": [], "retenues": [], "brouillons": [], "images_citees": set(), "notions_proposees": [],
+                "nouvelles_versions": []}
     dossier = lecteur.racine / "annales"
     if not dossier.is_dir():
-        return [], []
+        return resultat
     fiches = []
     for element in sorted(dossier.iterdir()):
         if element.name.startswith("."):
@@ -733,68 +951,100 @@ def charger_annales(lecteur, themes, publics, reserves_annales, notions):
         elif element.suffix == ".json":
             fiches.append(("plat", element, element.stem, None))
 
-    annales, brouillons, vus = [], [], {}
+    vus = {}
     for organisation, fiche, ident_attendu, dossier_annale in fiches:
         ou = lecteur.rel(fiche)
-        donnees = lecteur.json(fiche, dict)
-        ident = texte_requis(donnees, "id", ou)
+        c = Controle(CHAMPS_ANNALE)
+        signal = {"fiche": ou, "id": ident_attendu, "titre": ident_attendu, "rubrique": "Annales",
+                  "chemin": f"annales/{ident_attendu}/", "type": TYPE_ANNALE[0], "statut": "brouillon",
+                  "erreurs": c.erreurs, "fichier": None, "nouvelle_version": None, "image": None, "sans_source": False}
+        donnees = c("fiche", lecteur.json, fiche, dict)
+        if donnees is None:
+            signal["statut"] = "illisible"
+            resultat["retenues"].append(signal)
+            continue
+        resultat["images_citees"] |= chemins_images(donnees)
+        resultat["notions_proposees"] += notions_proposees(donnees, ou)
+        # Sans statut, une annale reste un brouillon : la publication demande « relu » (TRAME § 11).
+        signal["statut"] = c("statut", statut_valide, donnees, ou, "brouillon", sinon="brouillon")
+
+        ident = c("id", texte_requis, donnees, "id", ou, sinon=ident_attendu)
         if ident != ident_attendu:
             lieu = "son dossier" if organisation == "dossier" else "son fichier"
-            raise ErreurConstruction(f"L’identifiant « {ident} » de {ou} doit être le nom de {lieu} (« {ident_attendu} »).")
-        if not IDENTIFIANT.match(ident):
-            raise ErreurConstruction(f"Identifiant invalide « {ident} » ({ou}) : minuscules sans accent, chiffres et tirets.")
+            c.noter("id", f"L’identifiant « {ident} » de {ou} doit être le nom de {lieu} (« {ident_attendu} »).")
+        elif not IDENTIFIANT.match(ident):
+            c.noter("id", f"Identifiant invalide « {ident} » ({ou}) : minuscules sans accent, chiffres et tirets.")
+        ident = ident_attendu
         if ident in reserves_annales:
-            raise ErreurConstruction(
-                f"Identifiant d’annale réservé « {ident} » ({ou}) : /annales/{ident}/ est la page d’une filière."
-            )
+            c.noter("id", f"Identifiant d’annale réservé « {ident} » ({ou}) : /annales/{ident}/ est la page d’une "
+                          "filière.", "Créez l'annale sous un autre identifiant.")
         if ident in vus:
-            raise ErreurConstruction(f"Identifiant d’annale en double : « {ident} » ({vus[ident]} et {ou}).")
-        vus[ident] = ou
-        # Sans statut, une annale reste un brouillon : la publication demande « relu » (TRAME § 11).
-        statut = statut_valide(donnees, ou, defaut="brouillon")
-        if statut != "relu":
-            # Source facultative en brouillon ; le résumé de publication compte les annales qui n'en ont pas.
-            brouillons.append({"id": ident, "source": ou, "type": TYPE_ANNALE[0],
-                               "sans_source": bool(controle_autonome.controler_source(donnees.get("source"), ou))})
-            continue
+            c.noter("id", f"Identifiant d’annale en double : « {ident} » ({vus[ident]} et {ou}).",
+                    "Créez l'annale sous un autre identifiant.")
+        vus.setdefault(ident, ou)
 
-        depose = fichier_depose(lecteur, donnees, ou, obligatoire=(organisation == "plat"))
+        depose = c("fichier", fichier_depose, lecteur, donnees, ou, organisation == "plat")
+        source_html = dossier_ressources = None
         if depose:
-            source_html, dossier_ressources = depose, None
-        else:
+            source_html = depose
+        elif organisation == "dossier" and vide(donnees.get("fichier")):
             source_html, dossier_ressources = dossier_annale / "index.html", dossier_annale
             if not source_html.is_file():
-                raise ErreurConstruction(f"Fichier manquant : {lecteur.rel(source_html)}.")
+                c.noter("fichier", f"Fichier manquant : {lecteur.rel(source_html)}.")
+                source_html = None
+        signal["fichier"] = lecteur.rel(source_html) if source_html else None
 
-        publics_annale = publics_connus(donnees.get("publics"), publics_par_id, ou)
-        theme = theme_connu(donnees.get("theme"), themes_par_id, ou)
+        titre = c("titre", texte_requis, donnees, "titre", ou, sinon="")
+        signal["titre"] = titre or ident
+        presentation = c("presentation", texte_mesure, donnees, "presentation", ou, TEXTE_MIN, PRESENTATION_MAX,
+                         sinon="")
+        publics_annale = c("publics", publics_connus, donnees.get("publics"), publics_par_id, ou, sinon=[])
+        theme = c("theme", theme_connu, donnees.get("theme"), themes_par_id, ou)
         origine = donnees.get("origine") if isinstance(donnees.get("origine"), dict) else {}
         afficher = donnees.get("afficher_origine")
         if not vide(afficher) and not isinstance(afficher, bool):
-            raise ErreurConstruction(f"Champ « afficher_origine » invalide dans {ou} : true ou false attendu.")
+            c.noter("afficher_origine", f"Champ « afficher_origine » invalide dans {ou} : true ou false attendu.")
         afficher = afficher is True
+        mis_a_jour = c("mis_a_jour", date_facultative, donnees, "mis_a_jour", ou, sinon="")
+        notions_annale = c("notions", notions_valides, donnees, ou, notions, sinon=[])
+        duree_min = c("duree_min", entier_positif, donnees, "duree_min", ou)
+        requetes = c("requetes", liste_textes, donnees, "requetes", ou, sinon=[])
+        problemes_source = controle_autonome.controler_source(donnees.get("source"), ou)
+        for probleme in problemes_source:
+            c.noter("source", probleme)
+        signal["sans_source"] = bool(problemes_source)
+        if source_html:
+            controler_fichier(lecteur, c, source_html, dossier_ressources, verifications)
+        signal["nouvelle_version"] = lire_nouvelle_version(lecteur, donnees, ou, verifications, CHAMPS_ANNALE)
+        if signal["nouvelle_version"]:
+            resultat["nouvelles_versions"].append({**signal["nouvelle_version"], "fiche": ou,
+                                                   "titre": titre or ident, "rubrique": "Annales"})
+        signal["image"] = image_declaree(donnees.get("image"), ou, f"Carte de l’annale « {titre or ident} »",
+                                         "Image de la carte")
+        if signal["statut"] != "relu":
+            resultat["brouillons"].append(signal)
+            continue
+        if c.erreurs or theme is None:
+            resultat["retenues"].append(signal)
+            continue
+
         session = origine.get("session")
         origine_texte = " ".join(
             str(x).strip() for x in (origine.get("diplome"), session, origine.get("epreuve")) if not vide(x)
         )
         montrer = afficher and bool(origine_texte)
-        titre = texte_requis(donnees, "titre", ou)
         filieres = ", ".join(p["nom"] for p in publics_annale)
-        mis_a_jour = texte_facultatif(donnees, "mis_a_jour", ou)
-        if mis_a_jour and not re.match(r"^\d{4}-\d{2}-\d{2}$", mis_a_jour):
-            raise ErreurConstruction(f"Champ « mis_a_jour » invalide dans {ou} : date AAAA-MM-JJ attendue.")
-        notions_annale = notions_valides(donnees, ou, notions)
         annale = {
             "id": ident,
             "titre": titre,
-            "presentation": texte_requis(donnees, "presentation", ou),
+            "presentation": presentation,
             "type": TYPE_ANNALE[0],
             "type_nom": TYPE_ANNALE[1],
             "niveau": None,
-            "duree_min": entier_positif(donnees, "duree_min", ou),
+            "duree_min": duree_min,
             "notions": notions_annale,
-            "image": image_declaree(donnees.get("image"), ou),
-            "credit": credit_annale(donnees, ou),
+            "image": signal["image"],
+            "credit": credit_annale(donnees["source"]),
             "theme": theme,
             "publics": publics_annale,
             "filieres": filieres,
@@ -817,18 +1067,19 @@ def charger_annales(lecteur, themes, publics, reserves_annales, notions):
         }
         # Recherche du catalogue : l'origine n'y figure que si elle est affichée.
         annale["texte"] = " ".join(
-            [titre, annale["presentation"], *(notions[n] for n in notions_annale), theme["nom"], theme["court"],
+            [titre, presentation, *requetes, *(notions[n] for n in notions_annale), theme["nom"], theme["court"],
              TYPE_ANNALE[1], filieres, annale["origine_texte"]]
         )
-        annales.append(annale)
+        resultat["publiees"].append(annale)
 
     # Les plus récentes d'abord (date de mise à jour), puis par titre.
+    annales = resultat["publiees"]
     annales.sort(key=lambda a: cle_tri(a["titre"]))
     annales.sort(key=lambda a: a["mis_a_jour"], reverse=True)
     for i, annale in enumerate(annales):
         annale["precedent"] = annales[i - 1] if i > 0 else None
         annale["suivant"] = annales[i + 1] if i + 1 < len(annales) else None
-    return annales, brouillons
+    return resultat
 
 
 def ordre_par_defaut(contenu):
@@ -836,44 +1087,53 @@ def ordre_par_defaut(contenu):
     return (0 if contenu["type"] == "cours" else 1, contenu["niveau"] or 99, cle_tri(contenu["titre"]))
 
 
-def ordonner(contenus, ordre, ou, brouillons=()):
+def alerte(objet, message, correction):
+    """Signalement qui ne concerne pas une fiche précise (accueil, ordre d'une collection…)."""
+    return {"objet": objet, "message": message, "correction": correction}
+
+
+def ordonner(contenus, ordre, ou, alertes, connus=()):
+    """Ordre d'une collection (« ordre » de collection.json). Les contenus non publiés (brouillons, fiches retenues)
+    sont sautés ; un identifiant qui n'est aucun contenu de la collection est signalé."""
     if vide(ordre):
         return sorted(contenus, key=ordre_par_defaut)
     if not isinstance(ordre, list) or not all(isinstance(x, str) for x in ordre):
-        raise ErreurConstruction(f"Champ « ordre » invalide dans {ou} : une liste d’identifiants est attendue.")
+        alertes.append(alerte(ou, f"Champ « ordre » invalide dans {ou} : une liste d’identifiants est attendue ; "
+                                  "l’ordre par défaut est appliqué.", "Corrigez « ordre » sur GitHub."))
+        return sorted(contenus, key=ordre_par_defaut)
     par_id = {c["id"]: c for c in contenus}
     for ident in ordre:
-        if ident not in par_id and ident not in brouillons:
-            raise ErreurConstruction(f"« ordre » de {ou} cite « {ident} », qui n’est pas un contenu de la collection.")
-    if len(set(ordre)) != len(ordre):
-        raise ErreurConstruction(f"Identifiant en double dans « ordre » de {ou}.")
-    ordre = [i for i in ordre if i in par_id]
+        if ident not in par_id and ident not in connus:
+            alertes.append(alerte(ou, f"« ordre » de {ou} cite « {ident} », qui n’est pas un contenu de la collection.",
+                                  "Retirez cet identifiant de « ordre » sur GitHub."))
+    ordre = [i for i in dict.fromkeys(ordre) if i in par_id]
     restants = sorted((c for c in contenus if c["id"] not in ordre), key=ordre_par_defaut)
     return [par_id[i] for i in ordre] + restants
 
 
-def choisir_a_la_une(identifiants, contenus_par_id, brouillons):
-    if len(set(identifiants)) != len(identifiants):
-        raise ErreurConstruction("Identifiant en double dans catalogue/a-la-une.json.")
-    if not A_LA_UNE_MIN <= len(identifiants) <= A_LA_UNE_MAX:
-        raise ErreurConstruction(
-            f"catalogue/a-la-une.json doit citer de {A_LA_UNE_MIN} à {A_LA_UNE_MAX} contenus "
-            f"(il en cite {len(identifiants)})."
-        )
+def choisir_a_la_une(identifiants, contenus_par_id, alertes):
+    """Contenus à la une (catalogue/a-la-une.json) : un contenu non publié (brouillon, fiche retenue, inconnu) n'est
+    pas affiché et il est signalé ; la une n'empêche jamais la publication."""
+    objet = "Accueil → Contenus à la une"
     choisis = []
-    for ident in identifiants:
+    for ident in dict.fromkeys(identifiants):
         # Identifiant seul (« cadre-velo ») ou précédé de la collection (« statique/cadre-velo »).
         cle = ident.strip("/").split("/")[-1]
         contenu = contenus_par_id.get(cle)
-        if contenu is None and any(b["id"] == cle for b in brouillons):
-            raise ErreurConstruction(
-                f"Contenu de catalogue/a-la-une.json au statut brouillon : « {ident} ». Passez-le en « relu » ou "
-                "retirez-le de la une."
-            )
         if contenu is None or (ident.count("/") and contenu["chemin"] != ident.strip("/") + "/"):
-            raise ErreurConstruction(f"Contenu de catalogue/a-la-une.json introuvable : « {ident} ».")
+            alertes.append(alerte(objet, f"« {ident} » n’est pas un contenu publié (brouillon, fiche retenue ou "
+                                         "identifiant inconnu) : il n’est pas affiché sur l’accueil.",
+                                  "Retirez-le de la une, ou publiez le contenu."))
+            continue
         choisis.append(contenu)
-    return choisis
+    if len(identifiants) != len(set(identifiants)):
+        alertes.append(alerte(objet, "Un contenu est cité deux fois à la une : il n’est affiché qu’une fois.",
+                              "Retirez le doublon."))
+    if not A_LA_UNE_MIN <= len(choisis) <= A_LA_UNE_MAX:
+        alertes.append(alerte(objet, f"La une affiche {pluriel(len(choisis), 'contenu')} ; il en faut de "
+                                     f"{A_LA_UNE_MIN} à {A_LA_UNE_MAX}.",
+                              f"Choisissez de {A_LA_UNE_MIN} à {A_LA_UNE_MAX} contenus publiés."))
+    return choisis[:A_LA_UNE_MAX]
 
 
 # ---------------------------------------------------------------------------
@@ -950,36 +1210,60 @@ def envelopper(source, ou, tete, haut, bas, debut_tete=""):
 # ---------------------------------------------------------------------------
 
 class Images:
-    """Vérifie chaque image citée (fichier présent, crédit, licence, texte alternatif) et publie ses variantes."""
+    """Images des pages publiées (TRAME § 10, lot 1e). Chacune est jugée sur son crédit, saisi dans la fiche, et sur
+    la case « J'accepte le risque » :
+      - crédit complet (licence de la liste fermée, et référence pour une autorisation écrite) : publiée, citée sur
+        /credits/ ;
+      - crédit absent ou incomplet, case cochée : publiée, absente de /credits/, listée « à régulariser » ;
+      - sinon, ou licence hors liste, fichier introuvable ou illisible : non publiée (bandeau typographique),
+        signalée « à corriger ».
+    Une image ne retient jamais sa fiche. Texte alternatif vide : image décorative (alt="")."""
 
-    def __init__(self, lecteur, credits):
+    def __init__(self, lecteur):
         self.lecteur = lecteur
-        self.credits = credits
         self.cache = lecteur.racine / ".cache" / "images"
         self.sortie = None
         self.publiees = {}
+        self.evaluees = []
 
-    def verifier(self, image):
-        if image is None:
-            return
-        fichier, ou = image["fichier"], image["cite_par"]
+    def diagnostic(self, image):
+        """(état, message, correction) ; état : « publiee », « a-regulariser » ou « non-publiee »."""
+        fichier = image["fichier"]
+        if image["probleme"]:
+            return ("non-publiee", f"Image « {fichier} » : {image['probleme']}.",
+                    "Choisissez de nouveau l'image dans le champ, ou retirez-la.")
         if not (self.lecteur.racine / fichier).is_file():
-            raise ErreurConstruction(f"Image introuvable : {fichier} (citée par {ou}). Téléversez-la ou corrigez la fiche.")
-        credit = self.credits.get(fichier)
-        if credit is None:
-            raise ErreurConstruction(
-                f"Image sans crédit : {fichier} (citée par {ou}) n’est pas déclarée dans medias/CREDITS.json. "
-                "Ajoutez-la dans la rubrique « Crédits » du back-office, avec sa licence."
-            )
-        if not image["alt"] and not credit["decorative"]:
-            raise ErreurConstruction(
-                f"Texte alternatif manquant pour {fichier} (citée par {ou}) : décrivez l’image en une phrase, ou "
-                "déclarez-la décorative dans medias/CREDITS.json."
-            )
+            return ("non-publiee", f"Image introuvable : {fichier}.",
+                    "Téléversez de nouveau l'image dans le champ, ou retirez-la de la fiche.")
+        licence = image["licence"]
+        if licence and licence not in LICENCES:
+            return ("non-publiee", f"Licence non acceptée « {licence} » pour {fichier}.",
+                    "Choisissez une licence de la liste (domaine public, CC0, œuvre personnelle, autorisation écrite) "
+                    "ou retirez l'image : la case de risque ne couvre pas une licence refusée.")
+        manque = ("licence" if not licence else "référence de l’autorisation écrite"
+                  if licence == "autorisation-ecrite" and not image["reference_autorisation"] else "")
+        if not manque:
+            return ("publiee", "", "")
+        if image["risque_accepte"]:
+            return ("a-regulariser", f"Image {fichier} publiée sans crédit complet ({manque} manquante), case "
+                                     "« J’accepte le risque » cochée.",
+                    "Complétez le crédit dès que possible (licence, auteur, adresse de la source), puis décochez la "
+                    "case.")
+        return ("non-publiee", f"Image {fichier} sans crédit complet ({manque} manquante) : non publiée, le bandeau "
+                               "typographique la remplace.",
+                "Cochez la case « J’accepte le risque : image publiée sans crédit » ou complétez le crédit.")
+
+    def evaluer(self, image):
+        """Image d'une page publiée : son état décide de sa publication et des signalements."""
+        if image is None or image["etat"]:
+            return
+        image["etat"], image["message"], image["correction"] = self.diagnostic(image)
+        self.evaluees.append(image)
 
     def publier(self, image, profil):
-        """Renvoie {alt, variantes: [{chemin, largeur, hauteur}], largeur, hauteur} et copie les variantes."""
-        if image is None:
+        """Renvoie {alt, variantes: [{chemin, largeur, hauteur}], largeur, hauteur} et copie les variantes ; None pour
+        une image non publiée."""
+        if image is None or image["etat"] == "non-publiee":
             return None
         cle = (image["fichier"], profil)
         if cle not in self.publiees:
@@ -987,7 +1271,10 @@ class Images:
             try:
                 variantes = illustrations.variantes(source, profil, self.cache)
             except illustrations.ErreurImage as erreur:
-                raise ErreurConstruction(f"Image {image['fichier']} (citée par {image['cite_par']}) : {erreur}.") from None
+                image["etat"] = "non-publiee"
+                image["message"] = f"Image {image['fichier']} : {erreur}."
+                image["correction"] = "Téléversez une autre version de l'image (JPEG, PNG ou WebP lisible)."
+                return None
             dossier = Path(image["fichier"]).parent.as_posix()
             sorties = []
             for v in variantes:
@@ -997,8 +1284,23 @@ class Images:
                 sorties.append({"chemin": f"{dossier}/{v['nom']}", "largeur": v["largeur"], "hauteur": v["hauteur"]})
             self.publiees[cle] = sorties
         sorties = self.publiees[cle]
-        alt = "" if self.credits[image["fichier"]]["decorative"] else image["alt"]
-        return {"alt": alt, "variantes": sorties, "largeur": sorties[0]["largeur"], "hauteur": sorties[0]["hauteur"]}
+        return {"alt": image["alt"], "variantes": sorties, "largeur": sorties[0]["largeur"],
+                "hauteur": sorties[0]["hauteur"]}
+
+    def credits(self):
+        """Entrées de la page /credits/ : images publiées avec un crédit complet, une par fichier."""
+        par_fichier = {}
+        for image in self.evaluees:
+            if image["etat"] != "publiee":
+                continue
+            entree = par_fichier.setdefault(image["fichier"], {
+                "fichier": image["fichier"], "auteur": image["auteur"], "source": image["source"],
+                "licence": image["licence"], "licence_nom": LICENCES[image["licence"]],
+                "reference_autorisation": image["reference_autorisation"], "usages": [],
+            })
+            if image["usage"] not in entree["usages"]:
+                entree["usages"].append(image["usage"])
+        return sorted(par_fichier.values(), key=lambda e: cle_tri(e["usages"][0]))
 
 
 # ---------------------------------------------------------------------------
@@ -1006,13 +1308,16 @@ class Images:
 # ---------------------------------------------------------------------------
 
 class Constructeur:
-    def __init__(self, racine, sortie):
+    def __init__(self, racine, sortie, verifications=None, precedentes=None):
         self.racine = racine
         self.sortie = sortie
         self.lecteur = Lecteur(racine)
         self.pages = []
+        # Résultats du contrôle 20/20 (outils/verifier-annales.js), par fichier ; pages en ligne à la version précédente.
+        self.verifications = verifications or {}
+        self.precedentes = set(precedentes or ())
         self.env = Environment(
-            loader=FileSystemLoader(str(DEPOT / "gabarits")),
+            loader=FileSystemLoader(str(GABARITS)),
             autoescape=select_autoescape(["html"]),
             undefined=StrictUndefined,
             keep_trailing_newline=True,
@@ -1030,13 +1335,22 @@ class Constructeur:
         self.notions = charger_notions(self.lecteur)
         self.a_venir = charger_a_venir(self.lecteur)
         reserves = set(NOMS_RESERVES) | {t["id"] for t in self.themes} | {p["id"] for p in self.publics}
-        self.collections, self.contenus_par_id, self.brouillons = charger_contenus(
-            self.lecteur, self.themes, self.publics, reserves, self.notions)
-        self.annales, brouillons_annales = charger_annales(
-            self.lecteur, self.themes, self.publics, {p["id"] for p in self.publics}, self.notions)
-        self.brouillons_annales = brouillons_annales
-        self.a_la_une = choisir_a_la_une(ids_une, self.contenus_par_id, self.brouillons)
+        contenus = charger_contenus(self.lecteur, self.themes, self.publics, reserves, self.notions,
+                                    self.verifications)
+        annales = charger_annales(self.lecteur, self.themes, self.publics, {p["id"] for p in self.publics},
+                                  self.notions, self.verifications)
+        self.collections, self.contenus_par_id = contenus["collections"], contenus["publies"]
+        self.annales = annales["publiees"]
+        self.retenues = [*contenus["retenues"], *annales["retenues"]]
+        self.brouillons = [*contenus["brouillons"], *annales["brouillons"]]
+        self.nouvelles_versions = [*contenus["nouvelles_versions"], *annales["nouvelles_versions"]]
+        self.notions_proposees = [*contenus["notions_proposees"], *annales["notions_proposees"]]
+        self.alertes = contenus["alertes"]
+        self.a_la_une = choisir_a_la_une(ids_une, self.contenus_par_id, self.alertes)
         self.verifier_back_office()
+        # Fiche retenue alors qu'elle était en ligne : « retirée du site ».
+        for signal in self.retenues:
+            signal["etait_en_ligne"] = signal["chemin"] in self.precedentes
 
         rang_theme = {t["id"]: i for i, t in enumerate(self.themes)}
         self.collections.sort(key=lambda c: (rang_theme[c["theme"]["id"]], cle_tri(c["titre"])))
@@ -1051,34 +1365,57 @@ class Constructeur:
         for p in self.publics:
             p["nb"] = sum(1 for c in self.contenus if p in c["publics"])
             p["nb_annales"] = sum(1 for a in self.annales if p in a["publics"])
+            # Filière encore « Bientôt » alors qu'une carte publiée la vise : signalé, jamais bloquant.
+            if not p["actif"] and (p["nb"] or p["nb_annales"]):
+                visees = [c["titre"] for c in [*self.contenus, *self.annales] if p in c["publics"]]
+                self.alertes.append(alerte(
+                    "catalogue/publics.json", f"La filière « {p['nom']} » est inactive (« Bientôt » sur l’accueil) mais "
+                    f"{pluriel(len(visees), 'page publiée la vise', 'pages publiées la visent')} : "
+                    + ", ".join(f"« {v} »" for v in visees[:5]) + ".",
+                    f"Passez « actif » à true pour « {p['id']} » dans catalogue/publics.json (sur GitHub), ou retirez "
+                    "cette filière des fiches."))
 
-        # Liens entre annales et contenus par les notions (« Pour réviser »).
+        # Liens entre annales et contenus publiés par les notions (« Pour réviser »).
         for annale in self.annales:
             notions = set(annale["notions"])
             lies = [c for c in self.contenus if notions & set(c["notions"])]
             annale["contenus_lies"] = sorted(lies, key=lambda c: (c["type"] != "cours", cle_tri(c["titre"])))
 
-        # Images : chaque image citée doit exister, avoir un crédit et un texte alternatif.
-        self.credits = charger_credits(self.lecteur)
-        self.images = Images(self.lecteur, self.credits)
+        # Images des pages publiées : crédit saisi dans la fiche, ou case de risque (classe Images). Les images des
+        # brouillons sont seulement diagnostiquées, en avertissement.
+        self.images = Images(self.lecteur)
         for objet in [*self.contenus, *self.annales]:
-            self.images.verifier(objet["image"])
+            self.images.evaluer(objet["image"])
         for theme in self.themes:
-            self.images.verifier(theme["illustration"])
+            self.images.evaluer(theme["illustration"])
         for section in self.a_venir:
-            self.images.verifier(section["illustration"])
-        self.images.verifier(self.site["illustration_accueil"])
+            self.images.evaluer(section["illustration"])
+        self.images.evaluer(self.site["illustration_accueil"])
+        for signal in self.brouillons:
+            if signal.get("image"):
+                etat, message, correction = self.images.diagnostic(signal["image"])
+                if etat != "publiee":
+                    signal["erreurs"].append({"champ": "Image de la carte", "message": message,
+                                              "correction": correction})
 
-        # Fichiers autonomes publiés : contrôlés avant tout (TRAME § 11).
-        problemes = []
-        for objet in [*(c for c in self.contenus if c["mode"] == "repris"), *self.annales]:
-            problemes += controle_autonome.controler(
-                objet["html"], self.lecteur.rel(objet["html"]), objet["dossier_ressources"])
-        if problemes:
-            raise ErreurConstruction(
-                "fichier autonome refusé :\n  " + "\n  ".join(problemes[:12])
-                + ("\n  …" if len(problemes) > 12 else "")
-            )
+        # Images téléversées que plus aucune fiche ne cite, fichiers déposés qui n'ont pas été importés.
+        citees = contenus["images_citees"] | annales["images_citees"] | {
+            i["fichier"] for i in [*(t["illustration"] for t in self.themes), *(s["illustration"] for s in self.a_venir),
+                                   self.site["illustration_accueil"]] if i}
+        self.orphelines = []
+        for dossier in DOSSIERS_IMAGES:
+            if (self.racine / dossier).is_dir():
+                self.orphelines += [f"{dossier}/{f.name}" for f in sorted((self.racine / dossier).iterdir())
+                                    if f.suffix.lower() in EXTENSIONS_IMAGES and f"{dossier}/{f.name}" not in citees]
+        self.non_importes = []
+        if (self.racine / DOSSIER_IMPORT).is_dir():
+            for fichier in sorted((self.racine / DOSSIER_IMPORT).iterdir()):
+                if fichier.name.startswith(".") or fichier.suffix.lower() == ".json":
+                    continue
+                ou = self.lecteur.rel(fichier)
+                problemes = (controle_autonome.controler(fichier, ou) if fichier.suffix.lower() in (".html", ".htm")
+                             else [f"{ou} : seuls les fichiers HTML se déposent ici."])
+                self.non_importes.append({"fichier": ou, "problemes": problemes})
 
     def verifier_back_office(self):
         """Le back-office /admin/ demande le paquet npm @sveltia/cms et admin/config.yml."""
@@ -1094,6 +1431,9 @@ class Constructeur:
                 f"({SVELTIA}). Lancez « npm ci » (ou « npm install ») à la racine du dépôt, puis recommencez."
             )
         self.sveltia_version = json.loads(manifeste.read_text(encoding="utf-8"))["version"]
+        # Dépôt GitHub (backend.repo de admin/config.yml) : le bandeau d'état interroge son API publique.
+        depot = re.search(r"^\s+repo:\s*([\w.-]+/[\w.-]+)\s*$", self.admin_config.read_text(encoding="utf-8"), re.M)
+        self.depot_github = depot.group(1) if depot else ""
         # Modules servis par le site (MODULES_ADMIN) : l'adresse unpkg attendue porte la version écrite dans le script.
         script = (SVELTIA / "dist" / "sveltia-cms.js").read_text(encoding="utf-8")
         racine_modules = SVELTIA.parent.parent if SVELTIA.parent.name.startswith("@") else SVELTIA.parent
@@ -1124,8 +1464,18 @@ class Constructeur:
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(module["dossier"] / fichier, destination)
         page = self.env.get_template("admin.html").render(site=self.site, version=self.sveltia_version,
-                                                          modules=self.modules_admin)
+                                                          modules=self.modules_admin, depot=self.depot_github)
         (cible / "index.html").write_text(page, encoding="utf-8")
+        # Bandeau d'état et champ « Télécharger pour tester » (admin/admin.js), avec les jetons de couleur et de police
+        # de statique/commun.css (leurs valeurs ne sont écrites que là).
+        shutil.copy2(DEPOT / "admin" / "admin.js", cible / "admin.js")
+        css = (DEPOT / "statique" / "commun.css").read_text(encoding="utf-8")
+        jetons = re.search(r":root\s*\{[^}]*\}", css)
+        (cible / "admin.css").write_text(
+            "/* Jetons copiés de statique/commun.css par outils/construire.py. */\n" + (jetons.group(0) if jetons else "")
+            + "\n\n" + (DEPOT / "admin" / "admin.css").read_text(encoding="utf-8"), encoding="utf-8")
+        # État de la publication, lu par le bandeau.
+        (cible / "etat.json").write_text(json.dumps(self.etat(), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     def preparer_images(self):
         self.images.sortie = self.sortie
@@ -1408,7 +1758,7 @@ class Constructeur:
         )
 
     def pages_service(self):
-        credits = sorted(self.credits.values(), key=lambda c: cle_tri(c["titre"]))
+        credits = self.images.credits()
         annales = sorted(self.annales, key=lambda a: cle_tri(a["titre"]))
         for chemin, page, titre, description in SERVICE:
             self.rendre(
@@ -1438,15 +1788,140 @@ class Constructeur:
                       f"Disallow: /\n# Back-office, hors du site public.\nDisallow: {admin}\n")
         (self.sortie / "robots.txt").write_text(robots, encoding="utf-8")
 
+    # --- état de la publication (lot 1e) ---
+
+    def etat(self):
+        """État de la publication, écrit dans _site/admin/etat.json : lu par le bandeau de /admin/, par le résumé de
+        publication et par la construction suivante (--precedent). Aucune donnée personnelle : des chemins de
+        fichiers, des titres et des messages, déjà lisibles dans le dépôt public."""
+        if getattr(self, "_etat", None):
+            return self._etat
+
+        def fiche(signal):
+            return {"fiche": signal["fiche"], "titre": signal["titre"], "rubrique": signal["rubrique"],
+                    "statut": signal["statut"], "etait_en_ligne": signal.get("etait_en_ligne", False),
+                    "erreurs": signal["erreurs"]}
+
+        def image(i):
+            return {"fichier": i["fichier"], "usage": i["usage"], "fiche": i["cite_par"], "champ": i["champ"],
+                    "message": i["message"], "correction": i["correction"]}
+
+        evaluees = self.images.evaluees
+        a_corriger = {
+            "fiches_retenues": [fiche(s) for s in self.retenues],
+            "brouillons": [fiche(s) for s in self.brouillons if s["erreurs"]],
+            "nouvelles_versions": [{k: v for k, v in n.items()} for n in self.nouvelles_versions
+                                   if n["avertissements"]],
+            "images_non_publiees": [image(i) for i in evaluees if i["etat"] == "non-publiee"],
+            "images_orphelines": [{
+                "fichier": f, "message": f"{f} : téléversée mais citée par aucune fiche.",
+                "correction": "Supprimez-la (Ressources → Images de cartes ou Planches), ou choisissez-la dans une "
+                              "fiche."} for f in self.orphelines],
+            "fichiers_non_importes": [{
+                "fichier": n["fichier"], "problemes": n["problemes"],
+                "message": (f"{n['fichier']} : refusé à l’import." if n["problemes"] else
+                            f"{n['fichier']} : en attente d’import (la prochaine publication le traitera)."),
+                "correction": (CORRECTION_FICHIER + " Supprimez ensuite ce fichier (Ressources → Dépôt rapide)."
+                               if n["problemes"] else "")} for n in self.non_importes],
+            "notions_proposees": [{
+                **n, "correction": "Si elle convient, ajoutez-la dans la rubrique « Notions », puis choisissez-la "
+                                   "dans la fiche."} for n in self.notions_proposees],
+            "autres": self.alertes,
+        }
+        publiees = sorted([*(c["chemin"] for c in self.contenus), *(a["chemin"] for a in self.annales)])
+        self._etat = {
+            "format": 1,
+            "construit_le": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+            "publiees": publiees,
+            "comptes": {
+                "publiees": len(publiees),
+                "fiches_retenues": len(a_corriger["fiches_retenues"]),
+                "a_corriger": sum(len(v) for v in a_corriger.values()),
+                "images_a_regulariser": sum(1 for i in evaluees if i["etat"] == "a-regulariser"),
+                "brouillons": len(self.brouillons),
+                "nouvelles_versions": len(self.nouvelles_versions),
+            },
+            "a_corriger": a_corriger,
+            "images_a_regulariser": [image(i) for i in evaluees if i["etat"] == "a-regulariser"],
+            "nouvelles_versions": self.nouvelles_versions,
+        }
+        return self._etat
+
+    def resume(self, rapport_import=""):
+        """Résumé de publication (Markdown, récapitulatif de l'Action) : « À corriger » d'abord, puis les images à
+        régulariser, le rapport d'import et le tableau de bord éditorial."""
+        etat = self.etat()
+        a = etat["a_corriger"]
+
+        def erreurs(liste, retrait="  "):
+            return [f"{retrait}- *{e['champ']}* : {e['message']} → {e['correction']}" for e in liste]
+
+        lignes = ["## À corriger", ""]
+        if a["fiches_retenues"]:
+            lignes += ["### Fiches retenues (non publiées)", ""]
+            for f in a["fiches_retenues"]:
+                retiree = " **Retirée du site** : elle était en ligne." if f["etait_en_ligne"] else ""
+                lignes += [f"- **{f['rubrique']} : « {f['titre']} »** (`{f['fiche']}`).{retiree}", *erreurs(f["erreurs"])]
+            lignes.append("")
+        if a["brouillons"]:
+            lignes += ["### Brouillons : avertissements (rien n’est publié)", ""]
+            for f in a["brouillons"]:
+                lignes += [f"- **{f['rubrique']} : « {f['titre']} »** (`{f['fiche']}`)", *erreurs(f["erreurs"])]
+            lignes.append("")
+        if a["nouvelles_versions"]:
+            lignes += ["### Nouvelles versions à relire : avertissements", ""]
+            for n in a["nouvelles_versions"]:
+                lignes += [f"- **« {n['titre']} »** (`{n['fichier']}`)", *erreurs(n["avertissements"])]
+            lignes.append("")
+        if a["images_non_publiees"]:
+            lignes += ["### Images non publiées (le bandeau typographique les remplace)", ""]
+            lignes += [f"- `{i['fichier']}` ({i['usage']}, `{i['fiche']}`, champ « {i['champ']} ») : {i['message']} → "
+                       f"{i['correction']}" for i in a["images_non_publiees"]]
+            lignes.append("")
+        if a["images_orphelines"]:
+            lignes += ["### Images orphelines", ""]
+            lignes += [f"- {i['message']} → {i['correction']}" for i in a["images_orphelines"]]
+            lignes.append("")
+        if a["fichiers_non_importes"]:
+            lignes += ["### Fichiers déposés non importés", ""]
+            for n in a["fichiers_non_importes"]:
+                lignes.append(f"- {n['message']}" + (f" → {n['correction']}" if n["correction"] else ""))
+                lignes += [f"  - {p}" for p in n["problemes"][:8]]
+            lignes.append("")
+        if a["notions_proposees"]:
+            lignes += ["### Notions proposées (jamais créées automatiquement)", ""]
+            lignes += [f"- « {n['nom']} » (`{n['id']}`), proposée par `{n['fiche']}` → {n['correction']}"
+                       for n in a["notions_proposees"]]
+            lignes.append("")
+        if a["autres"]:
+            lignes += ["### Autres", ""]
+            lignes += [f"- *{x['objet']}* : {x['message']} → {x['correction']}" for x in a["autres"]]
+            lignes.append("")
+        if len(lignes) == 2:
+            lignes += ["Rien à corriger.", ""]
+        lignes += ["## Images à régulariser", ""]
+        lignes += ([f"- `{i['fichier']}` ({i['usage']}, `{i['fiche']}`) : {i['message']} → {i['correction']}"
+                    for i in etat["images_a_regulariser"]] or ["Aucune."])
+        lignes.append("")
+        if etat["nouvelles_versions"]:
+            lignes += ["## Nouvelles versions à relire", ""]
+            lignes += [f"- « {n['titre']} » (`{n['fiche']}`) : `{n['fichier']}`, déposée le {n['deposee_le'] or '?'}. "
+                       "Téléchargez-la depuis la fiche, testez-la, puis cochez « Valider la nouvelle version »."
+                       for n in etat["nouvelles_versions"]]
+            lignes.append("")
+        if rapport_import.strip():
+            lignes += [rapport_import.strip(), ""]
+        return "\n".join(lignes) + "\n" + self.tableau_de_bord()
+
     def tableau_de_bord(self):
-        """Résumé de publication (Markdown) pour le récapitulatif de l'Action : des comptes, aucun secret."""
+        """Tableau de bord éditorial (Markdown) : des comptes, aucun secret."""
         types = [*TYPES.items(), TYPE_ANNALE]
         publies = {k: 0 for k, _ in types}
         brouillons = {k: 0 for k, _ in types}
         for c in [*self.contenus, *self.annales]:
             publies[c["type"]] += 1
         sans_type = 0
-        for b in [*self.brouillons, *self.brouillons_annales]:
+        for b in self.brouillons:
             if b.get("type") in brouillons:
                 brouillons[b["type"]] += 1
             else:
@@ -1459,15 +1934,18 @@ class Constructeur:
             lignes.append(f"| Type non renseigné | 0 | {sans_type} |")
         lignes.append(f"| **Total** | **{sum(publies.values())}** | **{sum(brouillons.values()) + sans_type}** |")
         cartes = [*self.contenus, *self.annales]
-        sans_image = sum(1 for c in cartes if not c["image"])
-        sans_source = sum(1 for b in self.brouillons_annales if b.get("sans_source"))
+        sans_image = sum(1 for c in cartes if not c.get("image_publiee"))
+        sans_source = sum(1 for b in self.brouillons if b["type"] == TYPE_ANNALE[0] and b.get("sans_source"))
         poids = self.poids_accueil()
         manquantes = self.site["mentions_manquantes"]
+        comptes = self.etat()["comptes"]
         lignes += [
             "",
+            f"- Fiches retenues : **{comptes['fiches_retenues']}** (voir « À corriger »)",
+            f"- Images à régulariser : **{comptes['images_a_regulariser']}**",
             f"- Annales sans source : **{sans_source}** (en brouillon ; une annale publiée a toujours sa source)",
             f"- Cartes sans image : **{sans_image}** sur {len(cartes)} (bandeau typographique à la place)",
-            "- Planche de l’accueil : " + ("**présente**" if self.site["illustration_accueil"] else "**absente**"),
+            "- Planche de l’accueil : " + ("**présente**" if self.site.get("planche_accueil") else "**absente**"),
             f"- Poids de l’accueil : **{poids / 1000:.0f} ko** au premier affichage (estimation : page, styles, "
             "scripts, polices et planches ; limite 300 ko)",
             "- Mentions légales : " + ("**complètes**" if not manquantes else
@@ -1507,9 +1985,17 @@ class Constructeur:
             "Indexation : " + ("autorisée." if self.site["indexable"] else "interdite (noindex, robots.txt fermé)."),
             "Mesure d’audience : " + ("Umami." if self.site["umami"] else "aucune (site.json, « umami » vide)."),
         ]
-        brouillons = [b["source"] for b in [*self.brouillons, *self.brouillons_annales]]
+        brouillons = [b["fiche"] for b in self.brouillons]
         if brouillons:
             lignes.append(f"Brouillons non publiés ({len(brouillons)}) : " + ", ".join(brouillons) + ".")
+        if self.retenues:
+            lignes.append(f"Fiches retenues, non publiées ({len(self.retenues)}) : "
+                          + ", ".join(r["fiche"] for r in self.retenues) + " (voir « À corriger » dans le résumé).")
+            for r in self.retenues:
+                lignes += [f"  {r['fiche']} — {e['champ']} : {e['message']}" for e in r["erreurs"]]
+        comptes = self.etat()["comptes"]
+        if comptes["a_corriger"] > len(self.retenues):
+            lignes.append(f"À corriger : {comptes['a_corriger']} signalements en tout (résumé, bandeau de /admin/).")
         a_renseigner = [f"editeur.{k}" for k, v in self.site["editeur"].items() if not v]
         if not self.site["contact"]:
             a_renseigner.append("contact")
@@ -1528,7 +2014,13 @@ def main(arguments=None):
     analyseur.add_argument("--sortie", type=Path, default=None,
                            help="dossier à écrire (par défaut : <racine>/_site)")
     analyseur.add_argument("--resume", type=Path, default=None,
-                           help="fichier Markdown où ajouter le tableau de bord éditorial ($GITHUB_STEP_SUMMARY)")
+                           help="fichier Markdown où ajouter le résumé de publication ($GITHUB_STEP_SUMMARY)")
+    analyseur.add_argument("--verifications", type=Path, default=None,
+                           help="résultats du contrôle 20/20 des annales (outils/verifier-annales.js)")
+    analyseur.add_argument("--precedent", type=Path, default=None,
+                           help="etat.json de la version en ligne : une fiche retenue qui y figure est « retirée »")
+    analyseur.add_argument("--import", dest="rapport_import", type=Path, default=None,
+                           help="rapport Markdown de outils/importer.py, repris dans le résumé")
     options = analyseur.parse_args(arguments)
     racine = options.racine.resolve()
     sortie = (options.sortie or racine / "_site").resolve()
@@ -1538,15 +2030,38 @@ def main(arguments=None):
             with options.resume.open("a", encoding="utf-8") as fichier:
                 fichier.write(texte + "\n")
 
-    constructeur = Constructeur(racine, sortie)
+    def lire(chemin, quoi):
+        """Fichier facultatif d'une étape précédente : absent ou illisible, il est ignoré (jamais bloquant)."""
+        if not chemin:
+            return None
+        try:
+            texte = chemin.read_text(encoding="utf-8")
+            return json.loads(texte) if chemin.suffix == ".json" else texte
+        except (OSError, ValueError) as erreur:
+            print(f"Attention : {quoi} ignoré ({chemin} : {erreur}).", file=sys.stderr)
+            return None
+
+    verifications = lire(options.verifications, "résultat du contrôle 20/20") or {}
+    precedent = lire(options.precedent, "état de la version en ligne") or {}
+    rapport_import = lire(options.rapport_import, "rapport d’import") or ""
+    constructeur = Constructeur(racine, sortie, verifications=verifications.get("resultats") or {},
+                                precedentes=precedent.get("publiees") if isinstance(precedent, dict) else None)
     try:
         print(constructeur.construire())
     except ErreurConstruction as erreur:
         print(f"Construction arrêtée : {erreur}", file=sys.stderr)
-        resumer("## Tableau de bord éditorial\n\n**Publication arrêtée.** Rien n’a été mis en ligne ; le site "
-                f"précédent reste en place.\n\n```\nConstruction arrêtée : {erreur}\n```\n")
+        resumer("## À corriger\n\n**Publication arrêtée.** Rien n’a été mis en ligne ; le site précédent reste en "
+                "place. C’est une erreur de structure ou de code, à transmettre telle quelle dans une session Claude "
+                f"Code.\n\n```\nConstruction arrêtée : {erreur}\n```\n")
         return 1
-    resumer(constructeur.tableau_de_bord())
+    except Exception as erreur:  # erreur de code (gabarit, programme) : rien n'est publié
+        import traceback
+        traceback.print_exc()
+        resumer("## À corriger\n\n**Publication arrêtée.** Rien n’a été mis en ligne ; le site précédent reste en "
+                "place. C’est une erreur de code, à transmettre telle quelle dans une session Claude Code.\n\n```\n"
+                f"{type(erreur).__name__} : {erreur}\n```\n")
+        return 1
+    resumer(constructeur.resume(rapport_import))
     return 0
 
 
