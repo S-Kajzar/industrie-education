@@ -1,7 +1,7 @@
 # Note de livraison — lot 1e : publication fiable et dépôt en un geste
 
 Branche `claude/gifted-mccarthy-1rs5w8`, repartie de `main` (`2d3949b`, après le lot 1d et ses correctifs, PR n° 6
-et n° 7). Prompt : `prompts/LOT-1E.md`. `npm test` : **343 tests, tous verts** (environ 2 minutes, contrôle 20/20 compris, sans réseau).
+et n° 7) ; pull request n° 9. Prompt : `prompts/LOT-1E.md`. `npm test` : **343 tests, tous verts** (environ 2 minutes, contrôle 20/20 compris, sans réseau).
 
 **Aucune nouvelle dépendance** dans `package.json` ni `requirements.txt`. Un module déjà installé avec
 `@sveltia/cms` est désormais servi par le site : **Immutable.js** 5.2.1 (MIT). Sveltia le charge depuis unpkg.com
